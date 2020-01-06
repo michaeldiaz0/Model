@@ -36,21 +36,21 @@
 												}}
 
 /*****************************************************************************************
-* 
+* Buoyancy for dry parcel
 ******************************************************************************************/
 inline double buoyancy_dry(int i,int j,int k){
 	return TH(i,j,k) / tbv[k];
 }
 
 /*****************************************************************************************
-* 
+* Buoyancy for moist parcel without ice microphysics
 ******************************************************************************************/
 inline double buoyancy_warm_micro(int i,int j,int k){
 	return TH(i,j,k) / tbv[k] + 0.61*QV(i,j,k) - QC(i,j,k) - QR(i,j,k);
 }
 
 /*****************************************************************************************
-* 
+* Buoyancy for moist parcel with ice microphysics
 ******************************************************************************************/
 inline double buoyancy_cold_micro(int i,int j,int k){
 	return TH(i,j,k) / tbv[k] + 0.61*QV(i,j,k) - QC(i,j,k) - QR(i,j,k) - QI(i,j,k) - QS(i,j,k);
