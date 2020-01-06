@@ -1,0 +1,28 @@
+
+
+		//---------------------------------
+		// 72 b = 8 jn = 4 js = 14 convergence, wrong phase velocity direction
+		// 73 b = 8 jn = 4 js = 14 wrong phase velocity direction, no convergence
+		// 74 b = 8 jn = 4 js = 14 more amplitude at upper levels (compare heating-forced experiment)
+		// 75 b = 8 jn = 4 js = 14 more amplitude at upper levels (compare heating-forced experiment)
+		// 76 b = 8 jn = 4 js = 14	
+		// 77 b = 8 jn = 4 js = 14 beginning here, more amplitude at upper levels (compare heating-forced experiment)
+		// 78 b = 8 jn = 5 js = 13
+		// 79 b = 8 jn = 5 js = 12 similar to farther east
+		// 80 b = 9 jn = 5 js = 11
+		// 81 b = 9 jn = 6 js = 10
+		// 82 b = 10 jn = 6 js = 10
+		// 83 b = 10 jn = 6 js = 10
+		// 84 b = 10 jn = 6 js = 10
+		// 85 b = 10 jn = 6 js = 10
+		// 86 b = 10 jn = 6 js = 10 latoffset = 89.75
+		// 87 b = 10 jn = 6 js = 10
+		// 88 b = 10 jn = 6 js = 10
+		// 89 b = 10 jn = 6 js = 10
+		// 90 b = 10 jn = 6 js = 10
+		// 90.5 b = 10 jn = 6 js = 10	periodic convergence
+		// 91 b = 10 jn = 5 js = 10	convergence
+		// 92 b = 10 jn = 5 js = 10 no convergence b = 11 convergence
+		// 93 b = 10 jn = 5 js = 10 (or b=12 _2) (or b=11 _3)
+		// 94 b = 10 jn = 5 js = 10 (or b=11 _2)
+		//---------------------------------

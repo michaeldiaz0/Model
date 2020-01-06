@@ -1,0 +1,151 @@
+---------------------------------------------------
+---------------------------------------------------
+| Grid parameter settings
+---------------------------------------------------
+---------------------------------------------------
+&grid
+----------------------------------------
+| Number of grid points, grid spacing (m),
+| and time step (sec)
+----------------------------------------
+NX	:	345
+NY  :	259
+NZ	:	43
+dx	:	15000.0
+dz	:	500.0
+dt	:	40.0
+
+----------------------------------------
+| Vertical grid stretching. Height (m)
+| of the lowest full model level. Set to
+| value of 'dz' for no stetching.
+----------------------------------------
+height_lowest_level : 100
+
+----------------------------------------
+| Coordinates of lower left corner.
+| Latitude starts from south pole.
+| Longitude starts from prime meridian.
+----------------------------------------
+corner_lat	:	90
+corner_lon	:	61
+
+---------------------------------------
+| Number of time steps to run and how
+| often to output results to a file
+| (in number of time steps)
+---------------------------------------
+time_steps		 :	12960
+output_frequency :	270
+
+----------------------------------------
+| Grid level to begin upper-level damping
+----------------------------------------
+rayleigh_damping_z	: 37
+
+/
+
+---------------------------------------------------
+---------------------------------------------------
+| Model settings
+---------------------------------------------------
+---------------------------------------------------
+&settings
+----------------------------------------
+| Lots of console output? 1->yes, 0->no
+----------------------------------------
+verbose : 1
+----------------------------------------
+| How to initialize model
+| 0 - from a file
+| 1 - from a compiled subroutine
+----------------------------------------
+basic_state_init_option		:	1
+perturbation_init_option	:	0
+----------------------------------------
+| Restart a simulation from where it
+| left off, recording results into the
+| same file.
+----------------------------------------
+is_restart_run : 0
+----------------------------------------
+| Time at which to start reading
+| from perturbation input file
+----------------------------------------
+perturbationFileTime	: 7
+----------------------------------------
+| Time at which to start writing to the
+| output file (if not creating a new file)
+| Negative values are from the end
+----------------------------------------
+startOutfileAt	:		-3
+----------------------------------------
+| 1 -> Create a new output file
+| 0 -> keep writing to an existing
+| output file specified by 'output_file'
+| starting at file time 'startOutfileAt'
+----------------------------------------
+create_new_output_file : 1
+----------------------------------------
+| Run various budgets and output them
+| to a file. 0 -> no 1 -> yes
+----------------------------------------
+run_heat_budget 	:	0
+run_moisture_budget :	0
+run_pe_budget 		:	0
+run_pv_budget 		:	0
+run_vorticity_budget :	0
+
+/
+
+---------------------------------------------------
+---------------------------------------------------
+| Physics settings
+---------------------------------------------------
+---------------------------------------------------
+&physics
+
+microphysics_option : 2
+use_surface_heat_flux : 0
+
+/
+
+---------------------------------------------------
+---------------------------------------------------
+| File names
+---------------------------------------------------
+---------------------------------------------------
+&files
+----------------------------------------
+| File extensions
+----------------------------------------
+input_file_base		:		/Users/michaeldiaz/Desktop/model_output/
+output_file_base	:		/Users/michaeldiaz/Desktop/model_output/
+
+----------------------------------------
+| Input files
+----------------------------------------
+basic_state_input_file	:	pertinput.nc
+perturbation_input_file	:	outfile1013_0.nc
+
+----------------------------------------
+| Output files
+----------------------------------------
+output_file				  :	outfile1201_0.nc
+heat_budget_filename	  :	temp_budget1130_0.nc
+moisture_budget_filename  :	moisture_budget1130_0.nc
+pe_budget_filename		  :	pe_budget1130_0.nc
+pv_budget_filename		  :	pv_budget1130_0.nc
+vorticity_budget_filename :	vort_budget1129_0.nc
+
+
+/
+
+---------------------------------------------------
+---------------------------------------------------
+| Initialization subroutine parameters
+---------------------------------------------------
+---------------------------------------------------
+&initialization_constants
+
+/
