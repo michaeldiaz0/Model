@@ -100,7 +100,7 @@ int get_file_output_status();
 * FILE WRITING PROCEDURES
 *********************************************************/
 void create_outfile(const char *filename, bool basestate,bool modelBaseState,bool coordinates);
-void write_mbvar_to_file(int ncid,const char *var_name,double var[NZ]);
+void write_mbvar_to_file(int ncid,const char *var_name,double *var);
 void write_pvar_to_file(int ncid,const char *var_name,double *var,size_t tcount);
 void write_pvar_to_file(const char *filename,const char *var_name,double *var,size_t tcount);
 void write_pvar_to_file(const char *myfilename,const char *var_name,double *var,int nx,int ny,size_t tcount);

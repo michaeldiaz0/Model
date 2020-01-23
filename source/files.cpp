@@ -309,7 +309,7 @@ void shrink_file(const char *infile,const char *outfile){
 * var_name 	- variable name
 * var[NZ]	- variable data
 *********************************************************/
-void write_mbvar_to_file(int ncid,const char *var_name,double var[NZ]){
+void write_mbvar_to_file(int ncid,const char *var_name,double *var){
 
 	int status;
 	int var_id;

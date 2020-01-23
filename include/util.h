@@ -1,11 +1,11 @@
 void init_stats();
 double get_stats(FILE *infile=NULL);
 void line_array(int,int,int,int,int*);
-void find_max(double [NX][NY][NZ], int*, double*, double*);
+//void find_max(double [NX][NY][NZ], int*, double*, double*);
 void rescale_pert(double max1, double max2, double scale1, double scale2, int * arr, bool upper, bool lower);
 void rescale_pert2(double,double);
 double find_max2(double *);
-int find_max3(double[NX][NY][NZ],int);
+//int find_max3(double[NX][NY][NZ],int);
 double pivot_coriolis(double,int,int);
 void print_max_arrays(int);
 int get_point_from_lat(double);

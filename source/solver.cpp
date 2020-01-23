@@ -336,7 +336,7 @@ void linear_integrate_rk3(){
 	if(bigcounter<stopheating){ heat.applyHeating_random();}
 	
 	#if FOURIER_DAMPING
-		#if PERIODIC_BOUNDARIES
+		if(PERIODIC_BOUNDARIES){
 			fft_damp(NX-6,NY,NZ,3,&UP(0,0,0));
 			fft_damp(NX-6,NY,NZ,3,&VP(0,0,0));
 			fft_damp(NX-6,NY,NZ,3,&WP(0,0,0));
@@ -346,12 +346,12 @@ void linear_integrate_rk3(){
 				fft_damp(NX-6,NY,NZ,3,&QVP(0,0,0));
 			}
 			
-		#else
+		} else {
 			fft_damp2(NX,NY,NZ,0,&UP(0,0,0));
 			fft_damp2(NX,NY,NZ,0,&VP(0,0,0));
 			fft_damp2(NX,NY,NZ,0,&WP(0,0,0));
 			fft_damp2(NX,NY,NZ,0,&THP(0,0,0));
-		#endif
+		}
 	#endif
 			
 	apply_boundary_condition(0);
@@ -523,8 +523,10 @@ void run_model(int count,FILE *infile){
 
 			write_all_pvars(filename,file_time_counter);
 			
-			#if OUTPUT_FRICTION_TEND && USE_TURBULENT_STRESS && !PARALLEL
+			#if OUTPUT_FRICTION_TEND && !PARALLEL
+			if(USE_TURBULENT_STRESS){
 				write_pvar_to_file(filename,"fric",frictions,file_time_counter);
+			}
 			#endif
 			
 			#if OUTPUT_DIFFUSION_TEND && !PARALLEL

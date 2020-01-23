@@ -296,19 +296,19 @@ double get_FKE(int xl, int xh, int yl, int yh, int zl, int zh){
 
 		for(int k=zl;k<zh;k++){
 		
-		#if !USE_TURBULENT_STRESS
-			umid = 0.5*(U(i,j,k)+U(i+1,j,k));
-			vmid = 0.5*(V(i,j,k)+V(i,j+1,k));
+			if(!USE_TURBULENT_STRESS){
+				umid = 0.5*(U(i,j,k)+U(i+1,j,k));
+				vmid = 0.5*(V(i,j,k)+V(i,j+1,k));
 			
-			fke_vavg = fke_vavg + rhou[k]*( IFRICTION(i,j,k)*umid*umid + IFRICTION(i,j,k)*vmid*vmid )*DZU(k);
-			/*
-			fke_vavg = fke_vavg + rhou[k]*( 0.5*(IFRICTION(i,j,k)*U(i,j,k)*U(i,j,k) + IFRICTION(i+1,j,k)*U(i+1,j,k)*U(i+1,j,k)) 
-										  + 0.5*(IFRICTION(i,j,k)*V(i,j,k)*V(i,j,k) + IFRICTION(i,j+1,k)*V(i,j+1,k)*V(i,j+1,k) ) 
-											  )*DZU(k);
-			*/
-		#else
-			fke_vavg = fke_vavg + rhou[k]*IFRICTION(i,j,k)*DZU(k);
-		#endif
+				fke_vavg = fke_vavg + rhou[k]*( IFRICTION(i,j,k)*umid*umid + IFRICTION(i,j,k)*vmid*vmid )*DZU(k);
+				/*
+				fke_vavg = fke_vavg + rhou[k]*( 0.5*(IFRICTION(i,j,k)*U(i,j,k)*U(i,j,k) + IFRICTION(i+1,j,k)*U(i+1,j,k)*U(i+1,j,k)) 
+											  + 0.5*(IFRICTION(i,j,k)*V(i,j,k)*V(i,j,k) + IFRICTION(i,j+1,k)*V(i,j+1,k)*V(i,j+1,k) ) 
+												  )*DZU(k);
+				*/
+			} else {
+				fke_vavg = fke_vavg + rhou[k]*IFRICTION(i,j,k)*DZU(k);
+			}
 		}
 
 		fke_havg = fke_havg + fke_vavg;

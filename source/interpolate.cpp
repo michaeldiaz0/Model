@@ -363,7 +363,7 @@ void vert_interpolate_1d_from_model(double *z, double *source_z, double *source_
 		}
 	}}
 }
-
+#if 0
 /********************************************************
 * Vertical interpolation to model grid with terrain
 * following coordinates
@@ -458,7 +458,7 @@ void vert_interpolate_1d(double z[NX][NY][NZ], double var[NZ],double out[NX][NY]
 	}}
 
 }
-
+#endif
 /********************************************************
 * Vertical interpolation
 * 
@@ -551,14 +551,12 @@ void vert_interpolate_1d_linear(int nzIn,int nzOut, double * zIn,double * zOut,d
 }
 
 /********************************************************
-* Vertical interpolation
+* Vertical interpolation -> 1d to 1d
 * 
-* @param z   - 3D array of heights of output data
+* @param zOut - 1D array of heights of output data
 * @param var - 1D array of input uninterpolated data
-*			   at model heights where terrain height
-*			   equals zero
-* @param out - output data interpolated to terrain
-*			   following coordinates
+*			   
+* @param varOut - output data interpolated
 *
 *********************************************************/
 void vert_interpolate_1d(int nzIn,int nzOut, double * zIn,double * zOut,double * varIn,double * varOut){
@@ -643,7 +641,7 @@ void vert_interpolate_1d(int nzIn,int nzOut, double * zIn,double * zOut,double *
 		
 }
 
-
+#if 0
 /********************************************************
 * Vertical interpolation to model grid with terrain
 * following coordinates
@@ -738,7 +736,7 @@ void vert_interpolate_3d(double z[NX][NY][NZ], double var[NX][NY][NZ],double out
 	}}
 
 }
-
+#endif
 /********************************************************
 * Interpolate the horizontal dimensions of an array
 *

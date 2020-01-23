@@ -95,6 +95,7 @@ int number_of_time_steps;
 int raydampheight;
 int outfilefreq;
 double height_lowest_level;
+int SHIFT_PRIME_MERIDIAN;
 
 int PV_BUDGET;
 int HEAT_BUDGET;
@@ -102,13 +103,17 @@ int MOISTURE_BUDGET;
 int VORTICITY_BUDGET;
 int PE_BUDGET;
 
+int USE_TURBULENT_STRESS;
 int MICROPHYSICS_OPTION;
 int USE_ICE;
 int USE_MICROPHYSICS;
 int isRestartRun;
 int SURFACE_HEAT_FLUX;
+double WATER_TEMP_C;
 
 int VERBOSE;
+
+int PERIODIC_BOUNDARIES;
 
 int BASIC_STATE_OPTION;			// 0:Model output, 1:Code, 2:Reanalysis 
 int PERTURBATION_OPTION;
@@ -153,6 +158,7 @@ void initialize_globals(){
 	
 	lonoffset = inputs.corner_lon;
 	latoffset = inputs.corner_lat;
+	SHIFT_PRIME_MERIDIAN = inputs.shift_prime_meridian;
 	number_of_time_steps = inputs.time_steps;
 	raydampheight = inputs.rayleigh_damping_z;
 	outfilefreq = inputs.output_frequency;
@@ -178,6 +184,15 @@ void initialize_globals(){
 	
 	MICROPHYSICS_OPTION = inputs.microphysics_option;
 	
+	USE_TURBULENT_STRESS = inputs.turbulence_option;
+	
+	PERIODIC_BOUNDARIES = inputs.periodic_ew_boundaries;
+	
+	jnbuffer = inputs.boundary_width_north;
+	jsbuffer = inputs.boundary_width_south;
+	iebuffer = inputs.boundary_width_east;	
+	iwbuffer = inputs.boundary_width_west;
+	
 	if(MICROPHYSICS_OPTION==2){	USE_ICE = 1;} else { USE_ICE = 0;}
 	if(MICROPHYSICS_OPTION > 0){ USE_MICROPHYSICS = 1;} else {USE_MICROPHYSICS = 0;}
 	
@@ -196,6 +211,7 @@ void initialize_globals(){
 	}
 	
 	SURFACE_HEAT_FLUX = inputs.use_surface_heat_flux;
+	WATER_TEMP_C = inputs.water_temp;
 	
 	//printf("options = %d %d %d\n",MICROPHYSICS_OPTION,USE_MICROPHYSICS,USE_ICE);
 }
@@ -844,6 +860,12 @@ void setup_vertical_height_levels(){
 **********************************************************************/
 void initialize_vertical_basic_state2(double *tb,double *qb){
 	
+	tb[0]=tb[1];
+	tb[NZ-1]=tb[NZ-2];
+
+	qb[0]=qb[1];
+	qb[NZ-1]=qb[NZ-2];
+	
 	//-----------------------------------------------------
 	// create base state potential temperature profile
 	//-----------------------------------------------------
@@ -854,7 +876,7 @@ void initialize_vertical_basic_state2(double *tb,double *qb){
 	//-----------------------------------------------------
 	// create base state virtual potential temperature profile
 	//-----------------------------------------------------
-	for(int k=0;k<NZ;k++){ tbv[k]=tb[k]*(1.0+0.61*qb[k]);}
+	for(int k=0;k<NZ;k++){ tbv[k] = tb[k]*(1.0+0.61*qb[k]);}
 
 	//-----------------------------------------------------
 	// create base state pressure profile
@@ -919,9 +941,9 @@ void initialize_vertical_basic_state(int ibase,int jbase){
 	//-----------------------------------------------------
 	// create base state potential temperature profile
 	//-----------------------------------------------------
-	tb[0] = ITHBAR(ibase,jbase,0);
+	//tb[0] = ITHBAR(ibase,jbase,0);
 
-	for(int k=1;k<NZ;k++){ tb[k] = ITHBAR(ibase,jbase,k);}
+	for(int k=0;k<NZ;k++){ tb[k] = ITHBAR(ibase,jbase,k);}
 
 	tb[0]=tb[1];
 	tb[NZ-1]=tb[NZ-2];
@@ -929,9 +951,9 @@ void initialize_vertical_basic_state(int ibase,int jbase){
 	//-----------------------------------------------------
 	// create base state specific humidity profile
 	//-----------------------------------------------------
-	qb[0] = IQBAR(ibase,jbase,0);
+	//qb[0] = IQBAR(ibase,jbase,0);
 
-	for(int k=1;k<NZ;k++){ qb[k] = IQBAR(ibase,jbase,k);}
+	for(int k=0;k<NZ;k++){ qb[k] = IQBAR(ibase,jbase,k);}
 
 	qb[0]=qb[1];
 	qb[NZ-1]=qb[NZ-2];

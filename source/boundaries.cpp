@@ -19,6 +19,10 @@
 double *east_coeff,*west_coeff,*north_coeff,*south_coeff;
 int eb,ee,wb,we,nb,ne,sb,se;
 
+int iwbuffer = 5;
+int iebuffer = 5;
+int jnbuffer = 5;
+int jsbuffer = 5;
 
 void apply_sponge_boundaries(double *var);
 void upper_lower_boundaries();
@@ -134,7 +138,7 @@ void apply_boundary_condition(int mpi_proc_null){
 		//-------------------------------------------------------
 		// SPONGE BOUNDARIES / SERIAL VERSION
 		//-------------------------------------------------------
-		#if !PERIODIC_BOUNDARIES
+		if(!PERIODIC_BOUNDARIES){
 			
 			sponge_boundaries(ups,NX,NY);
 			sponge_boundaries(vps,NX,NY);
@@ -149,7 +153,7 @@ void apply_boundary_condition(int mpi_proc_null){
 		//-------------------------------------------------------
 		// PERIODIC BOUNDARIES / SERIAL VERSION
 		//-------------------------------------------------------			
-		#else
+		} else {
 			//printf("here\n");
 			//upper_lower_boundaries();
 			
@@ -171,7 +175,7 @@ void apply_boundary_condition(int mpi_proc_null){
 			upper_lower_boundaries_zero(wps,1,NX,1,NY);
 			
 			//periodic_ew_sponge_ns_boundaries();
-		#endif
+		}
 	#endif
 }
 
@@ -205,59 +209,61 @@ void apply_boundary_condition_microphysics(int mpi_proc_null){
 	//-----------------------------------------------------------
 	// SERIAL VERSION
 	//-----------------------------------------------------------			
-	#elif !PERIODIC_BOUNDARIES
-		//-------------------------------------------------------
-		// SPONGE BOUNDARIES / SERIAL VERSION
-		//-------------------------------------------------------	
-		sponge_boundaries(qvps,NX,NY);
-		sponge_boundaries(qcps,NX,NY);
-		sponge_boundaries(qrps,NX,NY);
-		
-		upper_lower_boundaries(qvps,1,NX,1,NY);
-		upper_lower_boundaries(qcps,1,NX,1,NY);
-		upper_lower_boundaries(qrps,1,NX,1,NY);
-		
-		if(USE_ICE){
-			//---------------------------------------------------
-			// ICE MICROPHYSICS	/ SERIAL VERSION
-			//---------------------------------------------------
-			sponge_boundaries(qips,NX,NY);
-			sponge_boundaries(qsps,NX,NY);
-			
-			upper_lower_boundaries(qips,1,NX,1,NY);
-			upper_lower_boundaries(qsps,1,NX,1,NY);		
-		}
-			
 	#else
-		//-------------------------------------------------------
-		// PERIODIC BOUNDARIES / SERIAL VERSION
-		//-------------------------------------------------------
-		sponge_boundaries_north_south(qvps,NX,NY);
-		sponge_boundaries_north_south(qcps,NX,NY);
-		sponge_boundaries_north_south(qrps,NX,NY);
-				
-		periodic_boundaries_east_west(qvps);
-		periodic_boundaries_east_west(qcps);		
-		periodic_boundaries_east_west(qrps);
 		
-		upper_lower_boundaries(qvps,1,NX,1,NY);
-		upper_lower_boundaries(qcps,1,NX,1,NY);
-		upper_lower_boundaries(qrps,1,NX,1,NY);	
-				
-		if(USE_ICE){
-			//---------------------------------------------------
-			// ICE MICROPHYSICS	/ SERIAL VERSION
-			//---------------------------------------------------
-			sponge_boundaries_north_south(qips,NX,NY);
-			sponge_boundaries_north_south(qsps,NX,NY);	
+		if(!PERIODIC_BOUNDARIES){
+			//-------------------------------------------------------
+			// SPONGE BOUNDARIES / SERIAL VERSION
+			//-------------------------------------------------------	
+			sponge_boundaries(qvps,NX,NY);
+			sponge_boundaries(qcps,NX,NY);
+			sponge_boundaries(qrps,NX,NY);
 		
-			periodic_boundaries_east_west(qips);
-			periodic_boundaries_east_west(qsps);
+			upper_lower_boundaries(qvps,1,NX,1,NY);
+			upper_lower_boundaries(qcps,1,NX,1,NY);
+			upper_lower_boundaries(qrps,1,NX,1,NY);
+		
+			if(USE_ICE){
+				//---------------------------------------------------
+				// ICE MICROPHYSICS	/ SERIAL VERSION
+				//---------------------------------------------------
+				sponge_boundaries(qips,NX,NY);
+				sponge_boundaries(qsps,NX,NY);
 			
-			upper_lower_boundaries(qips,1,NX,1,NY);
-			upper_lower_boundaries(qsps,1,NX,1,NY);	
+				upper_lower_boundaries(qips,1,NX,1,NY);
+				upper_lower_boundaries(qsps,1,NX,1,NY);		
+			}
+			
+		} else {
+			//-------------------------------------------------------
+			// PERIODIC BOUNDARIES / SERIAL VERSION
+			//-------------------------------------------------------
+			sponge_boundaries_north_south(qvps,NX,NY);
+			sponge_boundaries_north_south(qcps,NX,NY);
+			sponge_boundaries_north_south(qrps,NX,NY);
+				
+			periodic_boundaries_east_west(qvps);
+			periodic_boundaries_east_west(qcps);		
+			periodic_boundaries_east_west(qrps);
+		
+			upper_lower_boundaries(qvps,1,NX,1,NY);
+			upper_lower_boundaries(qcps,1,NX,1,NY);
+			upper_lower_boundaries(qrps,1,NX,1,NY);	
+				
+			if(USE_ICE){
+				//---------------------------------------------------
+				// ICE MICROPHYSICS	/ SERIAL VERSION
+				//---------------------------------------------------
+				sponge_boundaries_north_south(qips,NX,NY);
+				sponge_boundaries_north_south(qsps,NX,NY);	
+		
+				periodic_boundaries_east_west(qips);
+				periodic_boundaries_east_west(qsps);
+			
+				upper_lower_boundaries(qips,1,NX,1,NY);
+				upper_lower_boundaries(qsps,1,NX,1,NY);	
+			}
 		}
-			
 		
 
 	#endif
@@ -305,7 +311,7 @@ void upper_lower_boundaries_zero(double *var,int il,int ih,int jl,int jh){
 		var[INDEX(i,j,NZ-1)] = 0;
 	}}
 }
-
+#if 0
 /*********************************************************************
 *
 *
@@ -327,7 +333,7 @@ void mirror_boundaries(double s[NX][NY][NZ]){
 		}
 	}
 }
-
+#endif
 /*********************************************************************
 *
 *
@@ -402,7 +408,7 @@ void p_mirror_boundaries(double *s,int east,int west,int north,int south,int hal
 }
 
 
-
+#if 0
 /*********************************************************************
 *
 *
@@ -422,7 +428,7 @@ void mirror_boundaries2d(double s[NX][NY]){
 	}
 
 }
-
+#endif
 /*********************************************************************
 *
 *

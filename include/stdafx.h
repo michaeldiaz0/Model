@@ -10,7 +10,7 @@
 // still need to make latoffset and lonoffset consistent amoung initialization options
 // can't run moisture budget without microphysics since it requires vapor
 // can't run trajectory in parallel mode (array indices)
-// rain total not continued for restart runs
+// rain total not continued for restart runs (fixed)
 
 /*
 TO DO:
@@ -24,6 +24,9 @@ link Grabowski microphysics scheme
 could initialize model from a shell script, with input parameters provided
 add diffusion to snow and ice
 */
+
+// compile parallel (1) or serial (0) version
+#define PARALLEL 1
 
 #if 1
 
@@ -55,7 +58,6 @@ const int index_lowest_level = 1;		// what is the index of this level?
 //--------------------------------------
 // Version to execute
 //--------------------------------------
-#define PARALLEL 1
 #define ENSEMBLE 0
 #define ENERGY 0
 //--------------------------------------
@@ -64,7 +66,7 @@ const int index_lowest_level = 1;		// what is the index of this level?
 #define HYDROSTATIC 0			// hydrostatic option (no longer works)
 #define ISLINEAR 0				// linearize equation set
 #define USE_LINEAR_FRICTION 0	// linear friction in lowest model level(s)
-#define USE_TURBULENT_STRESS 1	// use turbulence parameterization
+extern int USE_TURBULENT_STRESS;// use turbulence parameterization
 #define RESTING_BASIC_STATE 0	// set all basic state terms to zero (doesn't work with some options)
 //--------------------------------------
 // Physics options
@@ -72,7 +74,7 @@ const int index_lowest_level = 1;		// what is the index of this level?
 extern int MICROPHYSICS_OPTION;		// 0:None 1:Kessler 2:Rutludge
 #define USE_TERRAIN 0				// 0:no, 1:yes
 extern int SURFACE_HEAT_FLUX;		// 0:no, 1:yes
-#define WATER_TEMP_C 29.0			// water temperature in Celsius (for surface heat fluxes)
+extern double WATER_TEMP_C;			// water temperature in Celsius (for surface heat fluxes)
 #define USE_LANDSEA_FROM_FILE 0		// 0:no, 1:yes
 //--------------------------------------
 // For linearized equation set
@@ -84,10 +86,10 @@ extern int SURFACE_HEAT_FLUX;		// 0:no, 1:yes
 //--------------------------------------
 // Grid / boundaries
 //--------------------------------------
-#define PERIODIC_BOUNDARIES 1
+extern int PERIODIC_BOUNDARIES;
 #define MERIDIONAL_CROSS_SECTION 0
 #define STRETCHED_GRID 1
-#define SHIFT_PRIME_MERIDIAN 0
+extern int SHIFT_PRIME_MERIDIAN;
 //--------------------------------------
 // Initialization Options
 //--------------------------------------
@@ -148,6 +150,7 @@ struct input_params {
 	int nx,ny,nz;
 	double dx,dy,dz,dt;
 	double corner_lat,corner_lon;
+	int shift_prime_meridian;
 	int time_steps,output_frequency;
 	int rayleigh_damping_z;
 	double height_lowest_level;
@@ -170,10 +173,18 @@ struct input_params {
 	char vorticity_budget_filename[length];
 
 	int use_surface_heat_flux;
+	int turbulence_option;
+	double water_temp;
 
 	int is_restart_run;
 	
 	int create_new_output_file;
+	
+	int periodic_ew_boundaries;
+	int boundary_width_north;
+	int boundary_width_south;
+	int boundary_width_east;	
+	int boundary_width_west;	
 	
 	int run_heat_budget;
 	int run_moisture_budget;
@@ -187,6 +198,20 @@ struct input_params {
 	double hor_shear;
 	double vert_shear0;
 	double vert_shear1;
+	
+	int vortex_initialize;
+	double vortex_latitude;
+	double vortex_longitude;
+	double vortex_radius;
+	double vortex_upper_warm_anomaly;
+	double vortex_lower_cold_anomaly;
+	double vortex_height_wind_max;
+	double vortex_vertical_extent;
+	double vortex_rh_top;
+	double vortex_rh_bottom;
+	double vortex_rh_prime;
+	double vortex_rh_radius;
+	double vortex_rh_max;
 };
 
 extern struct input_params inputs;

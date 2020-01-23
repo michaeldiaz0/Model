@@ -192,7 +192,7 @@ void distributeArray(double *svar,double *var){
 		MPI_Recv(svar,1,interior,0,123,MPI_COMM_WORLD,&status);
 	}
 }
-
+#if 0
 /*********************************************************************
 * All processes send their data to all other processes
 *
@@ -212,7 +212,7 @@ void alltoall(double * m_var,double var[NX][NY][NZ]){
 
 	MPI_Alltoallw(m_var,scounts,sdisps,types,&var[0][0][0],rcounts,rdisps,mysubarrayptr,MPI_COMM_WORLD);
 }
-
+#endif
 
 /*********************************************************************
 * Processes in each row exchange data amoung themselves
@@ -365,7 +365,7 @@ void wait(int r){
 	
 	MPI_Waitall(r,&requests[0],MPI_STATUSES_IGNORE);
 }
-
+#if 0
 /*********************************************************************
 * Distribute a full 3D array from the root process to all
 * processes
@@ -388,6 +388,7 @@ void scatterArrays(double * m_var,double var[NX][NY][NZ]){
 		MPI_COMM_WORLD
 	);
 }
+#endif
 #if 0
 /*********************************************************************
 * 3.53 2.39 1.85 1.61 1.29 1.32 1.03
@@ -411,6 +412,7 @@ void gatherArrays(){
 	}
 }
 #endif
+#if 0
 /*********************************************************************
 * Send the interior points of the subarrays on each process to the
 * root process.
@@ -437,7 +439,7 @@ void gatherArrays2(double * m_var,double var[NX][NY][NZ]){
 
 	MPI_Alltoallw(m_var,scounts,sdisps,types,&var[0][0][0],rcounts,rdisps,mysubarrayptr,MPI_COMM_WORLD);
 }
-
+#endif
 /*********************************************************************
 * Send the interior points of the subarrays on each process to the
 * root process.

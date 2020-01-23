@@ -26,11 +26,12 @@
 int rindex(int r,int k,int NR);
 void rinterp(int xc,int yc,int x,int y,int *ind, double *frac, double offset);
 void initialize_vortex_perturbation();
-void initialize_vortex(double r_end, double zm, double zt, double tmax, double tmin,int,int,double *u,double *v,double *th,double *q);
+void initialize_vortex(double, double,double,double,double,double,double,double,double,double,int,int,double *u,double *v,double *th,double *q);
 void initialize_basic_state_idealized();
 void initialize_basic_state_idealized2();
 void initialize_basic_state_ITCZ_shear();
 void initialize_basic_state_ITCZ_shear2(double,double,double);
+void get_base_state_from_20_88(double *,double *);
 
 /******************************************************************************
 * This subroutine is called from the main initializer to initialize the basic
@@ -43,13 +44,14 @@ void initialize_basic_state_from_subroutine(){
 	
 		initialize_basic_state_ITCZ_shear2(inputs.hor_shear,inputs.vert_shear0,inputs.vert_shear1);
 	
+		//LOOP3D_IJK(0,NX,0,NY,0,NZ,	IQBAR(i,j,k) = -(cp * ITHBAR(i,j,k)) / Lv	)
+	
 	} else {
 	
 		initialize_basic_state_ITCZ_shear2(1.0e-4,-2.0e-3,-1.0e-3);
 	}
 	
 	//initialize_basic_state_idealized2();
-	
 	//initialize_basic_state_idealized();
 }
 
@@ -58,8 +60,11 @@ void initialize_basic_state_from_subroutine(){
 * perturbation.
 *******************************************************************************/
 void initialize_perturbation_from_subroutine(){
+		
+	if(inputs.vortex_initialize == 1){
 	
-	initialize_vortex_perturbation();
+		initialize_vortex_perturbation();
+	}
 }
 
 /******************************************************************************
@@ -159,6 +164,23 @@ void get_stream_function(double *vort,double *stream){
 	}
 	
 	free(vortXY);
+}
+
+/******************************************************************************
+* Get Moist Static Energy
+*******************************************************************************/
+double get_MSE(double theta,double pressure,double qv,double z){
+
+	return cp * theta*pressure + Lv*qv +  grav*z;
+}
+
+/******************************************************************************
+* Flatten MSE gradient
+*******************************************************************************/
+void flatten_MSE_gradient(){
+
+	LOOP3D_IJK(0,NX,0,NY,0,NZ,	QBAR(i,j,k) = -(cp * THBAR(i,j,k)) / Lv	)
+		
 }
 
 /******************************************************************************
@@ -279,7 +301,9 @@ void initialize_basic_state_ITCZ_shear2(double hor_shear,double vert_shear0,doub
 
 	setup_vertical_height_levels();
 
-	initialize_from_era(&ZU(0));	// will use the basic state stratification
+	//initialize_from_era(&ZU(0));	// will use the basic state stratification
+
+	setup_coordinates(0.000000,-89.462997);
 
 	init_topography_to_zero();
 	
@@ -297,8 +321,12 @@ void initialize_basic_state_ITCZ_shear2(double hor_shear,double vert_shear0,doub
 	int base_i = get_point_from_lon(88);
 	int base_j = get_point_from_lat(20);
 	
-	initialize_vertical_basic_state(base_i,base_j);
+	//initialize_vertical_basic_state(base_i,base_j);
 	
+	get_base_state_from_20_88(tb,qb);
+	
+	initialize_vertical_basic_state2(tb,qb);
+		
 	if(VERBOSE){ print_vertical_basic_state();}
 	
 	//----------------------------------------------------------------
@@ -440,8 +468,12 @@ void initialize_basic_state_ITCZ_shear2(double hor_shear,double vert_shear0,doub
 
 		smr = get_QV_Sat(temp,pres);					// calculate saturation mixing ratio
 
+		//if(outLats[j]>15){ IQBAR(i,j,k) = 0;}
+		//else{
 		IQBAR(i,j,k) = (base_relh[k] - rh_drop[j]) * smr - qb[k];
+			//}
 
+		
 		//if(IQBAR(i,j,k)>0.002){ IQBAR(i,j,k) = 0.002;}
 		//if(i==NX/2 && k==9){ printf("%d %f %f\n",j,outLats[j],IQBAR(i,j,k)*1000.0);}
 		//IQBAR(i,j,k) = 0;
@@ -743,16 +775,9 @@ void initialize_vortex_perturbation(){
 		//----------------------------------------------------------------
 		// Do the initialization
 		//----------------------------------------------------------------
-		//int lat = get_point_from_lat(45);
-		//int lon = get_point_from_lon(90);
-		int lat = get_point_from_lat(20);
-		int lon = NX/2;// - + 40 * 111000/dx;//get_point_from_lon(87);
+		int lat = get_point_from_lat(inputs.vortex_latitude);
+		int lon = get_point_from_lon(inputs.vortex_longitude);
 
-		//int lat = get_point_from_lat(21);
-
-		//int lon = get_point_from_lon(130);
-
-		//int lat = get_point_from_lat(-16);
 
 		printf("Initializing vortex at lat = %f lon = %f\n",outLats[lat],outLons[lon]);
 
@@ -762,13 +787,38 @@ void initialize_vortex_perturbation(){
 		//initialize_vortex(1500000,6000, 14000, -4.5, 4.05,NX/3,lat);
 		//initialize_vortex(1000000,6000, 16000, 0.5, -0.5,lon,lat);
 		//initialize_vortex(1500000,6000, 16000, -2.0, 2.0,NX/2-500.0/15.0,get_point_from_lat(18));
-		
-		if(PARALLEL){
-		
-			initialize_vortex(500000*2,3000, 11000, 2.5, -2.05,lon,lat,iubar,ivbar,ithbar,iqbar);
 
+		if(PARALLEL){
+
+			initialize_vortex(			
+				inputs.vortex_radius,
+				inputs.vortex_height_wind_max,
+				inputs.vortex_vertical_extent,
+				inputs.vortex_upper_warm_anomaly,
+				inputs.vortex_lower_cold_anomaly,				
+				inputs.vortex_rh_bottom,
+				inputs.vortex_rh_top,
+				inputs.vortex_rh_prime,
+				inputs.vortex_rh_radius,
+				inputs.vortex_rh_max,
+				lon,lat,iubar,ivbar,ithbar,iqbar
+			);	
+			//initialize_vortex(500000*2,3000, 11000, 2.5, -2.05,lon,lat,iubar,ivbar,ithbar,iqbar);
 		} else {
-			initialize_vortex(500000*3,3000, 11000, 2.5, -2.05,lon,lat,us,vs,ths,qvs);
+			
+			initialize_vortex(
+				inputs.vortex_radius,
+				inputs.vortex_height_wind_max,
+				inputs.vortex_vertical_extent,
+				inputs.vortex_upper_warm_anomaly,
+				inputs.vortex_lower_cold_anomaly,			
+				inputs.vortex_rh_bottom,
+				inputs.vortex_rh_top,
+				inputs.vortex_rh_prime,
+				inputs.vortex_rh_radius,
+				inputs.vortex_rh_max,
+				lon,lat,us,vs,ths,qvs
+			);
 			//initialize_vortex(500000*3,3000, 11000, 2.5, -2.05,lon,lat,ums,vms,thms,qvms);
 		}
 	}
@@ -806,7 +856,8 @@ void initialize_vortex_perturbation(){
 *
 *
 **********************************************************************/
-void initialize_vortex(double r_end, double zm, double zt, double tmax, double tmin, int xpos, int ypos,double *u,double *v,double *th,double *q){
+void initialize_vortex(double r_end, double zm, double zt, double tmax, double tmin,double zb_rh,double zt_rh,
+					   double rh_prime,double r_end_rh,double rh_max,int xpos, int ypos,double *u,double *v,double *th,double *q){
 	
 	int NR = (int)(r_end / dx);
 	
@@ -833,13 +884,13 @@ void initialize_vortex(double r_end, double zm, double zt, double tmax, double t
 	//-------------------------------------------------------------------------------------
 	// Calculate moisture field
 	//-------------------------------------------------------------------------------------
-	double zt_rh = 11000;
-	double zb_rh = -2000;
+	//double zt_rh = 11000;
+	//double zb_rh = -2000;
 	//double zt_rh = 14000;
 	//double zb_rh = 1000;
-	double rh_prime = 0.20;
-	double r_end_rh = 1500000;//900000;
-	double rh_max = 0.95;
+	//double rh_prime = 0.20;
+	//double r_end_rh = 1500000;//900000;
+	//double rh_max = 0.95;
 	
 	zmid = 0.5*(zt_rh+zb_rh);
 	
@@ -949,7 +1000,7 @@ void initialize_vortex(double r_end, double zm, double zt, double tmax, double t
 				//-----------------------------------------------------------
 				//IQBAR(i-(int)(0*meters_per_degree/dx),j+(int)(0*meters_per_degree/dx),k) 
 				//			= ( (1.0-frac)*rh[rindex(ind,k,NR)] + frac*rh[rindex(ind+1,k,NR)] );	// POSSIBLE ARRAY OUT OF BOUNDS!!!
-				if(PARALLEL && USE_MICROPHYSICS){
+				if(PARALLEL && USE_MICROPHYSICS && rh_prime > 1.0e-10){
 					q[FULL_ARRAY_INDEX(i+(int)(0.0*meters_per_degree/dx),j-(int)(0.0*meters_per_degree/dx),k)] 
 								= ( (1.0-frac)*rh[rindex(ind,k,NR)] + frac*rh[rindex(ind+1,k,NR)] );
 				}
@@ -1637,1163 +1688,49 @@ void initialize_from_ERA5_processed(double * z){
 }
 
 
-
-
-#if 0
-/******************************************************************************
+/********************************************************
+* Values from the DiazBoos2019 basic state at 20N, 88E
+* 
 *
-*
-*******************************************************************************/
-void initialize_basic_state_idealized2(){
+*********************************************************/
+void get_base_state_from_20_88(double * tb_out,double *qb_out){
 
-	double f0 = 2*7.292e-5*sin(22*3.1416/180.0);
+	const int size = 37;
 
-	setup_memory_allocation();
+	double tb_input[size] =
+		{301.3688257116,301.8163590723,302.3725230915,303.5396454461,304.4779570865,305.4938954838,
+		306.6227667893,307.8911249353,309.2454008827,310.6936441680,312.2381766112,315.4918989755,
+		318.7967845618,321.8109652832,325.3755268822,330.0211783507,334.5667331740,339.1455453915,
+		343.9030848237,348.2139891673,352.0680543027,353.6331293068,355.0080137497,356.5539533635,
+		358.7368337136,362.1445309838,373.4121328070,429.4978633148,492.4724739660,593.3140366746,
+		681.8870810434,857.2924158974,967.5530849371,1092.1733790195,1319.2834107809,1518.7488915123,
+		1882.5817225223};
+	
+	double qb_input[size] =
+		{0.0199446990,0.0190561418,0.0181378907,0.0171884018,0.0164599732,0.0157072981,
+		0.0149655603,0.0142159289,0.0134605601,0.0126884429,0.0119014775,0.0103284225,
+		0.0088135030,0.0074222058,0.0062207775,0.0051422818,0.0039585675,0.0027820404,
+		0.0017543257,0.0009854162,0.0004371278,0.0002502617,0.0001286210,0.0000598493,
+		0.0000244848,0.0000085451,0.0000032968,0.0000025111,0.0000024027,0.0000024293,
+		0.0000025173,0.0000026986,0.0000028049,0.0000029210,0.0000031283,0.0000033081,
+		0.0000036400};
 
-	double * ivort   = (double *)calloc(NX*NY*NZ,sizeof(double));
-	double * istream = (double *)calloc(NX*NY*NZ,sizeof(double));
-
-	//----------------------------------------------------------------
-	// Calculate height of each level
-	//----------------------------------------------------------------
-	setup_vertical_height_levels();
-	
-	if(STRETCHED_GRID){initialize_from_era(&zsu[0]);} 
-	else {			   initialize_from_era(&zu[0]);}
-	
-	
-	int base_i = get_point_from_lon(88);
-	int base_j = get_point_from_lat(21);
-	//int base_i = get_point_from_lon(89);
-	//int base_j = get_point_from_lat(23);
-
-	
-	//----------------------------------------------------------------
-	// Coriolis parameter
-	//----------------------------------------------------------------
-	initialize_coriolis_parameter(&outLats[0]);
-	
-	//----------------------------------------------------------------
-	// Initialize vertically varying, x,y independent basic state
-	//----------------------------------------------------------------	
-	initialize_vertical_basic_state(base_i,base_j);
-	
-	if(VERBOSE){ print_vertical_basic_state();}
-	//----------------------------------------------------------------
-	// Initialize topographic array
-	//----------------------------------------------------------------
-	init_topography_to_zero();
-
-	double midLat = 21;
-	int mid_lat = get_point_from_lat(midLat);
-	
-	//----------------------------------------------------------------
-	// Defines length and width of shear zone
-	//----------------------------------------------------------------
-	int low_lat = get_point_from_lat(18);
-	int high_lat = get_point_from_lat(28);
-	int low_lon = get_point_from_lon(67);
-	//int high_lon = get_point_from_lon(100);
-	int high_lon = get_point_from_lon(110);
-	//int high_lev = 28;
-	int low_lev = 0;
-	int width = (int)(5.0 * 111000 / dy);	// half-width in grid points
-
-	//----------------------------------------------------------------
-	// Defines axis of monsoon trough from 
-	// xpoint1,ypoint1 to xpoint2,ypoint2
-	//----------------------------------------------------------------
-	//int ypoint1 = get_point_from_lat(30-4);
-	int ypoint1 = get_point_from_lat(23);
-	int xpoint1 = low_lon;//get_point_from_lon(60);
-	//int ypoint2 = get_point_from_lat(16);
-	int ypoint2 = get_point_from_lat(14);
-	int xpoint2 = high_lon;//get_point_from_lon(120);
-
-	//ypoint1 = get_point_from_lat(20);
-	//ypoint2 = get_point_from_lat(20);
-	
-	int * line = (int *)calloc(NX,sizeof(int));
-	
-	line_array(xpoint1,ypoint1,xpoint2,ypoint2,line);
-	
-	double mult = 1.0;
-	double d = 38;
-	double s = 1.0;
-	int fi = 0;
-	
-	int top_vort = 64;//64;//76;//64;
-	
-	//for(int i=0;i<100;i++){ printf("%d %f\n",i,cos_profile(-0.25,0.5,(double)i/100,1));}
-	//exit(0);
-	
-	int rotate_lat = 0;
-	
-	printf("coords ranges = %d %d %d %d\n",low_lat,high_lat,low_lon,high_lon);
-	for(int i=low_lon;i<high_lon;i++){
-	for(int j=line[i]-width;j<line[i]+width;j++){
-		
-		//rotate_lat = line[i];
-		
-		//low_lat = line[i];
-		//printf("%d %d\n",i,low_lat);
-		for(int k=0;k<top_vort;k++){
-
-			
-			mult = //0.3*cos_profile(-0.15,0.5,(double)k/(double)top_vort,1.0) * 
-					 0.3*cos_profile(-0.15,0.5,(double)k/(double)top_vort,1.0) *
-				       cos_profile(-0.2,0.2,(double)(i-low_lon)/(double)(high_lon-low_lon),0) *
-					   cos_profile(-0.25,0.25,(double)(j-line[i]+width)/(double)(2*width),0);
-						   
-						   ;
-			//if(i==NX/2 && k==3){			   
-			//printf("%d %f\n",j,cos_profile(-0.25,0.25,(double)(j-line[i]+width)/(double)(2*width),0));
-			//}		   
-			IVORT(i,j,k) = 6.0e-5 * mult;//2*3.5e-5 * mult;			   
-		}
-	}}
-
-	int sdisp = (int)(500000 / dy);
-	
-	for(int i=low_lon;i<high_lon;i++){
-	for(int j=line[i]+width;j<line[i]+width+sdisp;j++){
-		
-
-		for(int k=0;k<top_vort;k++){
-
-			
-			mult = 0.3*cos_profile(-0.15,0.5,(double)k/(double)top_vort,1.0) * 
-				       cos_profile(-0.2,0.2,(double)(i-low_lon)/(double)(high_lon-low_lon),0) *
-					   cos_profile(-0.25,0.25,(double)(j-line[i]-width)/(double)sdisp,0);
-						   
-						   ;
-	   
-			IVORT(i,j,k) = -4.0e-5 * mult;//-2*2.5e-5 * mult;			   
-		}
-	}}
-	
-
-	
-	int topo_j_disp = width + (int)(3.0 * (meters_per_degree / dy));
-	int topo_slope_zone = (int)(300000.0/dy);
-	
-	for(int i=0;i<NX;i++){
-	for(int k=0;k<NZ;k++){
-		
-		for(int j=line[i]+topo_j_disp;j<NY;j++){
-	
-	
-			if(j < line[i] + topo_j_disp + topo_slope_zone){
-				//ITOPO(i,j,k) = 5000 * cos_profile(-0.25,0,(j - (line[i]+width+5)) / (300000.0/dy),0);
-
-				ITOPO(i,j,k) = 5000 * cos_profile(-0.25,0,
-				frac_distance(
-					(double)j,
-				(double)(line[i] + topo_j_disp),
-				(double)(line[i] + topo_j_disp + topo_slope_zone)
-					)
-					,0);
-
-			} else {
-				ITOPO(i,j,k) = 5000;
-			}
-		
-			if(i==NX/4+NX/2 && k==10){printf("%d %f %f %f\n",j,outLons[i],outLats[j],ITOPO(i,j,k)); }
-		
-		}
-		
-	}}
-	
-	init_topography();
-
-	init_laplacian_solver_real(NX,NY);
-
-	//init_laplacian_solver_periodic_EW_zerograd_NS(NX,NY);
-
-	double *vortXY = (double*) calloc(NX*NY,sizeof(double));
-
-	for(int k=0;k<NZ;k++){
-
-		for(int i=0;i<NX;i++){
-		for(int j=0;j<NY;j++){
-	
-			vortXY[i*NY+j]= IVORT(i,j,k);
-		}}
-
-		run_laplacian_solver_real(vortXY);
-
-		for(int i=0;i<NX;i++){
-		for(int j=0;j<NY;j++){
-	
-			ISTREAM(i,j,k) = vortXY[i*NY+j];
-			
-		}}
-
-	}
-	
-	free(vortXY);	
-	
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	for(int k=0;k<NZ;k++){
-
-		IUBAR(i,j,k) = 0;
-		IVBAR(i,j,k) = 0;
-		ITHBAR(i,j,k) = 0;
-		IQBAR(i,j,k) = 0;
-		IPBAR(i,j,k) = 0;	
-	}}}
-	
-
-	int btop = NZ;
-
-	//----------------------------------------------------------------
-	// Set up the vertical shear profile
-	//----------------------------------------------------------------
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	
-		for(int k=0;k<btop;k++){
-
-			//IUBAR(i,j,k) = (10-(double)k*0.85 * 32.0/(double)top_vort) ;
-			//IUBAR(i,j,k) = (10-(double)k*1.0 * 32.0/(double)top_vort) ;
-			IUBAR(i,j,k) = (10-(double)k*1.0 * 32.0/(double)top_vort) ;
-			//IUBAR(i,j,k) = 12 * cos_profile(0,0.5,(double)(k)/(double)(btop),-0.50) ;
-			//IUBAR(i,j,k) = 0;
-			IVBAR(i,j,k) = 0;
-			//if(i==NX/2 && j==NY/2){ printf("%d %f\n",k,IUBAR(i,j,k) );  }
-		}
-		
-		for(int k=btop;k<NZ;k++){
-			
-			//IUBAR(i,j,k) =  IUBAR(i,j,k-1);
-			//IVBAR(i,j,k) = 0;
-		}
-
-	}}
-	
-	double pbar_store[NZ];
-	
-	for(int i=0;i<NX-1;i++){	
-	for(int k=0;k<NZ;k++){
-	
-		for(int j=1;j<mid_lat;j++){
-			IPBAR(i,j,k) = IPBAR(i,j-1,k) - 0.25*(IUBAR(i,j-1,k)+IUBAR(i+1,j-1,k)+IUBAR(i,j,k)+IUBAR(i+1,j,k)) * dy * f0;
-		}
-		
-		for(int j=mid_lat;j<NY;j++){
-			IPBAR(i,j,k) = IPBAR(i,j-1,k) - 0.25*(IUBAR(i,j-1,k)+IUBAR(i+1,j-1,k)+IUBAR(i,j,k)+IUBAR(i+1,j,k)) * dy * FC(j);
-		}
-	}}
-	
-	for(int k=0;k<NZ;k++){ pbar_store[k] = IPBAR(base_i,base_j,k);}
-	
-	for(int i=0;i<NX;i++){	
-	for(int k=0;k<NZ;k++){
-	for(int j=0;j<NY;j++){
-		
-		IPBAR(i,j,k) -= pbar_store[k];
-
-	}}}
-	
-	
-	//----------------------------------------------------------------
-	// Add in the horizontal shear
-	//----------------------------------------------------------------
-	for(int i=1;i<NX-1;i++){
-	for(int j=1;j<NY-1;j++){
-	for(int k=1;k<NZ-1;k++){
-	
-		IUBAR(i,j,k) += -0.25 * ( (ISTREAM(i-1,j+1,k) + ISTREAM(i  ,j+1,k)) - (ISTREAM(i-1,j-1,k) + ISTREAM(i  ,j-1,k)) ) * one_d_dy;
-		IVBAR(i,j,k) += 0.25 * (  (ISTREAM(i+1,j-1,k) + ISTREAM(i+1,j+1,k)) - (ISTREAM(i-1,j-1,k) + ISTREAM(i-1,j+1,k)) ) * one_d_dx;
-		
-		//IPBAR(i,j,k) = f0 * ISTREAM(i,j,k);
-	}}}
-	
-	//----------------------------------------------------------------
-	// Add in the geostrophically balanced pressure field due to the
-	// horizontal shear
-	//----------------------------------------------------------------
-	for(int k=0;k<NZ;k++){ pbar_store[k] = f0 * ISTREAM(base_i,base_j,k);}
-	
-	for(int i=0;i<NX;i++){	
-	for(int k=0;k<NZ;k++){
-	for(int j=0;j<NY;j++){
-		
-		ISTREAM(i,j,k) -= pbar_store[k] / f0;
-
-	}}}
-	
-	
-	for(int i=0;i<NX;i++){	
-	for(int k=0;k<NZ;k++){
-	for(int j=0;j<NY;j++){
-		
-		IPBAR(i,j,k) += f0 * ISTREAM(i,j,k);
-
-	}}}
-	
-	
-	mirror_boundaries(&IUBAR(0,0,0));
-	mirror_boundaries(&IPBAR(0,0,0));
-	
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-
-		IPBAR(i,j,0) = IPBAR(i,j,1) - (IPBAR(i,j,2)-IPBAR(i,j,1));
-		IPBAR(i,j,NZ-1) = IPBAR(i,j,NZ-2);
-	}}
-	
-	for(int i=0;i<NX;i++){			
-	for(int j=0;j<NY;j++){
-	for(int k=1;k<NZ;k++){
-
-		ITHBAR(i,j,k) = tbv[k]*(IPBAR(i,j,k) - IPBAR(i,j,k-1)) / (grav * (zu[k]-zu[k-1]) );
-		//if(j==low_lat && i==NX/2){ printf("%d %f %f %f\n",k,IPBAR(i,j,k),IPBAR(i,j,k-1),ITHBAR(i,j,k));}
-	}}}
-#if 0
-	int slat = get_point_from_lat(10);
-	
-	for(int i=0;i<NX;i++){			
-	for(int j=0;j<slat;j++){
-	for(int k=0;k<NZ;k++){
-
-		ITHBAR(i,j,k) = ITHBAR(i,slat,k);
-		//if(j==low_lat && i==NX/2){ printf("%d %f %f %f\n",k,IPBAR(i,j,k),IPBAR(i,j,k-1),ITHBAR(i,j,k));}
-	}}}
-#endif	
-	//----------------------------------------------------------------
-	// Convert to non-dimensional pressure
-	//----------------------------------------------------------------
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	for(int k=0;k<NZ;k++){
-
-		IPBAR(i,j,k) = IPBAR(i,j,k) / (cp*tbv[k]) + pib[k];
-
-		//IPBAR(i,j,k) = p0*pow(IPBAR(i,j,k),cp/Rd);
-
-	}}}
-	
-	double MSE[NZ];
-	
-	for(int k=0;k<NZ;k++){
-		
-		//MSE[k] = cp * tb[k]*pib[k] + grav*zu[k] + Lv*qb[k];
-		
-		//printf("%d %f %f %f\n",k,zu[k]/1000,tb[k]*pib[k],MSE[k]);
-	}
-	
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	for(int k=0;k<NZ;k++){
-
-		//IQBAR(i,j,k) = (MSE[k] - cp * (ITHBAR(i,j,k)+tb[k])*IPBAR(i,j,k) - grav*zu[k]) / Lv - qb[k];
-
-	}}}
-	
-#if 1
-	//
-	//-------------------------------------------------------------------------------------
-	//
-	
-	double smr,temp,pres,rh;
-	double base_temp[NZ];
-	double base_pres[NZ];
-	double base_relh[NZ];
-	
-	//-----------------------------------------------------------------------
-	// Relative humidity changes
-	//-----------------------------------------------------------------------
-	int rh_y_min = get_point_from_lat(5);
-	int rh_y_max = get_point_from_lat(13);
-	int rh_y_min2 = get_point_from_lat(25);
-	int rh_y_max2 = get_point_from_lat(32);
-	
-	//double rh_decrease = 0.1;
-	double rh_decrease = 0.3;
-	double rh_decrease2 = 0.3;
-	//double rh_decrease2 = 0.15;
-	double rh_drop[NY];
-	double rh_slope = rh_decrease / (double)(rh_y_max-rh_y_min);
-	double rh_slope2 = rh_decrease2 / (double)(rh_y_min2-rh_y_max2);
-	
-	for(int j=NY;j>rh_y_max;j--){			rh_drop[j] = 0;							}
-	
-	for(int j=rh_y_max;j>rh_y_min;j--){		rh_drop[j] = rh_drop[j+1] + rh_slope;	}
-	
-	for(int j=rh_y_min;j>=0;j--){			rh_drop[j] = rh_decrease;				}
-
-	for(int j=rh_y_min2;j<rh_y_max2;j++){	rh_drop[j] = rh_drop[j-1] - rh_slope2;	}
-	
-	for(int j=rh_y_max2;j<NY;j++){			rh_drop[j] = rh_decrease2;				}
-
-	//-----------------------------------------------------------------------
-	// Calculate mixing ratio
-	//-----------------------------------------------------------------------	
-	for(int k=0;k<NZ;k++){
-		
-		base_temp[k] = tb[k]*pib[k];
-		base_pres[k] = p0*pow(pib[k],(cp/Rd));
-		
-		base_relh[k] = qb[k] / get_QV_Sat(base_temp[k],base_pres[k]);
-		
-		printf("RH %d %f %f %f %f\n",k,zu[k],base_pres[k],base_relh[k],0.15*cos_profile(-0.25,0.25,(zu[k]-2000.0)/5000.0,0));
-	}
-
-
-
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	for(int k=1;k<NZ-1;k++){
-
-		temp = (ITHBAR(i,j,k)+tb[k]) * IPBAR(i,j,k);	// full, actual temperature
-		pres = p0*pow(IPBAR(i,j,k),(cp/Rd));			// full, dimensional pressure
-
-		smr = get_QV_Sat(temp,pres);					// calculate saturation mixing ratio
-
-		IQBAR(i,j,k) = (base_relh[k]-rh_drop[j]) * smr - qb[k];
-
-		//if(i==NX/2 && k==1){ printf("%d %d %f %f %f %f %f %f %f\n",j,k,outLats[j],pres/100.0,base_relh[k],qb[k]*1000,smr*1000,IQBAR(i,j,k)*1000,1000*(IQBAR(i,j,k)+qb[k]) );}		
-		//if(i==NX/2 && j==NY/4){ printf("%d %f %f %f %f %f %f\n",k,zui[k],pres/100.0,base_relh[k],qb[k]*1000,smr*1000,IQBAR(i,j,k)*1000);}
-	
-		if(IQBAR(i,j,k)>0.000){ IQBAR(i,j,k) = 0.000;}
-		
-		rh = (IQBAR(i,j,k)+qb[k])/smr;
-		
-		if(i==NX/2 && k==5){
-			
-			printf("%d %f\n",j,0.10*cos_profile(-0.25,0.25,(zu[k])/2000.0,0)*cos_profile(-0.25,0.25,(outLats[j]-21.0)/4.0,0));
-		}
-		
-		rh +=  0.10*cos_profile(-0.25,0.25,(zu[k]-500.0)/2000.0,0)*cos_profile(-0.25,0.25,(outLats[j]-21.0)/5.0,0);
+	double z_input[size] =
+		{-4.9309824095,220.0563275839,449.7083182255,684.3637424527,924.2080450767,1169.5747824156,
+		1420.7582630933,1678.1441041335,1942.1632221482,2213.2407713351,2491.8242119209,3073.6699679147,
+		3691.7716591048,4350.8611958576,5056.6653728972,5819.2277164608,6649.4016027568,7560.0781719656,
+		8569.3345586917,9701.5591376725,10992.8973225474,11714.3712557337,12499.8515755171,13360.3068109264,
+		14318.2241373647,15405.7570490178,16685.1606511117,18733.0547480514,20752.9602378743,23947.3420385707,
+		26561.1613501294,31151.8561242708,33573.3309380886,35905.4984772108,39575.7896964869,42588.1612632421,
+		47859.5785629266};
 		
 		
-		
-		if(rh<1.0 && outLats[j]>=21 && outLats[j]<=25 && zu[k]<2000){
-		
-			//rh = ( rh + 0.10*cos_profile(-0.25,0.25,(zu[k])/2000.0,0)*cos_profile(-0.25,0.25,(outLats[j]-21.0)/4.0,0);
-			
-			//IQBAR(i,j,k) += rh * smr - qb[k];
-		}
-		
-		//if(rh<0.002){
-		
-			//IQBAR(i,j,k) += rh;
-		//}
-		
+	vert_interpolate_1d(size,NZ,&z_input[0],&ZU(0),&tb_input[0],tb_out);
+	vert_interpolate_1d(size,NZ,&z_input[0],&ZU(0),&qb_input[0],qb_out);
 	
-	}}}
-	
-	
-	
-	
-	//
-	//-------------------------------------------------------------------------------------
-	//
-#endif
-	
-	
-	
-	//----------------------------------------------------------------
-	// Upper and lower boundary conditions for base state array
-	//----------------------------------------------------------------
-	upper_lower_boundaries(&ITHBAR(0,0,0));
-	upper_lower_boundaries(&IQBAR(0,0,0));
-	upper_lower_boundaries(&IUBAR(0,0,0));	
-	upper_lower_boundaries(&IVBAR(0,0,0));	
-		
-	//----------------------------------------------------------------
-	// Initialize friction array
-	//----------------------------------------------------------------
-	init_friction();
+	tb_out[0]=tb_out[1];
+	tb_out[NZ-1]=tb_out[NZ-2];
 
-	//----------------------------------------------------------------
-	// Calculate base state vertical velocity
-	//----------------------------------------------------------------
-	init_basic_state_vertical_velocity();
-	
-	free(ivort); free(istream);
-#if 1
-	double cape[NY][10];
-	double test_cape;
-
-	for(int j=0;j<NY;j++){
-	for(int k=0;k<10;k++){
-
-		cape[j][k] = get_CAPE(base_i,j,k);
-	#if 0	
-		if(outLats[j]<23 && outLats[j]>10 && k==1){
-			cape[j][k] += 3000*cos_profile(-0.25,0.25,(outLats[j]-10)/13,0);
-		}
-		
-		if(outLats[j]<23 && outLats[j]>10 && k==2){
-			cape[j][k] += 1500*cos_profile(-0.25,0.25,(outLats[j]-10)/13,0);
-		}
-		
-		if(outLats[j]<23 && outLats[j]>10 && k==3){
-			cape[j][k] += 1000*cos_profile(-0.25,0.25,(outLats[j]-10)/13,0);
-		}
-	#endif
-		if(k==1){
-			printf("%f %f\n",outLats[j],cape[j][k]);
-		}
-		
-	}}
-
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	for(int k=0;k<10;k++){		
-
-		test_cape = get_CAPE(i,j,k);
-		
-		if(test_cape > cape[j][k]){
-
-			while( get_CAPE(i,j,k) > cape[j][k] ){
-			
-				IQBAR(i,j,k) -= 0.00001;
-			}
-			
-		} else {
-		
-			while( get_CAPE(i,j,k) < cape[j][k] ){
-			
-				IQBAR(i,j,k) += 0.00001;
-			}
-		}
-		
-	}}}
-#endif
-	//printf("%d cape = %f\n",i,get_CAPE(base_i,base_j,k));
-
+	qb_out[0]=qb_out[1];
+	qb_out[NZ-1]=qb_out[NZ-2];
 }
-#endif
-
-
-
-#if 0
-/******************************************************************************
-*
-*
-*******************************************************************************/
-void initialize_basic_state_ITCZ_shear(){
-	
-	double f0 = 2*7.292e-5*sin(22*3.1416/180.0);
-
-	setup_memory_allocation();
-
-	setup_vertical_height_levels();
-		
-	initialize_from_era(&ZU(0));	// will use the basic state stratification
-
-	init_topography_to_zero();
-	
-	init_friction();
-
-	initialize_coriolis_parameter(&outLats[0]);
-	
-
-	int base_i = get_point_from_lon(88);
-	int base_j = get_point_from_lat(21);
-	
-	initialize_vertical_basic_state(base_i,base_j);
-	
-	if(VERBOSE){ print_vertical_basic_state();}
-	
-	init_laplacian_solver_periodic_EW_zerograd_NS(NX,NY);
-
-
-	double * ivort   = (double *)calloc(NX*NY*NZ,sizeof(double));
-	double * istream = (double *)calloc(NX*NY*NZ,sizeof(double));
-	
-	double top_height = 14750;
-	
-	int low_lat = get_point_from_lat(18-3);
-	int high_lat = get_point_from_lat(27-3);
-	int low_lon = get_point_from_lon(67);
-	//int high_lon = get_point_from_lon(110);
-	int high_lon = get_point_from_lon(90);
-	int top_vort = get_point_from_height(14750);
-	
-	//printf("height = %d %f\n",top_vort,ZU(top_vort));
-	
-	int high_lat2 = get_point_from_lat(30);
-	
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	for(int k=0;k<NZ;k++){
-
-		IUBAR(i,j,k) = 0;
-		IVBAR(i,j,k) = 0;
-		ITHBAR(i,j,k) = 0;
-		IQBAR(i,j,k) = 0;
-		IPBAR(i,j,k) = 0;	
-	}}}
-	
-	double mult;
-	
-	for(int i=0;i<NX;i++){
-	for(int j=low_lat;j<high_lat2;j++){
-		
-		for(int k=0;k<top_vort;k++){
-			
-			mult = 0;
-			
-			if(cos_profile(-0.05,0.5,frac_distance(ZU(k),0,14750),0.0) >= 0 && j<high_lat){
-			
-				mult = cos_profile(-0.05,0.5,frac_distance(ZU(k),0,14750),0.0) * 
-
-					   0.5*cos_profile(0,0.5,(double)(j-low_lat)/(double)(high_lat-low_lat),1);
-	   
-			} else if(cos_profile(-0.05,0.5,frac_distance(ZU(k),0,14750),0.0) < 0) {
-				
-				mult = cos_profile(-0.05,0.5,frac_distance(ZU(k),0,14750),0.0) * 
-
-					   0.5*cos_profile(0,0.5,(double)(j-low_lat)/(double)(high_lat2-low_lat),1);
-	   
-			}
-	   
-			IUBAR(i,j,k) = 19*mult;
-					   
-		}
-		
-	}}
-	
-	for(int i=0;i<NX;i++){
-	for(int k=0;k<top_vort;k++){
-		
-		for(int j=0;j<low_lat;j++){
-	
-			IUBAR(i,j,k) = IUBAR(i,low_lat,k);			   
-		}
-	}}
-	
-	
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-		
-		for(int k=top_vort;k<NZ;k++){
-			
-			IUBAR(i,j,k) = IUBAR(i,j,top_vort-1);			   
-		}
-		
-	}}
-	
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-		
-		for(int k=0;k<NZ;k++){
-			
-			IUBAR(i,j,k) -= 4;			   
-		}
-		
-	}}
-	
-	double low_zlev = 1000;
-	double high_zlev = 12000;
-	
-	int low_lat3 = get_point_from_lat(20-3);
-	int high_lat3 = get_point_from_lat(30-3);
-	int low_lev3 = get_point_from_height(low_zlev);
-	int high_lev3 = get_point_from_height(high_zlev);
-	
-	
-	for(int i=0;i<NX;i++){
-	for(int j=low_lat3;j<high_lat3;j++){
-		
-		for(int k=low_lev3;k<high_lev3;k++){
-			
-			mult = 0;
-			
-			mult = 0.5*cos_profile(-0.5,0.5,frac_distance(ZU(k),low_zlev,high_zlev),1) * 
-
-				   0.5*cos_profile(-0.5,0.5,frac_distance(j,low_lat3,high_lat3),1);
-   
-			IUBAR(i,j,k) -= 10*mult;
-					   
-		}
-		
-	}}
-	
-	
-	double pbar_store[NZ];
-	
-	for(int i=0;i<NX-1;i++){	
-	for(int k=0;k<NZ;k++){
-	
-		for(int j=high_lat;j>0;j--){
-			IPBAR(i,j,k) = IPBAR(i,j+1,k) + 0.25*(IUBAR(i,j-1,k)+IUBAR(i+1,j-1,k)+IUBAR(i,j,k)+IUBAR(i+1,j,k)) * dy * f0 *0.6;
-		}
-		
-		for(int j=high_lat;j<NY;j++){
-			IPBAR(i,j,k) = IPBAR(i,j-1,k) - 0.25*(IUBAR(i,j-1,k)+IUBAR(i+1,j-1,k)+IUBAR(i,j,k)+IUBAR(i+1,j,k)) * dy * FC(j)*0.8;
-		}
-	}}
-	
-
-	mirror_boundaries(&IUBAR(0,0,0));
-	mirror_boundaries(&IPBAR(0,0,0));
-	
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-
-		IPBAR(i,j,0) = IPBAR(i,j,1) - (IPBAR(i,j,2)-IPBAR(i,j,1));
-		IPBAR(i,j,NZ-1) = IPBAR(i,j,NZ-2);
-	}}
-	
-	for(int i=0;i<NX;i++){			
-	for(int j=0;j<NY;j++){
-	for(int k=1;k<NZ;k++){
-
-		ITHBAR(i,j,k) = tbv[k]*(IPBAR(i,j,k) - IPBAR(i,j,k-1)) / (grav * (zu[k]-zu[k-1]) );
-		//if(j==low_lat && i==NX/2){ printf("%d %f %f %f\n",k,IPBAR(i,j,k),IPBAR(i,j,k-1),ITHBAR(i,j,k));}
-	}}}
-
-	//----------------------------------------------------------------
-	// Convert to non-dimensional pressure
-	//----------------------------------------------------------------
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	for(int k=0;k<NZ;k++){
-
-		IPBAR(i,j,k) = IPBAR(i,j,k) / (cp*tbv[k]) + pib[k];
-
-	}}}
-	
-	
-	
-	//
-	//-------------------------------------------------------------------------------------
-	//
-	
-	double smr,temp,pres,rh;
-	double base_temp[NZ];
-	double base_pres[NZ];
-	double base_relh[NZ];
-	
-	//-----------------------------------------------------------------------
-	// Relative humidity changes
-	//-----------------------------------------------------------------------
-	int rh_y_min = get_point_from_lat(5);
-	int rh_y_max = get_point_from_lat(14);
-	int rh_y_min2 = get_point_from_lat(27);
-	int rh_y_max2 = get_point_from_lat(34);
-	
-	//double rh_decrease = 0.1;
-	double rh_decrease = 0.3;
-	double rh_decrease2 = 0.2;
-	//double rh_decrease2 = 0.15;
-	double rh_drop[NY];
-	double rh_slope = rh_decrease / (double)(rh_y_max-rh_y_min);
-	double rh_slope2 = rh_decrease2 / (double)(rh_y_min2-rh_y_max2);
-	
-	for(int j=NY;j>rh_y_max;j--){			rh_drop[j] = 0;							}
-	
-	for(int j=rh_y_max;j>rh_y_min;j--){		rh_drop[j] = rh_drop[j+1] + rh_slope;	}
-	
-	for(int j=rh_y_min;j>=0;j--){			rh_drop[j] = rh_decrease;				}
-
-	for(int j=rh_y_min2;j<rh_y_max2;j++){	rh_drop[j] = rh_drop[j-1] - rh_slope2;	}
-	
-	for(int j=rh_y_max2;j<NY;j++){			rh_drop[j] = rh_decrease2;				}
-
-	//-----------------------------------------------------------------------
-	// Calculate mixing ratio
-	//-----------------------------------------------------------------------	
-	for(int k=0;k<NZ;k++){
-		
-		base_temp[k] = tb[k]*pib[k];
-		base_pres[k] = p0*pow(pib[k],(cp/Rd));
-		
-		base_relh[k] = qb[k] / get_QV_Sat(base_temp[k],base_pres[k]);
-		
-		printf("RH %d %f %f %f %f\n",k,zu[k],base_pres[k],base_relh[k],0.15*cos_profile(-0.25,0.25,(zu[k]-2000.0)/5000.0,0));
-	}
-
-
-
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	for(int k=1;k<NZ-1;k++){
-
-		temp = (ITHBAR(i,j,k)+tb[k]) * IPBAR(i,j,k);	// full, actual temperature
-		pres = p0*pow(IPBAR(i,j,k),(cp/Rd));			// full, dimensional pressure
-
-		smr = get_QV_Sat(temp,pres);					// calculate saturation mixing ratio
-
-		IQBAR(i,j,k) = (base_relh[k]-rh_drop[j]) * smr - qb[k];
-
-		//if(i==NX/2 && k==1){ printf("%d %d %f %f %f %f %f %f %f\n",j,k,outLats[j],pres/100.0,base_relh[k],qb[k]*1000,smr*1000,IQBAR(i,j,k)*1000,1000*(IQBAR(i,j,k)+qb[k]) );}		
-		//if(i==NX/2 && j==NY/4){ printf("%d %f %f %f %f %f %f\n",k,zui[k],pres/100.0,base_relh[k],qb[k]*1000,smr*1000,IQBAR(i,j,k)*1000);}
-	
-		if(IQBAR(i,j,k)>0.00){ IQBAR(i,j,k) = 0.00;}
-		
-	
-	
-	}}}
-	
-#if 0
-	
-	int lowTempLat = get_point_from_lat(22);
-	int highTempLat = get_point_from_lat(30);
-	double deltaTemp = 6.0;
-	
-	for(int i=0;i<NX;i++){
-	for(int k=0;k<NZ;k++){
-		
-		for(int j=lowTempLat;j<highTempLat;j++){
-	
-			ITHBAR(i,j,k) = deltaTemp * frac_distance((double)j,(double)lowTempLat,(double)highTempLat);
-	
-		}
-		
-		for(int j=highTempLat;j<NY;j++){ ITHBAR(i,j,k) = deltaTemp;}
-		
-	}}
-#endif
-	
-	//----------------------------------------------------------------
-	// Upper and lower boundary conditions for base state array
-	//----------------------------------------------------------------
-	upper_lower_boundaries(&ITHBAR(0,0,0));
-	upper_lower_boundaries(&IQBAR(0,0,0));
-	upper_lower_boundaries(&IUBAR(0,0,0));	
-	upper_lower_boundaries(&IVBAR(0,0,0));	
-		
-	//----------------------------------------------------------------
-	// Initialize friction array
-	//----------------------------------------------------------------
-	init_friction();
-
-	//----------------------------------------------------------------
-	// Calculate base state vertical velocity
-	//----------------------------------------------------------------
-	init_basic_state_vertical_velocity();
-	
-	
-#if 0
-	double cape[NY][10];
-	double test_cape;
-
-	for(int j=0;j<NY;j++){
-	for(int k=0;k<10;k++){
-
-		if(k==9){
-			cape[j][k] = get_CAPE(base_i,j,k);
-
-		
-			printf("%f %f %f\n",outLats[j],cape[j][k],IQBAR(base_i,j,k)+qb[1]);
-		}
-		
-	}}
-
-#endif
-	
-	
-	
-	free(ivort); free(istream);
-	
-}
-
-#endif
-
-
-
-
-
-#if 0
-
-	double llev = 3000;
-	double hlev = 9000;
-
-	//----------------------------------------------------------------
-	// Remove some vertical shear
-	//----------------------------------------------------------------
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	for(int k=0;k<NZ-1;k++){
-	
-		if(outLats[j] > 19.5){
-		
-			if(ZU(k) < hlev && ZU(k) > llev){
-			
-				if(IUBAR(i,j,k) < 0){
-				
-					IUBAR(i,j,k) *= ( (ZU(k)-llev) / (hlev-llev));
-				
-				}
-			}
-			
-			if(ZU(k) <= llev){
-				
-				IUBAR(i,j,k) *= 0;
-			}
-		}
-	
-	}}}
-
-	for(int t=0;t<10;t++){
-
-		for(int i=0;i<NX-1;i++){
-		for(int j=10;j<NY-10;j++){
-		for(int k=0;k<NZ-1;k++){
-
-
-			if(ZU(k)>llev){
-
-				IUBAR(i,j,k) += 0.3*(IUBAR(i+1,j+1,k) - 2.0*IUBAR(i+1,j,k) + IUBAR(i+1,j-1,k));
-			}
-		
-		}}}
-		
-		for(int j=0;j<NY;j++){
-		for(int k=0;k<NZ-1;k++){
-
-			IUBAR(NX-1,j,k) = IUBAR(NX-2,j,k);
-		
-		}}
-	}
-
-
-#endif
-
-#if 0
-	// modify CAPE by changing upper level temperature
-	double cape[NY][10];
-	double test_cape;
-
-	for(int j=0;j<NY;j++){
-	for(int k=0;k<10;k++){
-
-		cape[j][k] = get_CAPE_base(base_i,j,k);
-
-		if(k==1){
-			printf("%f %f\n",outLats[j],cape[j][k]);
-		}
-		
-	}}
-	
-	
-	//double rh_decrease = 0.1;
-	rh_decrease = 0.25;
-	rh_decrease2 = 0.2;//0.1;
-	rh_decrease3 = -0.1;//0;
-	
-	rh_slope = rh_decrease / (double)(rh_y_max-rh_y_min);
-	rh_slope2 = rh_decrease2 / (double)(rh_y_max2-rh_y_min2);
-	rh_slope3 = rh_decrease3 / (double)(rh_y_min2-rh_y_min3);
-
-	for(int j=0;j<NY;j++){ rh_drop[j] = 0;} // initialize
-
-	//---------------------------------------------------------------
-	// First
-	//---------------------------------------------------------------	
-	for(int j=rh_y_max;j>rh_y_min;j--){		rh_drop[j] = rh_drop[j+1] + rh_slope;	}
-	
-	for(int j=rh_y_min;j>=0;j--){			rh_drop[j] = rh_decrease;				}
-	//---------------------------------------------------------------
-	// Third
-	//---------------------------------------------------------------
-	for(int j=rh_y_min3;j<rh_y_min2;j++){	rh_drop[j] = rh_drop[j-1] + rh_slope3;	}
-	//---------------------------------------------------------------
-	// Second
-	//---------------------------------------------------------------
-	for(int j=rh_y_min2;j<rh_y_max2;j++){	rh_drop[j] = rh_drop[j-1] + rh_slope2;	}
-	
-	for(int j=rh_y_max2;j<NY;j++){			rh_drop[j] = rh_drop[j-1];				}
-
-	//for(int j=0;j<NY;j++){ printf("%f %f\n",outLats[j],rh_drop[j]);}
-	//-----------------------------------------------------------------------
-	// Calculate mixing ratio
-	//-----------------------------------------------------------------------	
-	for(int k=0;k<NZ;k++){
-		
-		base_temp[k] = tb[k]*pib[k];
-		base_pres[k] = p0*pow(pib[k],(cp/Rd));
-		
-		base_relh[k] = qb[k] / get_QV_Sat(base_temp[k],base_pres[k]);
-		
-		//printf("RH %d %f %f %f %f\n",k,zu[k],base_pres[k],base_relh[k],0.15*cos_profile(-0.25,0.25,(zu[k]-2000.0)/5000.0,0));
-	}
-
-
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	for(int k=1;k<NZ-1;k++){
-
-		temp = (ITHBAR(i,j,k)+tb[k]) * IPBAR(i,j,k);	// full, actual temperature
-		pres = p0*pow(IPBAR(i,j,k),(cp/Rd));			// full, dimensional pressure
-
-		smr = get_QV_Sat(temp,pres);					// calculate saturation mixing ratio
-
-		//IQBAR(i,j,k) = (base_relh[k]-rh_drop[j]) * smr - qb[k];
-
-		if(rh_prof[j][k] + base_relh[k] - rh_drop[j] < 1.1){
-			IQBAR(i,j,k) = (rh_prof[j][k] + base_relh[k] - rh_drop[j]) * smr - qb[k];
-		} else {
-			IQBAR(i,j,k) = 1.1*smr;
-		}
-		
-		//if(i==NX/2 && k==5){ printf("%d %f %f\n", j,outLats[j],(qb[k]+IQBAR(i,j,k))*1000 ); }
-		
-		if(IQBAR(i,j,k)>0.002){ IQBAR(i,j,k) = 0.002;}
-		
-		//IQBAR(i,j,k) = 0;
-	
-	}}}
-	
-	
-	for(int i=0;i<NZ;i++){
-	
-		//printf("%d %f %f\n",i,ZU(i), cos_profile(-0.5,0.5,frac_distance( ZU(i),0,ZU(NZ-1) ) ,1.0) );
-		
-	}
-	
-	
-	
-	
-	int cape_lev = 1;
-	
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	//for(int k=0;k<10;k++){		
-
-		test_cape = get_CAPE_base(i,j,cape_lev);
-		
-		if(test_cape > cape[j][cape_lev]){
-
-			while( get_CAPE_base(i,j,cape_lev) > cape[j][cape_lev] ){
-			
-				//printf("%d %d %f\n",i,j,get_CAPE_base(i,j,cape_lev));
-			
-				for(int a=0;a<NZ;a++){
-			
-					ITHBAR(i,j,a) += 0.05*0.5*cos_profile(-0.5,0.5,frac_distance( ZU(a),0,ZU(NZ-1) ) ,1.0);
-					
-					//printf("%d %f\n",a,0.1*0.5*cos_profile(-0.5,0.5,frac_distance( ZU(a),0,ZU(NZ-1) ) ,1.0));
-				}
-			}
-			
-		} /*else {
-		
-			while( get_CAPE_base(i,j,cape_lev) < cape[j][cape_lev] ){
-			
-				for(int a=0;a<NZ;a++){
-			
-					ITHBAR(i,j,a) -= 0.05*0.5*cos_profile(-0.5,0.5,frac_distance( ZU(i),0,ZU(NZ-1) ) ,1.0);
-				}
-			}
-		}*/
-		
-		
-	}}
-	//}
-	
-	
-#endif
-
-#if 0
-	// add an anticylone
-	//double bot_height2 = 3000;	
-	double top_height2 = 12000;
-	
-	int low_lat2 = get_point_from_lat(22);
-	int high_lat2 = get_point_from_lat(25);
-	int top_vort2 = get_point_from_height(top_height2);
-	
-	
-	for(int i=left_vort-buffer_vort;i<right_vort+buffer_vort;i++){
-	for(int j=low_lat2;j<high_lat2;j++){
-		
-		for(int k=0;k<top_vort2;k++){
-			
-			mult = 0.5*cos_profile(-0.5,0.5,frac_distance(ZU(k),0,top_height2),1.0) * 
-
-				   0.5*cos_profile(-0.5,0.5,frac_distance(j,low_lat2,high_lat2),1);
-
-	   	 	if(i<left_vort){
-				mult *= 0.5*cos_profile(-0.5,0.5,frac_distance(j,left_vort-buffer_vort,left_vort),1);
-	   	 	}
-			
-			if(i > right_vort){
-				mult *= 0.5*cos_profile(-0.5,0.5,frac_distance(j,right_vort,right_vort+buffer_vort),1);
-			}
-	   	 
-	   
-			IVORT(i,j,k) = -0.5e-4 * mult;//1.5e-4 * mult;
-					   
-		}
-		
-	}}
-#endif
-
-#if 0	
-	double MSE[NZ];
-	int b = 18;
-	
-	double bqv_sat = get_QV_Sat(base_temp[b],base_pres[b]);
-	double btb = 0;
-	
-	double bMSE = cp * tb[b]*pib[b] + grav*zu[b] + Lv*0.99*bqv_sat;
-	
-	for(int k=0;k<NZ;k++){
-		
-		MSE[k] = cp * tb[k]*pib[k] + grav*zu[k] + Lv*qb[k];
-		
-		//printf("%d %f %f %f\n",k,zu[k]/1000,tb[k]*pib[k],MSE[k]);
-	}
-	
-	//for(int i=0;i<NX;i++){
-	//for(int j=0;j<NY;j++){
-	for(int k=0;k<NZ;k++){
-
-		bqv_sat = get_QV_Sat(base_temp[k],base_pres[k]);
-
-		btb = (bMSE - grav*zu[k] - Lv * 0.99 * bqv_sat) / (cp*pib[k]);
-
-		//printf("%d %f %f %f %f\n",k,zu[k]/1000,tb[k],btb,cp * btb*pib[k] + grav*zu[k] + Lv*0.99 * bqv_sat);
-
-
-		//IQBAR(i,j,k) = (MSE[k] - cp * (ITHBAR(i,j,k)+tb[k])*IPBAR(i,j,k) - grav*zu[k]) / Lv - qb[k];
-
-	}//}}
-#endif
-
-#if 0
-double base_cross_rh[NY][NZ];
-double rh_temp;
-double rh_pres;
-int rh_cutoff = get_point_from_lat(26);
-
-for(int j=0;j<rh_cutoff;j++){
-for(int k=0;k<NZ;k++){
-
-	rh_temp = (ITHBAR(base_i,j,k)) * IPBAR(base_i,j,k);
-	rh_pres = p0 * pow(IPBAR(base_i,j,k),(cp/Rd));
-	
-	base_cross_rh[j][k] = IQBAR(base_i,j,k) / get_QV_Sat(rh_temp,rh_pres);
-	if(k==7){ printf("%d %f %f %f %f %f %f %f\n",j,ZU(k),outLats[j],rh_temp,rh_pres,base_cross_rh[j][k],IQBAR(base_i,j,k),get_QV_Sat(rh_temp,rh_pres));}
-}}
-
-for(int j=rh_cutoff;j<NY;j++){
-for(int k=0;k<NZ;k++){
-
-	base_cross_rh[j][k] = base_cross_rh[rh_cutoff-1][k];
-}}
-#endif
-
-#if 0
-	int low_vort = 0;//get_point_from_height(2000);
-
-	for(int j=low_lat-3*111000/dx;j<high_lat+3*111000/dx;j++){	
-	for(int k=low_vort;k<top_vort;k++){
-			
-		mult = 0.5*cos_profile(-0.5,0.5,frac_distance(ZU(k),-3000,top_height),1.0) * 
-
-			   0.5*cos_profile(-0.5,0.5,frac_distance(j,low_lat-3*111000/dx,high_lat+3*111000/dx),1.0);
-
-   
-		rh_prof[j][k] = 0;//0.30 * mult;
-				   
-	}}
-#endif

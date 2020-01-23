@@ -81,11 +81,11 @@ void init_fft3d_real(int,int,int,double,double,double);
 void poisson_fft3d(int,int,int,double);
 void poisson_fft3d_real(int,int,int);
 void p_poisson_fft3d(double);
-void poisson_fft2d(double [NX][NY]);
+//void poisson_fft2d(double [NX][NY]);
 void hydrostatic_pressure(int,int,int,int);
 void divergence3d(double);
 void divergence3d_periodic(int,int,int,int,double);
-void SOR(int,int,double[3][NX][NY],double[NX][NY]);
+//void SOR(int,int,double[3][NX][NY],double[NX][NY]);
 
 //------------------------------------------------------------------------------------------------
 
@@ -171,7 +171,7 @@ void solve_pressure(double step){
 			/*****************************************************************
 			* ------------------ NON-LINEAR VERSION --------------------------
 			******************************************************************/
-			#if !PERIODIC_BOUNDARIES
+			if(!PERIODIC_BOUNDARIES){
 				mirror_boundaries(&UP(0,0,0));	// Enforce zero velocity gradient at lateral boundaries.
 				mirror_boundaries(&VP(0,0,0));	// Need to update because they are used to calculate
 				mirror_boundaries(&WP(0,0,0));	// the divergence tendency required by pressure solver.
@@ -182,13 +182,13 @@ void solve_pressure(double step){
 			/*****************************************************************
 			* ------------------ LINEAR VERSION ------------------------------
 			******************************************************************/
-			#else
+			} else {
 				periodic_uvw_boundaries();
 				
 				poisson_fft3d(NX-6,NY,NZ,step);	// solve anelastic pressure equation	
 		
 				periodic_pressure_boundaries();
-			#endif
+			}
 		/************************************************************************
 		* ------------------ PARALLEL VERSION / NON-LINEAR ----------------------
 		*************************************************************************/
@@ -565,7 +565,7 @@ void init_fft2d(int ni,int nj){
 	}}
 
 }
-
+#if 0
 /**********************************************************************
 * Fast Fourier transform-based pressure solver
 ***********************************************************************/
@@ -635,7 +635,7 @@ void poisson_fft2d(double Fxy[NX][NY]){
 	}}
 
 }
-
+#endif
 /**********************************************************************
 * Fast Fourier transform-based pressure solver for serial version
 *

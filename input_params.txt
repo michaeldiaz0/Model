@@ -9,11 +9,11 @@
 | and time step (sec)
 ----------------------------------------
 NX	:	345
-NY  :	259
+NY  :	140
 NZ	:	43
-dx	:	15000.0
+dx	:	50000.0
 dz	:	500.0
-dt	:	40.0
+dt	:	300.0
 
 ----------------------------------------
 | Vertical grid stretching. Height (m)
@@ -25,10 +25,13 @@ height_lowest_level : 100
 ----------------------------------------
 | Coordinates of lower left corner.
 | Latitude starts from south pole.
-| Longitude starts from prime meridian.
+| Longitude starts from the prime meridian
+| if "shift_prime_meridian" is set to 0
+| and from 180 W if set to 1.
 ----------------------------------------
-corner_lat	:	90
+corner_lat	:	100
 corner_lon	:	61
+shift_prime_meridian : 0
 
 ---------------------------------------
 | Number of time steps to run and how
@@ -36,7 +39,7 @@ corner_lon	:	61
 | (in number of time steps)
 ---------------------------------------
 time_steps		 :	12960
-output_frequency :	270
+output_frequency :	36
 
 ----------------------------------------
 | Grid level to begin upper-level damping
@@ -57,11 +60,11 @@ rayleigh_damping_z	: 37
 verbose : 1
 ----------------------------------------
 | How to initialize model
-| 0 - from a file
+| 0 - from an input file
 | 1 - from a compiled subroutine
 ----------------------------------------
-basic_state_init_option		:	1
-perturbation_init_option	:	0
+basic_state_init_option		:	0
+perturbation_init_option	:	1
 ----------------------------------------
 | Restart a simulation from where it
 | left off, recording results into the
@@ -72,10 +75,10 @@ is_restart_run : 0
 | Time at which to start reading
 | from perturbation input file
 ----------------------------------------
-perturbationFileTime	: 7
+perturbationFileTime	: 0
 ----------------------------------------
 | Time at which to start writing to the
-| output file (if not creating a new file)
+| output file (if NOT creating a new file)
 | Negative values are from the end
 ----------------------------------------
 startOutfileAt	:		-3
@@ -90,10 +93,10 @@ create_new_output_file : 1
 | Run various budgets and output them
 | to a file. 0 -> no 1 -> yes
 ----------------------------------------
-run_heat_budget 	:	0
-run_moisture_budget :	0
-run_pe_budget 		:	0
-run_pv_budget 		:	0
+run_heat_budget 	 :	0
+run_moisture_budget  :	0
+run_pe_budget 		 :	0
+run_pv_budget 		 :	0
 run_vorticity_budget :	0
 
 /
@@ -104,10 +107,49 @@ run_vorticity_budget :	0
 ---------------------------------------------------
 ---------------------------------------------------
 &physics
-
+----------------------------------------
+| 0 - no microphysics
+| 1 - Kessler warm rain microphysics
+| 2 - Rutledge/Hong ice microphysics
+----------------------------------------
 microphysics_option : 2
+----------------------------------------
+| Turbulence/flux settings
+| Off -> 0
+| On  -> 1
+----------------------------------------
 use_surface_heat_flux : 0
+turbulence_option : 1
+----------------------------------------
+| Water temperature in Celcius
+----------------------------------------
+water_temp : 29.0
 
+/
+
+---------------------------------------------------
+---------------------------------------------------
+| Boundary condition
+---------------------------------------------------
+---------------------------------------------------
+----------------------------------------
+| Unless periodic boundaries selected,
+| sponge boundaries are used
+----------------------------------------
+&boundaries
+----------------------------------------
+| Apply periodic boundaries in the
+| east and west (no->0, yes->1)
+----------------------------------------
+periodic_ew_boundaries : 1
+----------------------------------------
+| Width of sponge boundaries 
+| in grid points
+----------------------------------------
+north : 5
+south : 5
+east : 5
+west : 5
 /
 
 ---------------------------------------------------
@@ -119,19 +161,19 @@ use_surface_heat_flux : 0
 ----------------------------------------
 | File extensions
 ----------------------------------------
-input_file_base		:		/Users/michaeldiaz/Desktop/model_output/
+input_file_base		:		/Users/michaeldiaz/Desktop/model_input/
 output_file_base	:		/Users/michaeldiaz/Desktop/model_output/
 
 ----------------------------------------
 | Input files
 ----------------------------------------
-basic_state_input_file	:	pertinput.nc
-perturbation_input_file	:	outfile1013_0.nc
+basic_state_input_file	:	baroclinicjet.nc
+perturbation_input_file	:	baroclinicjet.nc
 
 ----------------------------------------
 | Output files
 ----------------------------------------
-output_file				  :	outfile1201_0.nc
+output_file				  :	outfile0122_0.nc
 heat_budget_filename	  :	temp_budget1130_0.nc
 moisture_budget_filename  :	moisture_budget1130_0.nc
 pe_budget_filename		  :	pe_budget1130_0.nc
@@ -147,5 +189,22 @@ vorticity_budget_filename :	vort_budget1129_0.nc
 ---------------------------------------------------
 ---------------------------------------------------
 &initialization_constants
+----------------------------------------
+| Axisymmetric vortex initialization
+| from Murthy and Boos (2018)
+----------------------------------------
+vortex_initialize : 1 (1->yes,0->no)
+vortex_latitude : 45.0
+vortex_longitude : 100.0
+vortex_radius : 1000000 (meters)
+vortex_upper_warm_anomaly : 2.5 (K)
+vortex_lower_cold_anomaly : -2.05 (K)
+vortex_height_wind_max : 3000 (meters)
+vortex_vertical_extent : 11000 (meters)
+vortex_rh_top : 11000 (meters)
+vortex_rh_bottom : 3000 (meters)
+vortex_rh_prime : 0 (as fraction from 0 to 1)
+vortex_rh_radius : 3000000 (meters)
+vortex_rh_max : 0.95 (as fraction from 0 to 1)
 
 /

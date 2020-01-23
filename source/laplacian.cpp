@@ -55,7 +55,7 @@ struct laplacian_vars *vars;
 * ---------------------- FUNCTION PROTOTYPES--------------------------------
 ****************************************************************************/
 void init_fft2d(int,int);
-void poisson_fft2d(double [NX][NY]);
+//void poisson_fft2d(double [NX][NY]);
 
 /**********************************************************************
 * Fast Fourier transform-based pressure solver for hydrostatic version

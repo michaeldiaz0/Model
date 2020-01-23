@@ -8,6 +8,7 @@ const char *grid_section = "&grid";
 const char *file_section = "&files";
 const char *settings_section = "&settings";
 const char *physics_section = "&physics";
+const char *boundaries_section = "&boundaries";
 const char *initialization_section = "&initialization_constants";
 const char *delimiter = "/";
 
@@ -67,7 +68,7 @@ void print_input_params(struct input_params inputs){
 **********************************************************************/
 void test_line_format(const char* buff){
 	
-	char *colon_match = strchr(buff,':');
+	const char *colon_match = strchr(buff,':');
 	
 	if(colon_match==NULL){ 
 		printf("Error: format error in parameters file. Missing colon for: %s",buff);
@@ -176,11 +177,12 @@ struct input_params read_input_file(const char* infile){
 				set_field(buff,gridnames[5],&inputs.dz);
 				set_field(buff,gridnames[6],&inputs.dt);
 				set_field(buff,gridnames[7],&inputs.corner_lat);
-				set_field(buff,gridnames[8],&inputs.corner_lon);
+				set_field(buff,gridnames[8],&inputs.corner_lon);				
 				set_field(buff,gridnames[9],&inputs.time_steps);
 				set_field(buff,gridnames[10],&inputs.output_frequency);
 				set_field(buff,gridnames[11],&inputs.rayleigh_damping_z);
 				set_field(buff,"height_lowest_level",&inputs.height_lowest_level);
+				set_field(buff,"shift_prime_meridian",&inputs.shift_prime_meridian);
 											
 			}	
 		}	
@@ -220,6 +222,26 @@ struct input_params read_input_file(const char* infile){
 
 				set_field(buff,"microphysics_option",&inputs.microphysics_option);
 				set_field(buff,"use_surface_heat_flux",&inputs.use_surface_heat_flux);
+				set_field(buff,"turbulence_option",&inputs.turbulence_option);
+				set_field(buff,"water_temp",&inputs.water_temp);
+			}	
+		}
+
+		//---------------------------------------------------------
+		// Read boundaries section
+		//---------------------------------------------------------
+		if(strncmp(buff,boundaries_section,strlen(boundaries_section))==0){
+			
+			while( fgets(buff,bufflength,fp) != NULL){
+				
+				if(strncmp(buff,delimiter,1)==0){ break; }
+
+				set_field(buff,"periodic_ew_boundaries",&inputs.periodic_ew_boundaries);
+				
+				set_field(buff,"north",&inputs.boundary_width_north);
+				set_field(buff,"south",&inputs.boundary_width_south);
+				set_field(buff,"east",&inputs.boundary_width_east);
+				set_field(buff,"west",&inputs.boundary_width_west);								
 			}	
 		}
 		
@@ -275,18 +297,32 @@ struct input_params read_input_file(const char* infile){
 				attach_file_base(inputs.vorticity_budget_filename,output_filebase);
 			}
 		}
-	}
 	
-	//---------------------------------------------------------
-	// Initialization constants section
-	//---------------------------------------------------------
-	if(strncmp(buff,initialization_section,strlen(initialization_section))==0){
+		//---------------------------------------------------------
+		// Initialization constants section
+		//---------------------------------------------------------
+		if(strncmp(buff,initialization_section,strlen(initialization_section))==0){
 		
-		while( fgets(buff,bufflength,fp) != NULL){
+			while( fgets(buff,bufflength,fp) != NULL){
 			
-			if(strncmp(buff,delimiter,1)==0){ break; }
+				if(strncmp(buff,delimiter,1)==0){ break; }
+			
+				set_field(buff,"vortex_initialize",&inputs.vortex_initialize);
+				set_field(buff,"vortex_latitude",&inputs.vortex_latitude);
+				set_field(buff,"vortex_longitude",&inputs.vortex_longitude);
+				set_field(buff,"vortex_radius",&inputs.vortex_radius);
+				set_field(buff,"vortex_upper_warm_anomaly",&inputs.vortex_upper_warm_anomaly);
+				set_field(buff,"vortex_lower_cold_anomaly",&inputs.vortex_lower_cold_anomaly);
+				set_field(buff,"vortex_height_wind_max",&inputs.vortex_height_wind_max);
+				set_field(buff,"vortex_vertical_extent",&inputs.vortex_vertical_extent);
+				set_field(buff,"vortex_rh_top",&inputs.vortex_rh_top);
+				set_field(buff,"vortex_rh_bottom",&inputs.vortex_rh_bottom);
+				set_field(buff,"vortex_rh_prime",&inputs.vortex_rh_prime);
+				set_field(buff,"vortex_rh_radius",&inputs.vortex_rh_radius);
+				set_field(buff,"vortex_rh_max",&inputs.vortex_rh_max);
 
-		}	
+			}	
+		}
 	}
 	
 	
@@ -303,7 +339,7 @@ struct input_params read_input_file(const char* infile){
 
 /*********************************************************************
 *
-*
+* mpirun -np 4 ./solve.exe -f input_params.txt -s "1.0 -2.0 -1.0"
 **********************************************************************/
 int process_command_line_args(int argc, char *argv[]){
 	

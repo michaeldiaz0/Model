@@ -57,7 +57,7 @@ double lH;			// horizontal mixing length
 const double one_d_Pr = 3.0;		// inverse Prantl number
 const double lv_max = 200.0;		// upper bound for vertical mixing length
 const double cs = 0.25;
-const double water_temp = WATER_TEMP_C + 273.15;
+double water_temp;
 
 struct stress_tensor *stress;
 
@@ -143,6 +143,8 @@ void init_kmix(int nx,int ny,int nz,double *zlevs){
 	//------------------------------------------------------
 	// Saturation vapor pressure for temperature of water surface
 	//------------------------------------------------------
+	water_temp = WATER_TEMP_C + 273.15;
+	
 	es_water = 611.2 * exp(17.67 * (water_temp-273.15) / (water_temp - 29.65) );
 }
 
