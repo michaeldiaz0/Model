@@ -159,7 +159,7 @@ west : 5
 ---------------------------------------------------
 &files
 ----------------------------------------
-| File extensions
+| File extensions. Ignored if left blank.
 ----------------------------------------
 input_file_base		:		/Users/michaeldiaz/Desktop/model_input/
 output_file_base	:		/Users/michaeldiaz/Desktop/model_output/
