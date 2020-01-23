@@ -1,10 +1,10 @@
-This program is an idealized numerical model that solves the equations of motion for the atmosphere based on a perturbation / basic state decomposition. Its equations and the numerical methods used to solve them are described in more detail in Diaz and Boos (2019a) and Diaz and Boos (2019b).
+This program is an idealized numerical model that solves the anelastic equations of motion for the atmosphere based on a perturbation / basic state decomposition. It includes a microphysics and turbulence parameterization and can be run on parallel architecture. The equations and the numerical methods used to solve them are described in more detail in Diaz and Boos (2019a) and Diaz and Boos (2019b).
 
 -------------------------------------------------------------
 I. COMPILATION
 -------------------------------------------------------------
 
-This program requires three external libraries: NETCDF (the file format, downloadable at https://www.unidata.ucar.edu/software/netcdf/), FFTW3 (a Fast Fourier Transform library, downloadable at http://www.fftw.org), and an implementation of MPI (the parallel programming library, for example, OpenMPI). To compile, locate the file "compile.sh". In this file, you will need to set the file paths to your own NETCDF, FFTW3, and MPI libraries. These paths must contain the "include" and "lib" directories to each library. Run the script with "./compile.sh". If compilation is successful, the executable "solve.exe" will appear in the "bin" folder.
+This program requires three external libraries: NetCDF (the file format, downloadable at https://www.unidata.ucar.edu/software/netcdf/), FFTW3 (a Fast Fourier Transform library, downloadable at http://www.fftw.org), and an implementation of MPI (the parallel programming library, for example, OpenMPI). To compile, locate the file "compile.sh". In this file, you will need to set the file paths to your own compiled versions of the NetCDF, FFTW3, and MPI libraries. The directories pointed to by these paths must contain the "include" and "lib" subdirectories to each library. The MPI compiler wrappers (e.g. mpic++) must also be in the execution path. Run the script with "./compile.sh". If compilation is successful, the executable "solve.exe" will appear in the "bin" folder.
 
 To switch between the parallel and serial version, locate the file "stdafx.h" in the "include" directory. Locate the line with "#define PARALLEL". Set it to "#define PARALLEL 0" for the serial version and "#define PARALLEL 1" for the parallel version. The program must be recompiled when switching between parallel and serial.
 
@@ -13,14 +13,16 @@ II. RUNNING
 -------------------------------------------------------------
 
 --------------------------------------------
-A. Command Line Options and Model Settings
+A. Command-Line Options and Model Settings
 --------------------------------------------
+
+Before running the model, you will probably need to provide input data (see section B below).
 
 The program is run using a specially formatted input file, which controls the model settings (grid spacing, grid size, model physics, etc.). The original version of the file is named "input_params.txt". Open it and change the values accordingly. To run, type the following line into the terminal window:
 
 mpirun -np 4 ./solve.exe -f input_params.txt 
 
-The number following "-np" is the number of processes to use.
+The number following "-np" is the number of processes to use. If this doesn't work, you may need to set the execution path to include the "bin" file in the MPI directory.
 
 A basic state with both horizontal and vertical shear from a soon to be submitted paper can be generated using the command line option "-s". For example,
 
@@ -32,11 +34,11 @@ where the first value is the maximum vorticity (x 10^-4 1/s), the second is the 
 B. Model Input
 --------------------------------------------
 
-There are two ways to generate model input: either from an external NETCDF file or from the program itself. These options are set after "basic_state_input_file" and "perturbation_input_file" in the input text file, with "0" being from an external file and "1" being from code. Before running, you'll need to ensure that the model either has an input NETCDF file or will generate its initial perturbation and/or basic state from code. The perturbation and basic state can be set to the same file name if the basic state and perturbation are in the same file. The input grid size and spacing can be the same as or different from that at which the model is run.
+There are two ways to generate model input: either from an external NetCDF file or from the program itself. These options are set after "basic_state_input_file" and "perturbation_input_file" in the input text file, with "0" being from an external file and "1" being from code. Before running, you'll need to ensure that the model either has an input NetCDF file or will generate its initial perturbation and/or basic state from code. The perturbation and basic state can be set to the same file name if the basic state and perturbation are in the same file. The input grid size and spacing can be the same as or different from that at which the model is run.
 
-Currently, the only option to generate a basic state from code is the one listed in the previous section (i.e. command-line option "-s"). The only option to generate an initial perturbation from code is an axisymmetric vortex based on Murthy and Boos (2018). To use this option, find the section labeled "&initialization_constants", set the values as desired, and make sure that "perturbation_init_option" is set to "1" to initialize from code and not an input NETCDF file.
+Currently, the only option to generate a basic state from code is the one listed in the previous section (i.e. command-line option "-s"). The only option to generate an initial perturbation from code is an axisymmetric vortex based on Murthy and Boos (2018). To use this option, find the section labeled "&initialization_constants", set the values as desired, and make sure that "perturbation_init_option" is set to "1" to initialize from code and not an input NetCDF file.
 
-The python script "initialize.py" is useful for generating input files. The function initialize() converts arrays of meteorological data into a netcdf file formatted to be read as input into the model.
+The python script "initialize.py" is useful for generating input files. The function initialize() converts arrays of meteorological data into a NetCDF file formatted to be read as input into the model. It currently has examples of baroclinic and barotropic jets.
 
 --------------------------------------------
 C. Model Output
