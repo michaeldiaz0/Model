@@ -44,7 +44,7 @@ The python script "initialize.py" is useful for generating input files. The func
 C. Model Output
 --------------------------------------------
 
-The model output is given as "output_file" in the input text file. The variables are as follows:
+The model output is given as "output_file" in the input text file. The variables in the output file are as follows:
 
 u-wind(t, x, y, z)	-> perturbation zonal wind (m/s)
 v-wind(t, x, y, z)	-> perturbation meridional wind (m/s)
