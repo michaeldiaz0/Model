@@ -313,32 +313,14 @@ void advect_uvw_velocity(double step,int il,int ih,int jl,int jh){
 
 		// compute all fluxes for a YZ cross section
 		compute_fluxes(i,jl-1,jh);
-#if 0
-		/********************************************************
-		* For each point within the north-south range
-		*********************************************************/
-		for(int j=jl;j<jh;j++){
 
-			// new values equal old values plus the rate of change
-			UP(i,j,1) = UM(i,j,1) + step * u_tend_cell(i,j,1);
-			VP(i,j,1) = VM(i,j,1) + step * v_tend_cell(i,j,1);
-
-			for(int k=2;k<NZ-1;k++){
-
-				// new values equal old values plus the rate of change
-				UP(i,j,k) = UM(i,j,k) + step * u_tend_cell(i,j,k);
-				VP(i,j,k) = VM(i,j,k) + step * v_tend_cell(i,j,k);
-				WP(i,j,k) = WM(i,j,k) + step * w_tend_cell(i,j,k);
-			}
-		}
-#else
 		/********************************************************
 		* For each point within the north-south range
 		*********************************************************/
 		LOOP2D_JK(jl,jh,1,NZ-1, UP(i,j,k) = UM(i,j,k) + step * u_tend_cell(i,j,k) )
 		LOOP2D_JK(jl,jh,1,NZ-1, VP(i,j,k) = VM(i,j,k) + step * v_tend_cell(i,j,k) )
 		LOOP2D_JK(jl,jh,2,NZ-1, WP(i,j,k) = WM(i,j,k) + step * w_tend_cell(i,j,k) )	
-#endif
+
 	}
 	/********************************************************
 	* Calculate buoyancy term base on the microphysics option

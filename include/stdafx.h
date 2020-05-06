@@ -76,6 +76,7 @@ extern int MICROPHYSICS_OPTION;		// 0:None 1:Kessler 2:Rutludge
 extern int SURFACE_HEAT_FLUX;		// 0:no, 1:yes
 extern double WATER_TEMP_C;			// water temperature in Celsius (for surface heat fluxes)
 #define USE_LANDSEA_FROM_FILE 0		// 0:no, 1:yes
+extern int RAIN_FALLOUT;			// 1:Eulerian 2:Semi-Lagrangian
 //--------------------------------------
 // For linearized equation set
 //--------------------------------------
@@ -87,6 +88,7 @@ extern double WATER_TEMP_C;			// water temperature in Celsius (for surface heat 
 // Grid / boundaries
 //--------------------------------------
 extern int PERIODIC_BOUNDARIES;
+#define PERIODIC_BOUNDARIES_NS 0
 #define MERIDIONAL_CROSS_SECTION 0
 #define STRETCHED_GRID 1
 extern int SHIFT_PRIME_MERIDIAN;
@@ -111,7 +113,7 @@ extern int VORTICITY_BUDGET;		// calculate vorticity budget and write to a file
 extern int PE_BUDGET;				// calculate potential energy budget
 extern int CREATE_NEW_OUTPUT_FILE;
 #define PV_TRACER 0
-#define OUTPUT_FRICTION_TEND true	// output frictional tendencies
+#define OUTPUT_FRICTION_TEND 0	// output frictional tendencies
 #define OUTPUT_TO_FILE true			// write output to netcdf file
 
 #define PRINT_EKE_BUDGET 0			// print EKE budget to terminal window
@@ -156,6 +158,7 @@ struct input_params {
 	double height_lowest_level;
 	
 	int microphysics_option;
+	int rain_fallout;
 	
 	int basic_state_init_option;
 	int perturbation_init_option;

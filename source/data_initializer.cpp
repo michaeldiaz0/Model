@@ -545,6 +545,13 @@ void initialize_basic_state_ITCZ_shear2(double hor_shear,double vert_shear0,doub
 	//----------------------------------------------------------------
 	init_friction();
 
+	//for(int j=0;j<NY;j++){
+		
+		//pres = p0*pow(IPBAR(5,NY/2,j),(cp/Rd));
+		
+		//printf("%.2f %.2f %.2f %d %.2f %.2f\n",hor_shear*1e4,vert_shear0*1e3,vert_shear1*1e3,j,outLats[j],IUBAR(NX/2,j,31)-IUBAR(NX/2,j,9));
+	//}
+
 	//----------------------------------------------------------------
 	// Calculate base state vertical velocity
 	//----------------------------------------------------------------
@@ -829,9 +836,9 @@ void initialize_vortex_perturbation(){
 	//----------------------------------------------------------------
 	if(PARALLEL){
 
-		distributeArray(ths,&ITHBAR(0,0,0));	distributeArray(thms,&ITHBAR(0,0,0));
-		distributeArray(us,  &IUBAR(0,0,0));	distributeArray(ums,  &IUBAR(0,0,0));
-		distributeArray(vs,  &IVBAR(0,0,0));	distributeArray(vms,  &IVBAR(0,0,0));
+		distributeArray_3d(ths,&ITHBAR(0,0,0));	distributeArray_3d(thms,&ITHBAR(0,0,0));
+		distributeArray_3d(us,  &IUBAR(0,0,0));	distributeArray_3d(ums,  &IUBAR(0,0,0));
+		distributeArray_3d(vs,  &IVBAR(0,0,0));	distributeArray_3d(vms,  &IVBAR(0,0,0));
 
 		exchange(ths); exchange(thms);
 		exchange(us); exchange(ums);
@@ -839,7 +846,7 @@ void initialize_vortex_perturbation(){
 					
 		if(USE_MICROPHYSICS){
 			
-			distributeArray(qvs,&IQBAR(0,0,0));	distributeArray(qvms,&IQBAR(0,0,0));
+			distributeArray_3d(qvs,&IQBAR(0,0,0));	distributeArray_3d(qvms,&IQBAR(0,0,0));
 			exchange(qvs); exchange(qvms);
 		}
 	

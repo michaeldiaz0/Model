@@ -25,6 +25,8 @@ extern int fNYfNZ;
 *********************************************/
 extern int *ibs,*ibe,*jbs,*jbe,*kbs,*kbe,*ibs_p,*jbs_p;	// beginning and ending i,j coordinates of each process
 extern int *s_nx,*s_ny,*s_nz,*s_nx_p,*s_ny_p;	// grid dimensions of each process
+extern int *big_i;
+extern int *big_j;
 
 /*********************************************
 * 
@@ -55,10 +57,8 @@ extern double *ipres_vert;
 /*********************************************
 * Subroutines
 *********************************************/
-void distributeArrays();
-void distributeArray(double *);
-void distributeArray(double *,double *);
-//void alltoall(double *,double [NX][NY][NZ]);
+void distributeArray_2d(double *,double *);
+void distributeArray_3d(double *,double *);
 void pres_row_alltoall(double *);
 void pres_row_alltoall2(double *,double *);
 void pres_row_alltoall2_reverse(double *,double *);
@@ -67,11 +67,8 @@ void pres_col_alltoall2(double *,double *);
 void pres_col_alltoall_reverse(double *);
 void pres_vert_alltoall(double *);
 void pres_vert_alltoall_reverse(double *);
-void wait(int);
-//void scatterArrays(double *,double [NX][NY][NZ]);
-void gatherArrays();
-//void gatherArrays2(double *,double [NX][NY][NZ]);
-void gatherArrays3(double * m_var,double * var);
+void gatherArrays_3d(double * m_var,double * var);
+void gatherArrays_2d(double * m_var,double * var);
 void presComm2d();
 void initAllComms();
 void exchange(double *);

@@ -11,8 +11,6 @@
 //	#define USE_ICE 0
 //#endif
 
-#define RAIN_FALLOUT 1	// 1:Eulerian 2:Semi-Lagrangian
-
 /********************************************************
 * Perturbation values forecast by model
 *
@@ -23,6 +21,7 @@ extern double *qrps,*qrs,*qrms;		// rain (kg/kg)
 extern double *qsps,*qss,*qsms;
 extern double *qips,*qis,*qims;
 extern double *vts,*sts,*its;		// fall speed (m/s)
+extern double *accRain,*accSnow;
 extern bool *isSaturated;
 
 #define QV(i,j,k) qvs[INDEX(i,j,k)]
@@ -49,6 +48,8 @@ extern bool *isSaturated;
 #define ST(i,j,k) sts[INDEX(i,j,k)]
 #define IT(i,j,k) its[INDEX(i,j,k)]
 
+#define ACCRAIN(i,j) accRain[INDEX2D(i,j)]
+
 #if !PARALLEL && !ENERGY
 	#define IQBAR(i,j,k) QBAR(i,j,k)
 #else
@@ -62,7 +63,7 @@ extern bool *isSaturated;
 *
 *********************************************************/
 void run_microphysics(int,int,int,int);
-void init_microphysics();
+void init_microphysics(int,int);
 
 /********************************************************
 * General shared function
@@ -75,9 +76,8 @@ void zero_moisture(int il,int ih,int jl,int jh,int size);
 double get_CAPE(int i,int j,int k_p,double,double);
 double get_CAPE(int i,int j,int k_p);
 double get_CAPE_base(int i,int j,int k_p);
-void hydrometeor_fallout(double *var,double *vel,int il,int ih,int jl,int jh);
-void piecewise_interp(double *zin,double *zout,double *qin,double *qout,int zlevs);
-void rain_rate(int il,int ih,int jl,int jh);
+void hydrometeor_fallout(double *var,double *vel,int il,int ih,int jl,int jh,double *precip);
+void precip_rate(int il,int ih,int jl,int jh,double *,double *,double *);
 
 /********************************************************
 * Specific schemes

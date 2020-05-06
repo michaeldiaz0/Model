@@ -521,17 +521,11 @@ void run_model(int count,FILE *infile){
 		//------------------------------------------------------
 		if(OUTPUT_TO_FILE && bigcounter % outfilefreq == 0 && ENSEMBLE==0){
 
-			write_all_pvars(filename,file_time_counter);
+			output_meteorological_fields_to_file(write_pvar_to_file_2d,
+												 write_pvar_to_file,
+												 file_time_counter);
 			
-			#if OUTPUT_FRICTION_TEND && !PARALLEL
-			if(USE_TURBULENT_STRESS){
-				write_pvar_to_file(filename,"fric",frictions,file_time_counter);
-			}
-			#endif
-			
-			#if OUTPUT_DIFFUSION_TEND && !PARALLEL
-				//write_pvar_to_file(filename,"diff",diff_tend,NX,NY,file_time_counter);
-			#endif
+			write_time_to_file(filename,file_time_counter);
 			
 			file_time_counter++;
 		}
@@ -541,6 +535,8 @@ void run_model(int count,FILE *infile){
 		//------------------------------------------------------
 		if(ISLINEAR){ linear_integrate_rk3();}
 		else { integrate_rk3();}
+
+		write_pvar_to_file(filename,"pi",pis,file_time_counter);
 
 		mtime += dt;	// elapsed physical time
 		

@@ -51,6 +51,9 @@ v-wind(t, x, y, z)	-> perturbation meridional wind (m/s)
 w-wind(t, x, y, z)	-> perturbation vertical wind (m/s) 
 theta(t, x, y, z) 	-> perturbation potential temperature (K)
 pi(t, x, y, z)	 	-> perturbation pressure (Pa / density)
+int_fric(t, x, y) 	-> vertically integrated friction
+rainfall(t, x, y)	-> accumulated rain fall (mm)
+snowfall(t, x, y)	-> accumulated snow fall (mm)
 qv(t, x, y, z)  	-> perturbation water vapor mixing ratio (g/g)
 qc(t, x, y, z)   	-> cloud water mixing ratio (g/g)
 qr(t, x, y, z)   	-> rain water mixing ratio (g/g)
@@ -69,8 +72,6 @@ qb(z) 				-> base state water vapor mixing ratio (g/g)
 zu(z)				-> height of scalar variables (m)
 
 Note that most of the variables are split into perturbation, basic state, and base state and will need to be added together to get the full state. This could require adding together two (for winds) or three (for scalars) fields. One exception is the condensate variables, namely mixing ratios of rain (qr), snow (qs), ice (qi), and cloud (qc), which don't have a basic state. In contrast with "tbar" and "qbar", the pressure variable "pbar" represents the full basic state, with "pib" already included. The pressure variables are also different in that the perturbation and basic states have different units.
-
-In the current version, latent heat fluxes and total accumulated precipitation are stored in "fric" at the nz - 1 and nz - 2 positions, respectively.
 
 The model output files are formatted similarly to the input files and can therefore be read as input. The input text file provides several ways to exploit this similarity using the options "is_restart_run", "perturbationFileTime", "startOutfileAt", and "create_new_output_file". However, be aware that restarting from a model output file may yield slightly different results than running straight through, since the output data is stored as single precision floating point values but the model is run with double precision.
 

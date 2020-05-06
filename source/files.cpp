@@ -136,6 +136,30 @@ void create_outfile(const char *myfilename, bool basestate,bool modelBaseState,b
 		status = nc_def_var (ncid,var_names[i], NC_FLOAT, 4, var_dimids, &var_id);
 		if (status != NC_NOERR) handle_error(status);
 	}
+
+	//-------------------------------------------------
+	// Two-dimensional fields
+	//-------------------------------------------------
+	//for(int i=0;i<twodVarCount;i++){
+
+		//status = nc_def_var (ncid,var_names_2d[i], NC_FLOAT, 3, var_dimids, &var_id);
+		//if (status != NC_NOERR) handle_error(status);
+		//}
+
+	//-------------------------------------------------
+	// Turbulance parameterization fields
+	//-------------------------------------------------	
+	if(USE_TURBULENT_STRESS){
+		
+		status = nc_def_var (ncid,"int_fric", NC_FLOAT, 3, var_dimids, &var_id);
+		if (status != NC_NOERR) handle_error(status);
+		
+		if(SURFACE_HEAT_FLUX){
+		
+			status = nc_def_var (ncid,"lh_flux", NC_FLOAT, 3, var_dimids, &var_id);
+			if (status != NC_NOERR) handle_error(status);
+		}
+	}
 	
 	/*************************************************
 	* Microphysics
@@ -144,7 +168,16 @@ void create_outfile(const char *myfilename, bool basestate,bool modelBaseState,b
 	
 		int mpVarCount = 3;
 	
-		if(USE_ICE){ mpVarCount = 5;}
+		status = nc_def_var (ncid,"rainfall", NC_FLOAT, 3, var_dimids, &var_id);
+		if (status != NC_NOERR) handle_error(status);
+	
+		if(USE_ICE){
+			
+			mpVarCount = 5;
+			
+			status = nc_def_var (ncid,"snowfall", NC_FLOAT, 3, var_dimids, &var_id);
+			if (status != NC_NOERR) handle_error(status);
+		}
 	
 		for(int i=0;i<mpVarCount;i++){
 
@@ -162,7 +195,7 @@ void create_outfile(const char *myfilename, bool basestate,bool modelBaseState,b
 		if (status != NC_NOERR) handle_error(status);
 	}
 	
-	if(OUTPUT_DIFFUSION_TEND){ 
+	if(OUTPUT_DIFFUSION_TEND){
 	
 		status = nc_def_var (ncid,opt_var_names[1], NC_FLOAT, 4, var_dimids, &var_id);
 		if (status != NC_NOERR) handle_error(status);
@@ -270,31 +303,6 @@ void add_attribute(int ncid,const char *att_name,const char *value){
 	if (status != NC_NOERR) handle_error(status);
 }
 
-/********************************************************
-*
-*********************************************************/
-void combine_files(const char *infile0,const char *infile,const char *outfile){
-
-
-}
-
-/********************************************************
-*
-*********************************************************/
-void copy_file(const char *infile,const char *outfile,int *times){
-
-
-}
-
-/********************************************************
-*
-*********************************************************/
-void shrink_file(const char *infile,const char *outfile){
-
-
-}
-
-
 /****************************************************************************
 *
 * 				SINGLE VARIABLE WRITING PROCEDURES
@@ -357,7 +365,7 @@ void write_pvar_to_file(int ncid,const char *var_name,double *var,size_t tcount)
 * 
 * myfilename 		- name of file
 * var_name 			- variable name
-* var[NX][NY][NZ]	- variable data
+* var				- variable data
 * tcount			- file time variable
 *********************************************************/
 void write_pvar_to_file(const char *myfilename,const char *var_name,double *var,size_t tcount){
@@ -375,15 +383,73 @@ void write_pvar_to_file(const char *myfilename,const char *var_name,double *var,
 	status = nc_close(ncid);
 	if (status != NC_NOERR) handle_error(status);
 }
+
+/********************************************************
+* Write data for single perturbation variable at a single 
+* time to the netcdf file
+* 
+* myfilename 		- name of file
+* var_name 			- variable name
+* var				- variable data
+* tcount			- file time variable
+*********************************************************/
+void write_pvar_to_file_2d(const char *myfilename,const char *var_name,double *var,size_t tcount){
+
+	int ncid,status,var_id;
+
+	status = nc_open(myfilename, NC_WRITE, &ncid);
+	if (status != NC_NOERR) handle_error(status);
+
+	size_t start[] = {tcount,0,0};
+	size_t count[] = {1,NX,NY};
+
+	status = nc_inq_varid (ncid, var_name, &var_id);
+	if (status != NC_NOERR) handle_error(status);
+
+	printf("writing %s %d to file\n",var_name,var_id);
+
+	status = nc_put_vara_double(ncid, var_id,start,count, var);
+	if (status != NC_NOERR) handle_error(status);
+	
+	/*************************************************
+	* Close file
+	**************************************************/
+	status = nc_close(ncid);
+	if (status != NC_NOERR) handle_error(status);
+}
+
 #if !PARALLEL_IO
 /********************************************************
+* Write data for single perturbation variable at a single 
+* time to the netcdf file for parallel version.
 * 
+* myfilename 		- name of file
+* var_name 			- variable name
+* var				- variable data
+* tcount			- file time variable
 *********************************************************/
-void parallel_write_pvar_to_file(const char *myfilename,const char *var_name,double *var,size_t tcount){
+void parallel_write_pvar_to_file_3d(const char *myfilename,const char *var_name,double *var,size_t tcount){
 	
-	gatherArrays3(var,output_to_file);
+	gatherArrays_3d(var,output_to_file_3d);
 	
-	if(rank==0){ write_pvar_to_file(myfilename,var_name,output_to_file,tcount);}
+	if(rank==0){ write_pvar_to_file(myfilename,var_name,output_to_file_3d,tcount);}
+	
+}
+
+/********************************************************
+* Write data for single perturbation variable at a single 
+* time to the netcdf file for parallel version.
+* 
+* myfilename 		- name of file
+* var_name 			- variable name
+* var				- variable data
+* tcount			- file time variable
+*********************************************************/
+void parallel_write_pvar_to_file_2d(const char *myfilename,const char *var_name,double *var,size_t tcount){
+	
+	gatherArrays_2d(var,output_to_file_2d);
+	
+	if(rank==0){ write_pvar_to_file_2d(myfilename,var_name,output_to_file_2d,tcount);}
 	
 }
 #else
@@ -571,6 +637,68 @@ void write_time_to_file(const char *myfilename,size_t tcount){
 *
 *****************************************************************************/
 
+/*********************************************************************
+* Write all variables to the netcdf file
+*
+* @param write2d - function to write 2d data
+* @param write3d - function to write 3d data
+**********************************************************************/
+void output_meteorological_fields_to_file(
+		void (*write2d)(const char*,const char*,double*,size_t),
+		void (*write3d)(const char*,const char*,double*,size_t),
+		int tcount
+		){
+	//------------------------------------------------------
+	// Core meteorological field
+	//------------------------------------------------------
+	write3d(filename,"u-wind",us, tcount);
+	write3d(filename,"v-wind",vs, tcount);
+	write3d(filename,"w-wind",ws, tcount);
+	write3d(filename,"pi",    pis,tcount);
+	write3d(filename,"theta", ths,tcount);
+
+	//------------------------------------------------------
+	// Microphysics specfic variables
+	//------------------------------------------------------
+	if(USE_MICROPHYSICS){
+		
+		write3d(filename,"qv",qvs,tcount);
+		write3d(filename,"qc",qcs,tcount);
+		write3d(filename,"qr",qrs,tcount);
+		
+		write2d(filename,"rainfall",accRain,tcount);
+		
+		if(USE_ICE){
+			
+			write2d(filename,"snowfall",accSnow,tcount);
+			
+			write3d(filename,"qi",qis,tcount);
+			write3d(filename,"qs",qss,tcount);
+		}
+	}
+	//------------------------------------------------------
+	// Turbulence specfic variables
+	//------------------------------------------------------	
+	if(USE_TURBULENT_STRESS){
+		
+		write2d(filename,"int_fric",integrated_friction_ke,tcount);
+		
+		if(SURFACE_HEAT_FLUX){
+			write2d(filename,"lh_flux",latent_heat_flux,tcount);
+		}
+	}
+	//------------------------------------------------------
+	// Extra variables
+	//------------------------------------------------------	
+	if(EXTRA_OUTPUT){
+		write3d(filename,"rate",rate,tcount);
+	}
+
+	if(OUTPUT_FRICTION_TEND){
+		write3d(filename,"fric",frictions,tcount);
+	}
+}
+#if 0
 /********************************************************
 * Write data for all perturbation variables to file
 * 
@@ -627,7 +755,7 @@ void write_all_pvars(const char *myfilename,size_t tcount){
 	if (status != NC_NOERR) handle_error(status);
 
 }
-
+#endif
 /********************************************************
 * Write data for all environmental base state variables 
 * to the netcdf file
@@ -1058,7 +1186,7 @@ void file_output_status(int a){
 		set_attribute(filename,att,a);
 	//-----------------------------------------------
 	// Otherwise, create it
-	//-----------------------------------------------		
+	//-----------------------------------------------
 	} else {
 		int ncid,status;
 		
@@ -1244,8 +1372,12 @@ void get_data_at_time(const char *myfilename,const char *varname, size_t time, d
 	int status, ncid, ndims, nvars, ngatts, unlimdimid;
 	int var_id;
 
-    size_t start[] = {time, 0, 0, 0};
-    size_t count[] = {1, (size_t)nx, (size_t)ny, (size_t)nz};
+	size_t start3d[] = {time, 0, 0, 0};
+	size_t count3d[] = {1, (size_t)nx, (size_t)ny, (size_t)nz};
+
+	size_t start2d[] = {time, 0, 0};
+	size_t count2d[] = {1, (size_t)nx, (size_t)ny};
+
 
 	/********************************************************
 	* Open file, get variable ID, get data
@@ -1268,7 +1400,12 @@ void get_data_at_time(const char *myfilename,const char *varname, size_t time, d
 	
 	if (status != NC_NOERR) handle_error(status);
 
-	status = nc_get_vara_double(ncid,var_id,start,count,array);
+	if(nz==0){
+		status = nc_get_vara_double(ncid,var_id,start2d,count2d,array);
+	} else {
+		status = nc_get_vara_double(ncid,var_id,start3d,count3d,array);
+	}
+	
 	if (status != NC_NOERR) handle_error(status);
 
 	/*********************

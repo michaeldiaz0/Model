@@ -194,9 +194,9 @@ void run_kessler_microphysics(int il,int ih,int jl,int jh){
 		}
 	}}}
 
-	/*******************************************
-	* Set lower boundary
-	********************************************/
+	//--------------------------------------------
+	// Lower boundary condition
+	//--------------------------------------------
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
 
@@ -204,8 +204,23 @@ void run_kessler_microphysics(int il,int ih,int jl,int jh){
 		VT(i,j,HTOPO(i,j)) = VT(i,j,HTOPO(i,j)+1);
 	}}
 
+	//--------------------------------------------
+	// Semi-Lagrangian rain fallout
+	//--------------------------------------------
 	if(RAIN_FALLOUT==2){
-		hydrometeor_fallout(qrps,vts,il,ih,jl,jh);
+		
+		hydrometeor_fallout(qrps,vts,il,ih,jl,jh,accRain);
+				
+		// set rain fall speed to zero so that it
+		// does not get advected by subsequent advection
+		// calculations
+		if(PARALLEL)
+			memset(vts,0,fNX*fNY*fNZ*sizeof(double));
+		else
+			memset(vts,0,NX*NY*NZ*sizeof(double));
+	} else {
+		
+		precip_rate(il,ih,jl,jh,vts,qrps,accRain);
 	}
 
 }

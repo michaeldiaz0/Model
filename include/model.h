@@ -17,9 +17,11 @@ extern int NYNZ;
 
 #if PARALLEL && !ENERGY
 	#define INDEX(i,j,k) ((i)*fNYfNZ + (j)*fNZ + (k))	// index for parallel version
+	#define INDEX2D(i,j) ((i)*fNY + (j))
 #else
 	#define INDEX(i,j,k) ((i)*NYNZ + (j)*NZ + (k))		// index for serial version
-#endif													
+	#define INDEX2D(i,j) ((i)*NY + (j))
+#endif
 
 #define FULL_ARRAY_INDEX(i,j,k) ((i)*NYNZ+(j)*NZ+(k))	// index for full domain arrays
 #define FULL_INDEX(i,j,k) ((i)*NYNZ+(j)*NZ+(k))
@@ -85,22 +87,29 @@ extern double *iubar,*ivbar,*iwbar,*ithbar,*iqbar,*ipbar;
 #endif
 
 //--------------------------------------------------------
+// 2D fields
+//--------------------------------------------------------
+extern double *integrated_friction_ke; 	// vertically integrated kinetic energy from friction
+extern double *latent_heat_flux;		// surface latent heat flux
+
+//--------------------------------------------------------
 // Topography and friction
 //--------------------------------------------------------
 extern double *istopos,*uistopos,*vistopos;
-extern int *htopo;//[NX][NY];
+extern int *htopo;
 extern double *frictions;
 
 //--------------------------------------------------------
 // Map coordinates and Coriolis terms
 //--------------------------------------------------------
-extern double *outLats;//[NY];		// latitudes
-extern double *outLons;//[NX];		// longitudes
-extern double *f;//f[NY];			// coriolis parameter
-extern double *dfdy;//[NY];			// gradient of coriolis parameter
+extern double *outLats;				// latitudes
+extern double *outLons;				// longitudes
+extern double *f;					// coriolis parameter
+extern double *dfdy;				// gradient of coriolis parameter
 
-extern double *output_to_file;//u[NX][NY][NZ];
-extern double *rhoavg2d;//[NX][NY];
+extern double *output_to_file_3d;
+extern double *output_to_file_2d;
+extern double *rhoavg2d;
 
 extern double *itopo,*iistopo,*iuistopo,*ivistopo,*ifriction;
 extern double *rate;
@@ -140,7 +149,7 @@ extern double *rate;
 	#define IFRICTION(i,j,k) ifriction[(i)*NY*NZ+(j)*NZ+(k)]
 
 	#define LANDSEA(i,j) landsea[(i+ibs[rank]-3)*NY+(j+jbs[rank]-3)]
-	#define HTOPO(i,j) htopo[(i+ibs[rank]-3)*NY+(j+jbs[rank]-3)]//htopo[i+ibs[rank]-3][j+jbs[rank]-3]
+	#define HTOPO(i,j) htopo[(i+ibs[rank]-3)*NY+(j+jbs[rank]-3)]
 	#define RHOAVG2D(i,j) rhoavg2d[(i+ibs[rank]-3)*NY+(j+jbs[rank]-3)]
 	#define LATS(j) outLats[j+jbs[rank]-3]
 	#define LONS(i) outLons[i+ibs[rank]-3]

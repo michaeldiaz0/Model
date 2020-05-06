@@ -20,7 +20,7 @@
 /***************************************************************************
 * -------------------------- VARIABLES -------------------------------------
 ****************************************************************************/
-double *output_to_file;//u[NX][NY][NZ];
+double *output_to_file_3d,*output_to_file_2d;
 //--------------------------------------
 // BASIC STATE ARRAYS
 //--------------------------------------
@@ -42,6 +42,10 @@ double *rate;
 // FALL SPEEDS
 //--------------------------------------
 double *vts,*sts,*its;
+//--------------------------------------
+// Accumulated rain and snow
+//--------------------------------------
+double *accRain,*accSnow;
 //--------------------------------------
 // TOPOGRAPHY AND FRICTION ARRAYS
 //--------------------------------------
@@ -73,13 +77,12 @@ double rhoavg = 0;
 double mtime = 0;
 int bigcounter = 0;
 
-int NX,NY,NZ,NYNZ;// = 1035/3;//173;//345;//173;//345;//518;
-// = 777/3;//111;//222;//111;//222;
+int NX,NY,NZ,NYNZ;
 
-double dx;// = 15000.0;
-double dy;// = 15000.0;
-double dz;// = 500.0;
-double dt;// = 60.0;
+double dx;
+double dy;
+double dz;
+double dt;
 
 double dtx;
 double dty;
@@ -105,6 +108,7 @@ int PE_BUDGET;
 
 int USE_TURBULENT_STRESS;
 int MICROPHYSICS_OPTION;
+int RAIN_FALLOUT;
 int USE_ICE;
 int USE_MICROPHYSICS;
 int isRestartRun;
@@ -183,6 +187,7 @@ void initialize_globals(){
 	VERBOSE = inputs.verbose;
 	
 	MICROPHYSICS_OPTION = inputs.microphysics_option;
+	RAIN_FALLOUT = inputs.rain_fallout;
 	
 	USE_TURBULENT_STRESS = inputs.turbulence_option;
 	
@@ -293,7 +298,7 @@ void initialize_perturbation(){
 	switch(my_perturbation_option){
 		//----------------------------------------------------------------
 		// Initialize from a model output file
-		//----------------------------------------------------------------		
+		//----------------------------------------------------------------
 		case 0:
 		
 			if(!PARALLEL || rank==0){
@@ -390,7 +395,9 @@ void initialize_1D_arrays(){
 *
 * @param size - number of elements to allocate
 **********************************************************************/
-void initialize_subarray(int size){
+void initialize_subarray(int nx,int ny,int nz){
+	
+	int size = nx*ny*nz;
 	
 	// this was already allocated on the root process, just
 	// do it on the other processes if parallel version
@@ -422,6 +429,8 @@ void initialize_subarray(int size){
 		
 		ALLOC(vts,size);
 		
+		accRain = (double *)calloc(nx*ny,sizeof(double));
+			
 		if(USE_ICE){
 			
 			ALLOC(qss,size);  ALLOC(qis,size); 
@@ -429,6 +438,8 @@ void initialize_subarray(int size){
 			ALLOC(qsms,size); ALLOC(qims,size);
 			
 			ALLOC(sts,size); ALLOC(its,size);
+			
+			accSnow = (double *)calloc(nx*ny,sizeof(double));
 		}
 	}
 
@@ -474,7 +485,7 @@ void setup_memory_allocation(){
 	//----------------------------------------------------------------
 	if(PARALLEL || ENERGY){
 	
-		if(rank==0){ ALLOC(output_to_file,size);}
+		if(rank==0){ ALLOC(output_to_file_3d,size);  ALLOC(output_to_file_2d,NX*NY);}
 	
 		ALLOC(iubar,size);
 		ALLOC(ivbar,size);
@@ -516,7 +527,7 @@ void setup_memory_allocation(){
 		initialize_flux_cells(NY,NZ);
 		initialize_microphysics_cells(NY,NZ);
 
-		initialize_subarray(NX*NY*NZ);
+		initialize_subarray(NX,NY,NZ);
 
 		init_damping(NX,NY,NZ);
 	}
@@ -546,7 +557,7 @@ void initialize_serial(){
 	
 	if(USE_TURBULENT_STRESS){ init_kmix(NX,NY,NZ,&ZU(0));}
 	
-	if(USE_MICROPHYSICS){ init_microphysics();}
+	if(USE_MICROPHYSICS){ init_microphysics(NX,NY);}
 	
 	initialize_landsea(landseaMaskFile);
 
@@ -1374,7 +1385,8 @@ double get_QV_Sat(double temperature,double pressure){
 /*********************************************************************
 * Load data from model output file for use as an initial condition for 
 * the perturbation fields. Assumes that the current model grid settings 
-* (i.e. NX,dx, etc.) and the those of the input file are identical
+* (i.e. NX,dx, etc.) and the those of the input file are identical.
+* This works only for parallel model.
 *
 * filename 	- file containing input fields for perturbation
 * varname 	- name of variable within file
@@ -1398,7 +1410,7 @@ void load_from_output(const char *filename,const char *varname,double *var,doubl
 			else { 		   get_data(        filename,varname,NX*NY*NZ,iubar);}
 		}
 	
-		distributeArray(var,iubar);	// distribute to other processes
+		distributeArray_3d(var,iubar);	// distribute to other processes
 	
 		exchange(var);			// processes exchange boundaries
 	
@@ -1411,7 +1423,47 @@ void load_from_output(const char *filename,const char *varname,double *var,doubl
 		}
 	//----------------------------------------------------------------------
 	// If variable does not exist, do nothing but print out a warning.
-	//----------------------------------------------------------------------			
+	//----------------------------------------------------------------------
+	} else {
+		if(!PARALLEL || rank==0){
+			printf("Variable %s not in file! Initializing to zero\n",varname);
+		}
+	}
+}
+
+/*********************************************************************
+* Load data from model output file for use as an initial condition for 
+* the perturbation fields. Assumes that the current model grid settings 
+* (i.e. NX,dx, etc.) and the those of the input file are identical.
+* This works only for parallel model.
+*
+* filename 	- file containing input fields for perturbation
+* varname 	- name of variable within file
+* var,mvar	- fully interpolated arrays as output (if mvar is a null pointer
+*			  nothing will be output to it)
+* time 		- time at which to initialize, negative for basic state
+**********************************************************************/
+void load_from_output_2d(const char *filename,const char *varname,double *var,int time){
+	
+	//-----------------------------------------------------------------------
+	// Does the variable exist in the file?
+	//-----------------------------------------------------------------------
+	if(fileHasVar(filename,varname)){
+	
+		//----------------------------------------------------------------
+		// Load data on root process
+		//----------------------------------------------------------------	
+		if(rank==0){ 
+	
+			if(time >= 0){ get_data_at_time(filename,varname,time, iubar,NX,NY,0);}
+			else { 		   get_data(        filename,varname,NX*NY,iubar);}
+		}
+	
+		distributeArray_2d(var,iubar);	// distribute to other processes
+	
+	//----------------------------------------------------------------------
+	// If variable does not exist, do nothing but print out a warning.
+	//----------------------------------------------------------------------
 	} else {
 		if(!PARALLEL || rank==0){
 			printf("Variable %s not in file! Initializing to zero\n",varname);
@@ -1560,7 +1612,7 @@ void load_interpolate_from_output(
 	//-----------------------------------------------------------------
 	// Distribute results to other processes
 	//-----------------------------------------------------------------
-	distributeArray(var,iubar);
+	distributeArray_3d(var,iubar);
 	
 	exchange(var);
 	
@@ -1665,8 +1717,12 @@ void initialize_from_output_parallel(const char *myfilename,size_t time){
 			if(USE_ICE){
 				
 				load_from_output(myfilename,"qs",qss,qsms,time);
-				load_from_output(myfilename,"qi",qis,qims,time);				
+				load_from_output(myfilename,"qi",qis,qims,time);
+				
+				load_from_output_2d(myfilename,"snowfall",accSnow,time);
 			}
+			
+			load_from_output_2d(myfilename,"rainfall",accRain,time);
 		}
 	//------------------------------------------------------------------------------
 	// If the files have different dimensions or grid spacing, need to interpolate
@@ -1768,7 +1824,11 @@ void initialize_from_output_serial(const char *myfilename,size_t time){
 			if(USE_ICE){
 				get_data_at_time(myfilename,"qi",time,&QI(0,0,0));
 				get_data_at_time(myfilename,"qs",time,&QS(0,0,0));
+				
+				get_data_at_time(myfilename,"snowfall",time,accSnow,NX,NY,0);
 			}
+
+			get_data_at_time(myfilename,"rainfall",time,accRain,NX,NY,0);
 		}
 		#if 0
 		for(int i=0;i<NX*NY*NZ;i++){
@@ -2022,7 +2082,7 @@ void initialize_basic_state_from_output_file(const char *myfilename){
 			
 		//------------------------------------------------------------------------------
 		// Get data, interpolate it
-		//------------------------------------------------------------------------------		
+		//------------------------------------------------------------------------------
 		interpolate_from_output(myfilename,"ubar", -1,var,var_interpz,&IUBAR(0,0,0), zgrid,myLons,myLats,zlevs,xdim,ydim,zdim,interp_dx,interp_dy);
 		interpolate_from_output(myfilename,"vbar", -1,var,var_interpz,&IVBAR(0,0,0), zgrid,myLons,myLats,zlevs,xdim,ydim,zdim,interp_dx,interp_dy);		
 		interpolate_from_output(myfilename,"wbar", -1,var,var_interpz,&IWBAR(0,0,0), zgrid,myLons,myLats,zlevs,xdim,ydim,zdim,interp_dx,interp_dy);

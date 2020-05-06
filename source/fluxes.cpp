@@ -565,11 +565,11 @@ void compute_fluxes_moisture(int i,int jl,int jh){
 		QVCELL(j,0).top = 0;
 		QCCELL(j,0).top = 0;
 		
-		#if RAIN_FALLOUT==1
+		//#if RAIN_FALLOUT==1
 			QRCELL(j,0).top = -0.5*(VT(i,j,1)+VT(i,j,0)) * QRCELL(j,1).top;	// allows rain to fall out through the ground
-		#elif RAIN_FALLOUT==2
-			QRCELL(j,0).top = 0;
-		#endif
+		//#elif RAIN_FALLOUT==2
+			//QRCELL(j,0).top = 0;
+		//#endif
 		
 		for(int k=1;k<NZ-1;k++){
 
@@ -592,11 +592,11 @@ void compute_fluxes_moisture(int i,int jl,int jh){
 			QRCELL(j,k).east  = ub * QRCELL(j,k).east;
 			QRCELL(j,k).north = vb * QRCELL(j,k).north;
 			
-			#if RAIN_FALLOUT==1
+			//#if RAIN_FALLOUT==1
 				QRCELL(j,k).top = (wb-0.5*(VT(i,j,k+1)+VT(i,j,k))) * QRCELL(j,k).top;	
-			#elif RAIN_FALLOUT==2			
-				QRCELL(j,k).top   = wb * QRCELL(j,k).north;
-			#endif
+			//#elif RAIN_FALLOUT==2			
+				//QRCELL(j,k).top   = wb * QRCELL(j,k).top;
+			//#endif
 		}
 	}
 }
@@ -878,11 +878,11 @@ void interpolate_moisture(int i,int jl,int jh){
 			vbsign = signof(VBAR(i,j+1,k)+V(i,j+1,k));
 			wbsign = signof(WBAR(i,j,k+1)+W(i,j,k+1));
 			
-			#if RAIN_FALLOUT==1
+			//#if RAIN_FALLOUT==1
 				wrsign = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(VT(i,j,k+1)+VT(i,j,k)));
-			#elif RAIN_FALLOUT==2
-				wrsign = wbsign;
-			#endif
+			//#elif RAIN_FALLOUT==2
+			//	wrsign = wbsign;
+			//#endif
 
 			QVCELL(j,k).west = QVCELL(j,k).east;
 			QVCELL(j,k).east  = INTERP_5TH_EAST( QV,ubsign,i);

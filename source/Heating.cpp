@@ -34,7 +34,7 @@ int i_eastlon,i_eastlat,i_westlon,i_westlat,i_width;
 // end lat/lon points of heating region
 double d_eastlon,d_eastlat,d_westlon,d_westlat,d_width;
 
-double precip_rate;
+double equiv_precip_rate;
 
 double slope;
 
@@ -50,7 +50,7 @@ Heating::Heating(){
 /********************************************************
 * Class Initializer
 *********************************************************/
-void Heating::initialize(double lat1, double lon1, double lat2, double lon2, double width_meters, double precip_rate){
+void Heating::initialize(double lat1, double lon1, double lat2, double lon2, double width_meters, double equiv_precip_rate){
 
 	heating = (double *)calloc(NZ,sizeof(double));
 
@@ -63,9 +63,9 @@ void Heating::initialize(double lat1, double lon1, double lat2, double lon2, dou
 		z_heating[k] = ((double)k-0.5)*dz;
 	}
 
-	this->precip_rate = precip_rate;
+	this->equiv_precip_rate = equiv_precip_rate;
 
-	setHeatingRate(precip_rate);
+	setHeatingRate(equiv_precip_rate);
 
 	d_eastlon = lon1;
 	d_eastlat = lat1;
@@ -96,7 +96,7 @@ void Heating::scaleHeating(double scaleFactor){
 
 	for(int k=0;k<NZ;k++){ heating[k] *= scaleFactor;}
 	
-	this->precip_rate *= scaleFactor;
+	this->equiv_precip_rate *= scaleFactor;
 
 }
 
@@ -375,13 +375,13 @@ void Heating::printInfo(FILE * infile){
 
 	if(infile==NULL){
 
-		printf("Heating %f %f %f %f %d %f\n",outLats[i_eastlat],outLons[i_eastlon],outLats[i_westlat],outLons[i_westlon],i_width*2,precip_rate);
+		printf("Heating %f %f %f %f %d %f\n",outLats[i_eastlat],outLons[i_eastlon],outLats[i_westlat],outLons[i_westlon],i_width*2,equiv_precip_rate);
 
 		printf("%d %d %d %d\n",i_eastlat,i_eastlon,i_westlat,i_westlon);
 
 	} else {
 
-		fprintf(infile,"Heating %f %f %f %f %d %f\n",outLats[i_eastlat],outLons[i_eastlon],outLats[i_westlat],outLons[i_westlon],i_width*2,precip_rate);
+		fprintf(infile,"Heating %f %f %f %f %d %f\n",outLats[i_eastlat],outLons[i_eastlon],outLats[i_westlat],outLons[i_westlon],i_width*2,equiv_precip_rate);
 
 		fprintf(infile,"%d %d %d %d\n",i_eastlat,i_eastlon,i_westlat,i_westlon);
 	}

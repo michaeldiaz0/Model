@@ -10,7 +10,7 @@ class Heating
 		double z_heating[35];
 		int i_eastlon,i_eastlat,i_westlon,i_westlat,i_width;
 		double d_eastlon,d_eastlat,d_westlon,d_westlat,d_width;
-		double precip_rate;
+		double equiv_precip_rate;
 		double slope;
 		Heating();
 		//Heating(double,double,double,double,double,double);

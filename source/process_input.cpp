@@ -177,7 +177,7 @@ struct input_params read_input_file(const char* infile){
 				set_field(buff,gridnames[5],&inputs.dz);
 				set_field(buff,gridnames[6],&inputs.dt);
 				set_field(buff,gridnames[7],&inputs.corner_lat);
-				set_field(buff,gridnames[8],&inputs.corner_lon);				
+				set_field(buff,gridnames[8],&inputs.corner_lon);
 				set_field(buff,gridnames[9],&inputs.time_steps);
 				set_field(buff,gridnames[10],&inputs.output_frequency);
 				set_field(buff,gridnames[11],&inputs.rayleigh_damping_z);
@@ -224,6 +224,7 @@ struct input_params read_input_file(const char* infile){
 				set_field(buff,"use_surface_heat_flux",&inputs.use_surface_heat_flux);
 				set_field(buff,"turbulence_option",&inputs.turbulence_option);
 				set_field(buff,"water_temp",&inputs.water_temp);
+				set_field(buff,"rain_fallout",&inputs.rain_fallout);
 			}	
 		}
 
@@ -241,7 +242,7 @@ struct input_params read_input_file(const char* infile){
 				set_field(buff,"north",&inputs.boundary_width_north);
 				set_field(buff,"south",&inputs.boundary_width_south);
 				set_field(buff,"east",&inputs.boundary_width_east);
-				set_field(buff,"west",&inputs.boundary_width_west);								
+				set_field(buff,"west",&inputs.boundary_width_west);
 			}	
 		}
 		
@@ -359,7 +360,7 @@ int process_command_line_args(int argc, char *argv[]){
 		switch (c){
 			case 'f':
 			
-				input_file_given = true;				
+				input_file_given = true;
 				inputs = read_input_file(optarg);
 				
 				break;

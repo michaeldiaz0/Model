@@ -7,9 +7,10 @@ extern MPI_Datatype *types;
 extern MPI_Comm comm_cart,comm_row,comm_col;
 
 MPI_Datatype mysubarray[4];
+MPI_Datatype mysubarray_2d[4];
 
-MPI_Datatype *mysubarrayptr;
-MPI_Datatype nsBound,ewBound,interior;
+MPI_Datatype *mysubarrayptr,*mysubarrayptr_2d;
+MPI_Datatype nsBound,ewBound,interior,interior_2d;
 MPI_Datatype nsBoundOnePoint,ewBoundOnePoint;
 
 MPI_Request request;
@@ -42,7 +43,7 @@ inline void ewExchange(double *);
 inline void cornerExchange(double *);
 void initComm(int,int,int,int,MPI_Datatype *);
 void initComm2d(int,int,int,int,int,int,MPI_Datatype *);
-
+#if 0
 /*********************************************************************
 * Distribute initial data to each process
 **********************************************************************/
@@ -116,6 +117,7 @@ void distributeArrays(){
 		MPI_Recv(frictions,1,interior,0,129,MPI_COMM_WORLD,&status);
 	}
 }
+#endif
 #if 0
 /*********************************************************************
 * Distribute initial data to each process
@@ -155,8 +157,11 @@ void distributeArray(double *svar){
 #endif
 /*********************************************************************
 * Distribute initial data to each process
+*
+* svar - smaller array, local to each process
+* var - bigger array, on the root process
 **********************************************************************/
-void distributeArray(double *svar,double *var){
+void distributeArray_3d(double *svar,double *var){
 
 	/******************************************************
 	* Root process has already loaded input data to its
@@ -190,6 +195,48 @@ void distributeArray(double *svar,double *var){
 	*******************************************************/
 	else {
 		MPI_Recv(svar,1,interior,0,123,MPI_COMM_WORLD,&status);
+	}
+}
+
+/*********************************************************************
+* Distribute initial data to each process
+*
+* svar - smaller array, local to each process
+* var - bigger array, on the root process
+**********************************************************************/
+void distributeArray_2d(double *svar,double *var){
+
+	/******************************************************
+	* Root process has already loaded input data to its
+	* arrays. Now divide them up and distribute them
+	* to each process.
+	*******************************************************/
+	if(rank==0){
+		/******************************************************
+		* Give the root process its share of each array.
+		*******************************************************/
+		for(int i=0;i<myNX;i++){
+		for(int j=0;j<myNY;j++){
+
+			svar[INDEX2D(i+halo_buffer,j+halo_buffer)] = var[(i)*NY+(j)];
+		}}
+		/******************************************************
+		* Distribute the rest of each array to other processes
+		*******************************************************/
+		int offset;
+		
+		for(int i=1;i<numtasks;i++){
+			
+			offset = ibs[i]*NY + jbs[i];
+			
+			MPI_Send(var+offset,1,mysubarrayptr_2d[i],i,123,MPI_COMM_WORLD);
+		}
+	}
+	/******************************************************
+	* Other processes receive array.
+	*******************************************************/
+	else {
+		MPI_Recv(svar,1,interior_2d,0,123,MPI_COMM_WORLD,&status);
 	}
 }
 #if 0
@@ -357,7 +404,7 @@ void pres_col_alltoall_reverse(double * col){
 		comm_col
 	);
 }
-
+#if 0
 /*********************************************************************
 * 
 **********************************************************************/
@@ -365,7 +412,7 @@ void wait(int r){
 	
 	MPI_Waitall(r,&requests[0],MPI_STATUSES_IGNORE);
 }
-#if 0
+
 /*********************************************************************
 * Distribute a full 3D array from the root process to all
 * processes
@@ -447,7 +494,7 @@ void gatherArrays2(double * m_var,double var[NX][NY][NZ]){
 * @param *m_var - pointer to beginning of buffer
 * @param var - full size array on root to receive data
 **********************************************************************/
-void gatherArrays3(double * m_var,double * var){
+void gatherArrays_3d(double * m_var,double * var){
 
 	for(int i=0;i<numtasks;i++){
 
@@ -465,6 +512,33 @@ void gatherArrays3(double * m_var,double * var){
 	scounts[0] = 1;
 
 	MPI_Alltoallw(m_var,scounts,sdisps,types,var,rcounts,rdisps,mysubarrayptr,MPI_COMM_WORLD);
+}
+
+/*********************************************************************
+* Send the interior points of the subarrays on each process to the
+* root process.
+*
+* @param *m_var - pointer to beginning of buffer
+* @param var - full size array on root to receive data
+**********************************************************************/
+void gatherArrays_2d(double * m_var,double * var){
+
+	for(int i=0;i<numtasks;i++){
+
+		scounts[i] = 0;
+		sdisps[i] = 0;
+		rcounts[i] = 0;
+		rdisps[i] = (ibs[i]*NY + jbs[i]) * sizeof(double);
+		types[i] = interior_2d;
+	}
+
+	if(rank==0){
+		for(int i=0;i<numtasks;i++){ rcounts[i] = 1;}
+	}
+
+	scounts[0] = 1;
+
+	MPI_Alltoallw(m_var,scounts,sdisps,types,var,rcounts,rdisps,mysubarrayptr_2d,MPI_COMM_WORLD);
 }
 
 /*********************************************************************
@@ -814,59 +888,51 @@ void initAllComms(){
 
 	// Interior of subarrays
 	initComm(halo_buffer,halo_buffer,myNX,myNY,&interior);
+	initComm2d(halo_buffer,halo_buffer,myNX,myNY,fNX,fNY,&interior_2d);
 
 	if(HYDROSTATIC){ presComm2d();}
 	else { presComm3d();}
 
-	/***********************************************************************
-	* Create the data types used to break up the full domain arrays into
-	* pieces for each process. The subarrays can be of four different sizes,
-	* with each dimesion having the possibility of being one unit less than 
-	* that of the root process's subarray.
-	************************************************************************/
-	int rank_index;
-	
-	mysubarrayptr = (MPI_Datatype *)malloc(numtasks*sizeof(MPI_Datatype));
-
-	int starts3[3] = {0,0,0};
-	int subsizes3[4][3];
-	int bigsizes3[3]  = {NX,NY,NZ};
+	//--------------------------------------------------------------------
+	// Create the data types used to break up the full domain arrays into
+	// pieces for each process. The subarrays can be of four different sizes,
+	// with each dimesion having the possibility of being one unit less than 
+	// that of the root process's subarray.
+	//--------------------------------------------------------------------
+	mysubarrayptr    = (MPI_Datatype *)malloc(numtasks*sizeof(MPI_Datatype));
+	mysubarrayptr_2d = (MPI_Datatype *)malloc(numtasks*sizeof(MPI_Datatype));
 
 	int bigNX = s_nx[0];
 	int bigNY = s_ny[0];
 
-	/********************************************************************
-	* Calculate the index of each data type
-	*********************************************************************/
+	//--------------------------------------------------------------------
+	// Create and initialize each data type
+	//--------------------------------------------------------------------
 	for(int i=0;i<2;i++){
 	for(int j=0;j<2;j++){
-
-		subsizes3[i*2+j][0] = bigNX-i;
-		subsizes3[i*2+j][1] = bigNY-j;
-		subsizes3[i*2+j][2] = myNZ;
+		
+		initComm3d(0,0,0,bigNX-i,bigNY-j,myNZ,NX,NY,NZ,&mysubarray[   i*2+j]);
+		initComm2d(0,0,  bigNX-i,bigNY-j,     NX,NY,   &mysubarray_2d[i*2+j]);
 	}}
 
-	/********************************************************************
-	* Create and initialize each data type
-	*********************************************************************/
-	for(int i=0;i<4;i++){
-
-		MPI_Type_create_subarray(3, bigsizes3, subsizes3[i], starts3,MPI_ORDER_C, MPI_DOUBLE, &mysubarray[i]);
-		MPI_Type_commit(&mysubarray[i]);
-	}
-
-	/********************************************************************
-	* Link each element of *mysubarrayptr to one of the four data types
-	*********************************************************************/
+	//--------------------------------------------------------------------
+	// Link each element of *mysubarrayptr to one of the four data types
+	//--------------------------------------------------------------------
 	for(int i=0;i<dims[0];i++){
 	for(int j=0;j<dims[1];j++){
 
-		rank_index = i*dims[1]+j;
+		int rank_index = i*dims[1]+j;
 
-		if(s_nx[i]==bigNX   && s_ny[j]==bigNY  ){ mysubarrayptr[rank_index] = mysubarray[0];}
-		if(s_nx[i]==bigNX   && s_ny[j]==bigNY-1){ mysubarrayptr[rank_index] = mysubarray[1];}
-		if(s_nx[i]==bigNX-1 && s_ny[j]==bigNY  ){ mysubarrayptr[rank_index] = mysubarray[2];}
-		if(s_nx[i]==bigNX-1 && s_ny[j]==bigNY-1){ mysubarrayptr[rank_index] = mysubarray[3];}
+		for(int x=0;x<2;x++){
+		for(int y=0;y<2;y++){
+
+			if(s_nx[i]==bigNX-x && s_ny[j]==bigNY-y){
+				
+				mysubarrayptr[   rank_index] = mysubarray[   x*2+y];
+				mysubarrayptr_2d[rank_index] = mysubarray_2d[x*2+y];
+			}
+		}}
+		
 		if(mysubarrayptr[rank_index]==NULL) { printf("Error\n");}
 
 	}}
@@ -1027,8 +1093,14 @@ void get_corner(int xshift,int yshift,int coords[2],int dims[2],int * corner){
 
 	if(PERIODIC_BOUNDARIES){
 		
-		if(shifted[1]!=-1 && shifted[1]<dims[1]){
+		if(!PERIODIC_BOUNDARIES_NS){
 		
+			if(shifted[1]!=-1 && shifted[1]<dims[1]){
+		
+				MPI_Cart_rank(comm_cart,shifted,corner);
+			}
+			
+		} else {
 			MPI_Cart_rank(comm_cart,shifted,corner);
 		}
 

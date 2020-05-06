@@ -1166,7 +1166,7 @@ void write_tvar_to_file(const char *myfilename,const char *varname,double *var,b
 	
 		smooth(var,3,fNX-3,3,fNY-3,grid_ratio);
 	
-		gatherArrays3(var,output_to_file);
+		gatherArrays_3d(var,output_to_file_3d);
 	
 		if(rank==0){
 				
@@ -1174,7 +1174,7 @@ void write_tvar_to_file(const char *myfilename,const char *varname,double *var,b
 			for(int j=0;j<subNY;j++){
 			for(int k=0;k<NZ;k++){
 
-				smallArray[SUBINDEX(i,j,k)] = output_to_file[FULL_ARRAY_INDEX( i*grid_ratio,j*grid_ratio,k) ] ;//u[i*grid_ratio][j*grid_ratio][k];
+				smallArray[SUBINDEX(i,j,k)] = output_to_file_3d[FULL_ARRAY_INDEX( i*grid_ratio,j*grid_ratio,k) ] ;//u[i*grid_ratio][j*grid_ratio][k];
 
 			}}}
 
@@ -1183,7 +1183,7 @@ void write_tvar_to_file(const char *myfilename,const char *varname,double *var,b
 	//------------------------------------------------------------
 	// Output full dimension grid
 	//------------------------------------------------------------			
-	} else { parallel_write_pvar_to_file(myfilename,varname,var,file_time_counter);}
+	} else { parallel_write_pvar_to_file_3d(myfilename,varname,var,file_time_counter);}
 	
 	//------------------------------------------------------------
 	// If requested, set all values to zero
@@ -1198,7 +1198,7 @@ void write_tvar_to_file(const char *myfilename,const char *varname,double *var,b
 **********************************************************************/
 void write_tvar_to_file_laplacian(const char *myfilename,const char *varname,double *var,bool zero_out){
 	
-	gatherArrays3(var,output_to_file);
+	gatherArrays_3d(var,output_to_file_3d);
 		
 	if(rank==0){
 				
@@ -1209,7 +1209,7 @@ void write_tvar_to_file_laplacian(const char *myfilename,const char *varname,dou
 			for(int i=0;i<NX;i++){
 			for(int j=0;j<NY;j++){
 		
-				input[i*NY+j] = output_to_file[FULL_ARRAY_INDEX(i,j,k)];
+				input[i*NY+j] = output_to_file_3d[FULL_ARRAY_INDEX(i,j,k)];
 			}}
 		
 			if(PERIODIC_BOUNDARIES){
@@ -1221,14 +1221,14 @@ void write_tvar_to_file_laplacian(const char *myfilename,const char *varname,dou
 			for(int i=0;i<NX;i++){
 			for(int j=0;j<NY;j++){
 		
-				 output_to_file[FULL_ARRAY_INDEX(i,j,k)] = input[i*NY+j];
+				 output_to_file_3d[FULL_ARRAY_INDEX(i,j,k)] = input[i*NY+j];
 			}}
 		
 		}
 		
 		free(input);
 		
-		write_pvar_to_file(myfilename,varname,output_to_file,NX,NY,file_time_counter);
+		write_pvar_to_file(myfilename,varname,output_to_file_3d,NX,NY,file_time_counter);
 	}
 	
 	if(zero_out){ for(int i=0;i<fNX*fNY*NZ;i++){ var[i] = 0; }}

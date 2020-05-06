@@ -8,12 +8,12 @@
 | Number of grid points, grid spacing (m),
 | and time step (sec)
 ----------------------------------------
-NX	:	1035
-NY  :	777
+NX	:	50
+NY  :	50
 NZ	:	43
 dx	:	5000.0
 dz	:	500.0
-dt	:	300.0
+dt	:	30.0
 
 ----------------------------------------
 | Vertical grid stretching. Height (m)
@@ -29,8 +29,8 @@ height_lowest_level : 100
 | if "shift_prime_meridian" is set to 0
 | and from 180 W if set to 1.
 ----------------------------------------
-corner_lat	:	90
-corner_lon	:	61
+corner_lat	:	120
+corner_lon	:	50.4
 shift_prime_meridian : 0
 
 ---------------------------------------
@@ -38,8 +38,8 @@ shift_prime_meridian : 0
 | often to output results to a file
 | (in number of time steps)
 ---------------------------------------
-time_steps		 :	12960
-output_frequency :	36
+time_steps		 :	80
+output_frequency :	2
 
 ----------------------------------------
 | Grid level to begin upper-level damping
@@ -63,14 +63,14 @@ verbose : 1
 | 0 - from an input file
 | 1 - from a compiled subroutine
 ----------------------------------------
-basic_state_init_option		:	1
-perturbation_init_option	:	1
+basic_state_init_option		:	0
+perturbation_init_option	:	0
 ----------------------------------------
 | Restart a simulation from where it
 | left off, recording results into the
 | same file.
 ----------------------------------------
-is_restart_run : 0
+is_restart_run : 1
 ----------------------------------------
 | Time at which to start reading
 | from perturbation input file
@@ -112,7 +112,7 @@ run_vorticity_budget :	0
 | 1 - Kessler warm rain microphysics
 | 2 - Rutledge/Hong ice microphysics
 ----------------------------------------
-microphysics_option : 2
+microphysics_option : 1
 ----------------------------------------
 | How flow-relative rain vertical 
 | advection is handled
@@ -125,7 +125,7 @@ rain_fallout : 2
 | Off -> 0
 | On  -> 1
 ----------------------------------------
-use_surface_heat_flux : 0
+use_surface_heat_flux : 1
 turbulence_option : 1
 ----------------------------------------
 | Water temperature in Celcius
@@ -174,13 +174,13 @@ output_file_base	:		/Users/michaeldiaz/Desktop/model_output/
 ----------------------------------------
 | Input files
 ----------------------------------------
-basic_state_input_file	:	baroclinicjet.nc
-perturbation_input_file	:	baroclinicjet.nc
+basic_state_input_file	:	rainball.nc
+perturbation_input_file	:	rainball.nc
 
 ----------------------------------------
 | Output files
 ----------------------------------------
-output_file				  :	outfile0410_0.nc
+output_file				  :	outfile0418_1.nc
 heat_budget_filename	  :	temp_budget1130_0.nc
 moisture_budget_filename  :	moisture_budget1130_0.nc
 pe_budget_filename		  :	pe_budget1130_0.nc

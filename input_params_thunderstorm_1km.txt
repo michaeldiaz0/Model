@@ -8,19 +8,19 @@
 | Number of grid points, grid spacing (m),
 | and time step (sec)
 ----------------------------------------
-NX	:	1035
-NY  :	777
-NZ	:	43
-dx	:	5000.0
-dz	:	500.0
-dt	:	300.0
+NX	:	250
+NY  :	250
+NZ	:	86
+dx	:	1000.0
+dz	:	250.0
+dt	:	3.0
 
 ----------------------------------------
 | Vertical grid stretching. Height (m)
 | of the lowest full model level. Set to
 | value of 'dz' for no stretching.
 ----------------------------------------
-height_lowest_level : 100
+height_lowest_level : 250
 
 ----------------------------------------
 | Coordinates of lower left corner.
@@ -29,8 +29,8 @@ height_lowest_level : 100
 | if "shift_prime_meridian" is set to 0
 | and from 180 W if set to 1.
 ----------------------------------------
-corner_lat	:	90
-corner_lon	:	61
+corner_lat	:	120
+corner_lon	:	50.4
 shift_prime_meridian : 0
 
 ---------------------------------------
@@ -38,8 +38,8 @@ shift_prime_meridian : 0
 | often to output results to a file
 | (in number of time steps)
 ---------------------------------------
-time_steps		 :	12960
-output_frequency :	36
+time_steps		 :	2725 1375 1800
+output_frequency :	50 25
 
 ----------------------------------------
 | Grid level to begin upper-level damping
@@ -63,8 +63,8 @@ verbose : 1
 | 0 - from an input file
 | 1 - from a compiled subroutine
 ----------------------------------------
-basic_state_init_option		:	1
-perturbation_init_option	:	1
+basic_state_init_option		:	0
+perturbation_init_option	:	0
 ----------------------------------------
 | Restart a simulation from where it
 | left off, recording results into the
@@ -74,8 +74,9 @@ is_restart_run : 0
 ----------------------------------------
 | Time at which to start reading
 | from perturbation input file
+| Set to zero for initial time.
 ----------------------------------------
-perturbationFileTime	: 0
+perturbationFileTime	: 17
 ----------------------------------------
 | Time at which to start writing to the
 | output file (if NOT creating a new file)
@@ -168,19 +169,19 @@ west : 5
 ----------------------------------------
 | File extensions. Ignored if left blank.
 ----------------------------------------
-input_file_base		:		/Users/michaeldiaz/Desktop/model_input/
+input_file_base		:		
 output_file_base	:		/Users/michaeldiaz/Desktop/model_output/
 
 ----------------------------------------
 | Input files
 ----------------------------------------
-basic_state_input_file	:	baroclinicjet.nc
-perturbation_input_file	:	baroclinicjet.nc
+basic_state_input_file	:	/Users/michaeldiaz/Desktop/model_input/thunderstorm.nc
+perturbation_input_file	:	/Users/michaeldiaz/Desktop/model_output/outfile0412_7.nc
 
 ----------------------------------------
 | Output files
 ----------------------------------------
-output_file				  :	outfile0410_0.nc
+output_file				  :	outfile0413_0.nc
 heat_budget_filename	  :	temp_budget1130_0.nc
 moisture_budget_filename  :	moisture_budget1130_0.nc
 pe_budget_filename		  :	pe_budget1130_0.nc

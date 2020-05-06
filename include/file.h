@@ -75,7 +75,7 @@ const int mainVarCount = 5;	// number of primary variables
 const int baseVarCount = 6;
 const int mbaseVarCount = 4;
 const int coordVarCount = 2;
-
+//const int twodVarCount = 2;
 
 const char var_names[11][10] = {"u-wind","v-wind","w-wind", "theta", "pi","rate"};
 const char mp_var_names[11][10] = {"qv", "qc", "qr","qi","qs"};
@@ -85,6 +85,7 @@ const char modelbasevar_names[4][10] = {"tb","pib","qb","zu"};
 const char coordvar_names[2][10] = {"lat","lon"};
 const char topo_name[5] = "topo";
 const char lsmask_name[10] = "lsmask";
+//const char var_names_2d[11][10] = {"rainfall","LHF","int_fric"};
 
 extern int isRestartRun;
 
@@ -99,14 +100,16 @@ int get_file_output_status();
 /********************************************************
 * FILE WRITING PROCEDURES
 *********************************************************/
+void output_meteorological_fields_to_file(void (*write2d)(const char*,const char*,double*,size_t),void (*write3d)(const char*,const char*,double*,size_t),int);
 void create_outfile(const char *filename, bool basestate,bool modelBaseState,bool coordinates);
 void write_mbvar_to_file(int ncid,const char *var_name,double *var);
 void write_pvar_to_file(int ncid,const char *var_name,double *var,size_t tcount);
 void write_pvar_to_file(const char *filename,const char *var_name,double *var,size_t tcount);
 void write_pvar_to_file(const char *myfilename,const char *var_name,double *var,int nx,int ny,size_t tcount);
+void write_pvar_to_file_2d(const char *filename,const char *var_name,double *var,size_t tcount);
 void write_bvar_to_file(int ncid,const char *var_name,double *var);
-void parallel_write_pvar_to_file(const char *myfilename,const char *var_name,double *var,size_t tcount);
-void parallel_write_pvar_to_file(const char *myfilename,const char *var_name,double *var,size_t tcount,MPI_Comm,MPI_Info);
+void parallel_write_pvar_to_file_2d(const char *myfilename,const char *var_name,double *var,size_t tcount);
+void parallel_write_pvar_to_file_3d(const char *myfilename,const char *var_name,double *var,size_t tcount);
 void write_all_pvars(const char *filename,size_t tcount);
 void write_all_bvars(const char *filename);
 void write_all_mbvars(const char *filename);

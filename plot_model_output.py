@@ -60,9 +60,9 @@ def plot_winds_temperature_pressure(infile,outfile,time):
 	
 	rho = get_density(tb,pib,qb)
 
-	temp = t + tbar + tb[height]
-	u = u + ubar
-	v = v + vbar
+	temp = t #+ tbar + tb[height]
+	u = u #+ ubar
+	v = v #+ vbar
 	
 	#-----------------------------------
 	# Destagger winds.
@@ -91,9 +91,9 @@ def plot_winds_temperature_pressure(infile,outfile,time):
 	#-----------------------------------
 	# make vector plot
 	#-----------------------------------
-	stride = 10
+	stride = 5
 
-	quiv = m.quiver(x[::stride,::stride], y[::stride,::stride], u[::stride,::stride], v[::stride,::stride],pivot='mid',color='Black',scale=100)
+	quiv = m.quiver(x[::stride,::stride], y[::stride,::stride], u[::stride,::stride], v[::stride,::stride],pivot='mid',color='Black',scale=400)
 
 	#-----------------------------------
 	# Create map
@@ -388,9 +388,9 @@ def main():
 		start = int(sys.argv[1])
 		end = int(sys.argv[2])
 
-		input_file = '../model_output/outfile0122_0.nc'
-		output_file0 = '../figures26/pres_wind0122_0fig'
-		output_file1 = '../figures26/rain_wind0122_0fig'
+		input_file = '../model_output/outfile0122_3.nc'
+		output_file0 = '../figures26/pres_wind0122_2fig'
+		output_file1 = '../figures26/rain_wind0122_3fig'
 
 		for i in range(start,end):
 

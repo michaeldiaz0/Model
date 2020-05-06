@@ -8,19 +8,19 @@
 | Number of grid points, grid spacing (m),
 | and time step (sec)
 ----------------------------------------
-NX	:	1035
-NY  :	777
+NX	:	50
+NY  :	50
 NZ	:	43
-dx	:	5000.0
+dx	:	4000.0
 dz	:	500.0
-dt	:	300.0
+dt	:	24.0
 
 ----------------------------------------
 | Vertical grid stretching. Height (m)
 | of the lowest full model level. Set to
 | value of 'dz' for no stretching.
 ----------------------------------------
-height_lowest_level : 100
+height_lowest_level : 50
 
 ----------------------------------------
 | Coordinates of lower left corner.
@@ -29,8 +29,8 @@ height_lowest_level : 100
 | if "shift_prime_meridian" is set to 0
 | and from 180 W if set to 1.
 ----------------------------------------
-corner_lat	:	90
-corner_lon	:	61
+corner_lat	:	80
+corner_lon	:	-100
 shift_prime_meridian : 0
 
 ---------------------------------------
@@ -38,8 +38,8 @@ shift_prime_meridian : 0
 | often to output results to a file
 | (in number of time steps)
 ---------------------------------------
-time_steps		 :	12960
-output_frequency :	36
+time_steps		 :	72000
+output_frequency :	450
 
 ----------------------------------------
 | Grid level to begin upper-level damping
@@ -63,25 +63,27 @@ verbose : 1
 | 0 - from an input file
 | 1 - from a compiled subroutine
 ----------------------------------------
-basic_state_init_option		:	1
-perturbation_init_option	:	1
+basic_state_init_option		:	0
+perturbation_init_option	:	0
 ----------------------------------------
 | Restart a simulation from where it
 | left off, recording results into the
 | same file.
 ----------------------------------------
-is_restart_run : 0
+is_restart_run : 1
 ----------------------------------------
 | Time at which to start reading
 | from perturbation input file
+| Set to zero for initial time, negative
+| values measure from the end.
 ----------------------------------------
 perturbationFileTime	: 0
 ----------------------------------------
 | Time at which to start writing to the
 | output file (if NOT creating a new file)
-| Negative values are from the end
+| Negative values measure from the end
 ----------------------------------------
-startOutfileAt	:		-3
+startOutfileAt	:		-1
 ----------------------------------------
 | 1 -> Create a new output file
 | 0 -> keep writing to an existing
@@ -125,12 +127,12 @@ rain_fallout : 2
 | Off -> 0
 | On  -> 1
 ----------------------------------------
-use_surface_heat_flux : 0
+use_surface_heat_flux : 1
 turbulence_option : 1
 ----------------------------------------
 | Water temperature in Celcius
 ----------------------------------------
-water_temp : 29.0
+water_temp : 27.0
 
 /
 
@@ -174,13 +176,13 @@ output_file_base	:		/Users/michaeldiaz/Desktop/model_output/
 ----------------------------------------
 | Input files
 ----------------------------------------
-basic_state_input_file	:	baroclinicjet.nc
-perturbation_input_file	:	baroclinicjet.nc
+basic_state_input_file	:	hurricane.nc
+perturbation_input_file	:	hurricane.nc
 
 ----------------------------------------
 | Output files
 ----------------------------------------
-output_file				  :	outfile0410_0.nc
+output_file				  :	outfile0415_5.nc
 heat_budget_filename	  :	temp_budget1130_0.nc
 moisture_budget_filename  :	moisture_budget1130_0.nc
 pe_budget_filename		  :	pe_budget1130_0.nc
@@ -202,8 +204,8 @@ vorticity_budget_filename :	vort_budget1129_0.nc
 ----------------------------------------
 vortex_initialize : 1 (1->yes,0->no)
 vortex_latitude : 20.0
-vortex_longitude : 100.0
-vortex_radius : 1000000 (meters)
+vortex_longitude : -60
+vortex_radius : 300000 (meters)
 vortex_upper_warm_anomaly : 2.5 (K)
 vortex_lower_cold_anomaly : -2.05 (K)
 vortex_height_wind_max : 3000 (meters)

@@ -51,6 +51,9 @@ int numtasks;
 int row_size;
 int col_size;
 
+// index within the larger domain
+int *big_i,*big_j;
+
 // sizes of subarrays on each process
 int *s_nx,*s_ny,*s_nz,*s_ny_p,*s_nx_p;
 
@@ -176,7 +179,7 @@ void setup_grid(){
 	/**************************************
 	* Set up Cartesian grid
 	***************************************/
-	int periods[] = {PERIODIC_BOUNDARIES,false};
+	int periods[] = {PERIODIC_BOUNDARIES,PERIODIC_BOUNDARIES_NS};
 
 	MPI_Dims_create(numtasks,2,dims);
 
@@ -226,7 +229,18 @@ void setup_grid(){
 	get_sub_dims(dims[0],dims[1],s_nx,s_ny,ibs,jbs);
 
 	if(VERBOSE){ printf("Process %d \t has starting i index \t %d, \t starting j index \t %d, \t and grid dimensions \t %d x %d\n",rank,ibs[rank],jbs[rank],myNX,myNY);}
+
+	/**************************************
+	* Calculate index within big domain
+	***************************************/	
+	big_i = (int *)calloc(fNX,sizeof(int));
+	big_j = (int *)calloc(fNY,sizeof(int));
 	
+	for(int i=0;i<fNX;i++){ big_i[i] = i + ibs[rank] - halo_buffer;}//printf("%d ",big_i[i]);}
+	//printf("\n");
+	for(int j=0;j<fNY;j++){ big_j[j] = j + jbs[rank] - halo_buffer;}//printf("%d ",big_j[j]);}
+	//printf("\n");
+	//exit(0);
 	/**************************************
 	* Determine who my neighboring processes are
 	***************************************/
@@ -266,9 +280,9 @@ void setup_grid(){
 **********************************************************************/
 void broadcast_shared_data(){
 
-	/*********************************************
-	* This data is the same on each process
-	**********************************************/
+	//----------------------------------------------
+	// This data is the same on each process
+	//----------------------------------------------
 	BCAST_NZ(rhou); BCAST_NZ(rhow);
 	BCAST_NZ(zu); BCAST_NZ(zw);
 	BCAST_NZ(tb); BCAST_NZ(tbw); BCAST_NZ(tbv);
@@ -288,14 +302,23 @@ void broadcast_shared_data(){
 	MPI_Bcast(&RHOAVG2DFULL(0,0),NX*NY,MPI_DOUBLE,0,MPI_COMM_WORLD);
 	MPI_Bcast(&HTOPOFULL(0,0),NX*NY,MPI_INT,0,MPI_COMM_WORLD);
 
-	/*********************************************
-	* This data is different on each process
-	**********************************************/
-	distributeArrays();
+	//----------------------------------------------
+	// This data is different on each process
+	//----------------------------------------------
+	distributeArray_3d(m_ubar,iubar);
+	distributeArray_3d(m_vbar,ivbar);
+	distributeArray_3d(m_wbar,iwbar);
+	distributeArray_3d(m_thbar,ithbar);
+	distributeArray_3d(m_qbar,iqbar);
+	distributeArray_3d(m_pbar,ipbar);
+	distributeArray_3d(istopos,iistopo);
+	distributeArray_3d(uistopos,iuistopo);
+	distributeArray_3d(vistopos,ivistopo);
+	distributeArray_3d(frictions,ifriction);
 
-	/*********************************************
-	* Fill the ghost cells and lateral boundaries
-	**********************************************/
+	//----------------------------------------------
+	// Fill the ghost cells and lateral boundaries
+	//----------------------------------------------
 	exchange(m_ubar); exchange(m_vbar); exchange(m_wbar); exchange(m_thbar);  exchange(m_qbar);	exchange(m_pbar);
 	exchange(istopos); exchange(uistopos); exchange(vistopos);
 	exchange(frictions);
@@ -362,9 +385,9 @@ void print_time_estimates(int total_cputime,int total_walltime,int timer_counter
 
 	int cpu_time_hours = cputime_secs / 3600;
 	int cpu_time_min = (cputime_secs % 3600) / 60;
+	int cpu_time_sec = (cputime_secs % 3600) % 60;
 	int wall_time_hours = walltime_secs / 3600;
 	int wall_time_min = (walltime_secs % 3600) / 60;
-	int cpu_time_sec = (cputime_secs % 3600) % 60;
 	int wall_time_sec = (walltime_secs % 3600) % 60;
 
 	printf("Estimated time remaining: cpu time = %02d:%02d:%02d hours, wall time = %02d:%02d:%02d hours\n",
@@ -384,6 +407,53 @@ void print_time_estimates(int total_cputime,int total_walltime,int timer_counter
 	cpu_time_hours,cpu_time_min,cpu_time_sec,wall_time_hours,wall_time_min,wall_time_sec);
 	
 }
+#if 0
+/*********************************************************************
+* 
+**********************************************************************/
+void output_meteorological_fields_to_file(){
+	
+	parallel_write_pvar_to_file_3d(filename,"u-wind",us, file_time_counter);
+	parallel_write_pvar_to_file_3d(filename,"v-wind",vs, file_time_counter);
+	parallel_write_pvar_to_file_3d(filename,"w-wind",ws, file_time_counter);
+	parallel_write_pvar_to_file_3d(filename,"pi",    pis,file_time_counter);
+	parallel_write_pvar_to_file_3d(filename,"theta", ths,file_time_counter);
+
+	if(USE_MICROPHYSICS){
+		
+		parallel_write_pvar_to_file_3d(filename,"qv",qvs,file_time_counter);
+		parallel_write_pvar_to_file_3d(filename,"qc",qcs,file_time_counter);
+		parallel_write_pvar_to_file_3d(filename,"qr",qrs,file_time_counter);
+		
+		parallel_write_pvar_to_file_2d(filename,"rainfall",accRain,file_time_counter);
+		
+		if(USE_ICE){
+			
+			parallel_write_pvar_to_file_2d(filename,"snowfall",accSnow,file_time_counter);
+			
+			parallel_write_pvar_to_file_3d(filename,"qi",qis,file_time_counter);
+			parallel_write_pvar_to_file_3d(filename,"qs",qss,file_time_counter);
+		}
+	}
+	
+	if(USE_TURBULENT_STRESS){
+		
+		parallel_write_pvar_to_file_2d(filename,"int_fric",integrated_friction_ke,file_time_counter);
+		
+		if(SURFACE_HEAT_FLUX){
+			parallel_write_pvar_to_file_2d(filename,"lh_flux",latent_heat_flux,file_time_counter);
+		}
+	}
+	
+	if(EXTRA_OUTPUT){
+		parallel_write_pvar_to_file_3d(filename,"rate",rate,file_time_counter);
+	}
+
+	if(OUTPUT_FRICTION_TEND){
+		parallel_write_pvar_to_file_3d(filename,"fric",frictions,file_time_counter);
+	}
+}
+#endif
 
 /*********************************************************************
 * Advance model foreward one full time step using third-order Runge-Kutta
@@ -483,6 +553,7 @@ void p_integrate_rk3(){
 	* POST INTEGRATION. NOW RUN PHYSICAL PARAMETERIZATIONS
 	******************************************************************/
 	//damp_var(&THP(0,0,0),3,fNX-3,3,fNY-3,1.157e-6,2.3148e-5);
+	//damp_var(&THP(0,0,0),3,fNX-3,3,fNY-3,2.3148e-5,2.3148e-5);
 
 	/*********************************************
 	* Apply heating perturbation
@@ -552,38 +623,15 @@ void p_run_model(int count,FILE *infile){
 				write_time_to_file(filename,file_time_counter);
 			}
 			
-			parallel_write_pvar_to_file(filename,"u-wind",us, file_time_counter);
-			parallel_write_pvar_to_file(filename,"v-wind",vs, file_time_counter);
-			parallel_write_pvar_to_file(filename,"w-wind",ws, file_time_counter);
-			parallel_write_pvar_to_file(filename,"pi",    pis,file_time_counter);
-			parallel_write_pvar_to_file(filename,"theta", ths,file_time_counter);
-		
-			if(USE_MICROPHYSICS){
-				
-				parallel_write_pvar_to_file(filename,"qv",qvs,file_time_counter);
-				parallel_write_pvar_to_file(filename,"qc",qcs,file_time_counter);
-				parallel_write_pvar_to_file(filename,"qr",qrs,file_time_counter);
-				
-				if(USE_ICE){
-					parallel_write_pvar_to_file(filename,"qi",qis,file_time_counter);
-					parallel_write_pvar_to_file(filename,"qs",qss,file_time_counter);
-				}
-			}
-			
-			if(EXTRA_OUTPUT){
-				parallel_write_pvar_to_file(filename,"rate",rate,file_time_counter);
-			}
-		
-			if(OUTPUT_FRICTION_TEND){
-				parallel_write_pvar_to_file(filename,"fric",frictions,file_time_counter);
-			}
+			output_meteorological_fields_to_file(parallel_write_pvar_to_file_2d,
+												 parallel_write_pvar_to_file_3d,
+												 file_time_counter);
 			
 			if(rank==0){ file_output_status(MODEL_FILES_WRITTEN);}
 			
 			write_budgets_to_file();
 			
 			if(rank==0){ file_output_status(ALL_FILES_WRITTEN);}
-			
 		}
 
 		p_integrate_rk3();	// run model forward one time step
@@ -594,7 +642,7 @@ void p_run_model(int count,FILE *infile){
 		if(OUTPUT_TO_FILE && bigcounter % outfilefreq == 0){
 			
 			if(!isRestartRun || !isFirstStep)
-				parallel_write_pvar_to_file(filename,"pi",pis,file_time_counter);
+				parallel_write_pvar_to_file_3d(filename,"pi",pis,file_time_counter);
 			
 			file_time_counter++;
 			
@@ -604,7 +652,7 @@ void p_run_model(int count,FILE *infile){
 			
 			total_walltime = 0;
 			total_cputime = 0;
-			timer_counter = 0;		
+			timer_counter = 0;
 		}
 
 		//-----------------------------------------------------------------------
@@ -671,7 +719,7 @@ void initialize_parallel_model(int argc, char *argv[]){
 	//------------------------------------------------
 	// Initialize subarrays for each process
 	//------------------------------------------------
-	initialize_subarray(size2);	
+	initialize_subarray(fNX,fNY,fNZ);
 	//------------------------------------------------
 	// Broadcast input data from the root process 
 	// to all processes
@@ -698,7 +746,7 @@ void initialize_parallel_model(int argc, char *argv[]){
 
 	initialize_pressure_solver();
 	
-	if(USE_MICROPHYSICS){ init_microphysics();}
+	if(USE_MICROPHYSICS){ init_microphysics(fNX,fNY);}
 	
 	init_boundaries(iebuffer,iwbuffer,jnbuffer,jsbuffer,3);
 

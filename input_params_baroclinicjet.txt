@@ -8,12 +8,12 @@
 | Number of grid points, grid spacing (m),
 | and time step (sec)
 ----------------------------------------
-NX	:	1035
-NY  :	777
-NZ	:	43
-dx	:	5000.0
+NX	:	500
+NY  :	225
+NZ	:	40
+dx	:	25000.0
 dz	:	500.0
-dt	:	300.0
+dt	:	150.0
 
 ----------------------------------------
 | Vertical grid stretching. Height (m)
@@ -29,8 +29,8 @@ height_lowest_level : 100
 | if "shift_prime_meridian" is set to 0
 | and from 180 W if set to 1.
 ----------------------------------------
-corner_lat	:	90
-corner_lon	:	61
+corner_lat	:	110
+corner_lon	:	100
 shift_prime_meridian : 0
 
 ---------------------------------------
@@ -38,13 +38,13 @@ shift_prime_meridian : 0
 | often to output results to a file
 | (in number of time steps)
 ---------------------------------------
-time_steps		 :	12960
-output_frequency :	36
+time_steps		 : 1584
+output_frequency :	72
 
 ----------------------------------------
 | Grid level to begin upper-level damping
 ----------------------------------------
-rayleigh_damping_z	: 37
+rayleigh_damping_z	: 35
 
 /
 
@@ -63,8 +63,8 @@ verbose : 1
 | 0 - from an input file
 | 1 - from a compiled subroutine
 ----------------------------------------
-basic_state_init_option		:	1
-perturbation_init_option	:	1
+basic_state_init_option		:	0
+perturbation_init_option	:	0
 ----------------------------------------
 | Restart a simulation from where it
 | left off, recording results into the
@@ -75,7 +75,7 @@ is_restart_run : 0
 | Time at which to start reading
 | from perturbation input file
 ----------------------------------------
-perturbationFileTime	: 0
+perturbationFileTime	: 37
 ----------------------------------------
 | Time at which to start writing to the
 | output file (if NOT creating a new file)
@@ -130,7 +130,7 @@ turbulence_option : 1
 ----------------------------------------
 | Water temperature in Celcius
 ----------------------------------------
-water_temp : 29.0
+water_temp : 5.0
 
 /
 
@@ -168,19 +168,19 @@ west : 5
 ----------------------------------------
 | File extensions. Ignored if left blank.
 ----------------------------------------
-input_file_base		:		/Users/michaeldiaz/Desktop/model_input/
-output_file_base	:		/Users/michaeldiaz/Desktop/model_output/
+input_file_base		:		
+output_file_base	:	/Users/michaeldiaz/Desktop/model_output/	
 
 ----------------------------------------
 | Input files
 ----------------------------------------
-basic_state_input_file	:	baroclinicjet.nc
-perturbation_input_file	:	baroclinicjet.nc
+basic_state_input_file	:	/Users/michaeldiaz/Desktop/model_input/baroclinicjet.nc
+perturbation_input_file	:	/Users/michaeldiaz/Desktop/model_output/outfile0419_0.nc
 
 ----------------------------------------
 | Output files
 ----------------------------------------
-output_file				  :	outfile0410_0.nc
+output_file				  :	outfile0419_1.nc
 heat_budget_filename	  :	temp_budget1130_0.nc
 moisture_budget_filename  :	moisture_budget1130_0.nc
 pe_budget_filename		  :	pe_budget1130_0.nc
@@ -201,8 +201,8 @@ vorticity_budget_filename :	vort_budget1129_0.nc
 | from Murthy and Boos (2018)
 ----------------------------------------
 vortex_initialize : 1 (1->yes,0->no)
-vortex_latitude : 20.0
-vortex_longitude : 100.0
+vortex_latitude : 45.0
+vortex_longitude : 70.0
 vortex_radius : 1000000 (meters)
 vortex_upper_warm_anomaly : 2.5 (K)
 vortex_lower_cold_anomaly : -2.05 (K)

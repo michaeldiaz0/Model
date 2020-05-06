@@ -1249,7 +1249,14 @@ void horz_interpolate_from_model(double *uz,double *out,
 
 					} else if(xcount==xdim-1){
 	//printf("%d %d %d %d %d %f %f %f %f %f %f %f \n ",i,j,k,xcount,ycount,out[d4(i,j,k)],y[j],yi[ycount],yi[ycount+1],x[i],xi[xcount],xi[xcount+1]);
-						if(x[i]-xi[xdim-1]<10){ out[d4(i,j,k)] = uz[d3(xcount,ycount,k)];}
+						if( fabs(x[i]-xi[xdim-1]) < 10){
+							
+							//if(outLons[i] > 50){ printf("%f\n",outLons[i]);}
+							
+							//printf("%d %d %d %d %f %f %f %f %f %f\n",i,j,xcount,ycount,y[j],yi[ycount],x[i],xi[xcount],outLons[i],outLats[j]);
+							//printf("%f %f\n",x[i],y[i]);
+							out[d4(i,j,k)] = uz[d3(xcount,ycount,k)];
+						}
 						//printf("%d %d %d %d %d %f %f %f %f %f %f %f \n ",i,j,k,xcount,ycount,out[d4(i,j,k)],y[j],yi[ycount],yi[ycount+1],x[i],xi[xcount],xi[xcount+1]);
 						
 						if(!ifound && i<NX){ istart++; i = istart; xcount = 0;}

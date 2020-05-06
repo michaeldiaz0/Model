@@ -33,7 +33,7 @@ double *landsea;
 double *u_friction,*v_friction,*w_friction,*t_diffusion;
 double *qv_diffusion,*qc_diffusion,*qr_diffusion;
 double *Kmix,*KHmix;
-double *red;
+double *integrated_friction_ke,*latent_heat_flux;
 
 bool *isSaturated;
 
@@ -43,8 +43,6 @@ double *vert_mixing_length_squared;
 double *vert_mix_Kmax;
 
 double es_water;
-//const double tmp_surface = 302.1;
-//const double qvs_surface = 0.0255;
 
 const double cmixv_max = 0.15;	// upper bound on non-dimensional horizontal mixing coefficients
 const double cmixh_max = 0.05;	// lower bound on non-dimensional horizontal mixxing coefficients
@@ -107,6 +105,9 @@ void init_kmix(int nx,int ny,int nz,double *zlevs){
 	w_friction = (double*)calloc(size,sizeof(double));
 	t_diffusion = (double*)calloc(size,sizeof(double));
 	
+	integrated_friction_ke = (double*)calloc(nx*ny,sizeof(double));
+	latent_heat_flux = (double*)calloc(nx*ny,sizeof(double));
+		
 	if(USE_MICROPHYSICS && USE_TURBULENT_STRESS){
 		
 		qv_diffusion = (double*)calloc(size,sizeof(double));
@@ -948,6 +949,8 @@ void turbulent_diffusion_velocity(int il,int ih,int jl,int jh){
 				tau_u_zl = STRESS(j,0).tau_u_surface;
 				tau_v_zl = STRESS(j,0).tau_v_surface;
 				
+				integrated_friction_ke[INDEX2D(i,j)] = 0;
+				
 				for(int k=HTOPO(i,j)+1;k<NZ-1;k++){
 					//-----------------------------------------------------------------
 					// EDDY VISCOSITY FOR ZONAL WIND
@@ -990,7 +993,7 @@ void turbulent_diffusion_velocity(int il,int ih,int jl,int jh){
 							(wK33V_h*STRESS(j,k  ).tau_33 - wK33V_l*STRESS(j  ,k-1).tau_33)			* ONE_D_DZW(k);
 					//-----------------------------------------------------------------
 					// STORE VALUES FOR USE DURING RK3 LOOP
-					//-----------------------------------------------------------------					
+					//-----------------------------------------------------------------	
 					u_friction[INDEX(i,j,k)] = ufric;
 					v_friction[INDEX(i,j,k)] = vfric;
 					w_friction[INDEX(i,j,k)] = wfric;
@@ -1001,6 +1004,8 @@ void turbulent_diffusion_velocity(int il,int ih,int jl,int jh){
 					//-----------------------------------------------------------------
 					// 	OPTIONAL OUTPUT
 					//-----------------------------------------------------------------	
+					integrated_friction_ke[INDEX2D(i,j)] += -(ufric*UM(i,j,k) + vfric*VM(i,j,k)) * rhou[k] * DZU(k);
+					
 					#if OUTPUT_FRICTION_TEND
 					FRICTION(i,j,k) = -ufric*UM(i,j,k) - vfric*VM(i,j,k);
 					#endif
@@ -1106,7 +1111,7 @@ void turbulent_diffusion_scalars(int il,int ih,int jl,int jh){
 				tau_t_l = drag_coef * ( ( wind_speed - wind_speed_base) * (water_temp - tmp_surface_base) - wind_speed * tmp_surface_pert );
 			}
 
-			FRICTION(i,j,NZ-1) = tau_q_l * Lv * rhou[k];	// store surface latent heat flux
+			latent_heat_flux[INDEX2D(i,j)] = tau_q_l * Lv * rhou[k];	// store surface latent heat flux
 		}
 		
 		/***********************************************************************************

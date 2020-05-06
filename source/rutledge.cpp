@@ -288,7 +288,7 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 
 				Dl = 11.3 * sqrt(MI);	// average diameter of cloud ice particles
 
-				pdepi = (4 * Dl * (vapor/qvi_sat-1)*nc) / ( App + Bpp ) * one_d_rhou[k] * dt;			
+				pdepi = (4 * Dl * (vapor/qvi_sat-1)*nc) / ( App + Bpp ) * one_d_rhou[k] * dt;
 			}
 			//------------------------------------------------------
 			// Autoconversion of cloud ice to snow
@@ -406,12 +406,6 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 		* 			ADD UP ALL OF THE PROCESSES
 		*
 		*************************************************************/
-		//psdep = fmin(psdep,QVP(i,j,k)+QBAR(i,j,k)+qb[k]);
-		//psdep = -fmin(-psdep,QSP(i,j,k));
-
-		//psmlt = fmin(psmlt,QSP(i,j,k));
-		//psmlt = -fmin(-psmlt,QRP(i,j,k));
-
 		pint_p_pdepi = fmin(pint+pdepi,vapor);
 		pint_p_pdepi = -fmin(-pint_p_pdepi,QIP(i,j,k));
 		
@@ -447,20 +441,11 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 				lambdaS = pow( (trigpi*rhoS*N0S) / (rhou[k]*QSP(i,j,k)),0.25);
 				
 				ST(i,j,k) = app * 1.15 * pow(lambdaS,-b) * pow(p0/pd,0.4);
-				//printf("%d %e %f\n",k,QSP(i,j,k)*1000,ST(i,j,k));
 		}
 		else { 
 			ST(i,j,k) = 0;
 		}
 		
-		//if(QSP(i,j,k)*1000>60){
-		/*
-			if(i==61 && j==60 && rank==0){
-			printf("%d %d %d %f %f %f %f %f %f %f %f %f %f %f %f\n",i,j,
-		rank,outLats[j],outLons[i],QSP(i,j,k)*1000,psmlt,ST(i,j,k),
-			psdep*1000,pmltev*1000,psaci*1000,psmlt*1000,psacw_cold*1000,pconv*1000,prfrz*1000
-			); }
-		*/
 		/********************************
 		* Calculate rain fall speed
 		*********************************/
@@ -468,52 +453,12 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 	
 			lambdaR = sqrt(sqrt( (trigpi*1000*N0r) / (rhou[k]*QRP(i,j,k)) ));
 		
-			//VT(i,j,k) = (-0.267 + 206/lambdaR -2.045e3/(lambdaR*lambdaR) + 9.06e3/(lambdaR*lambdaR*lambdaR)) * pow((p0/pd),0.4);
 			VT(i,j,k) = rfall / (6.0*pow(lambdaR,0.8)) * pow( p0/pd,0.4);
-
-			//if(VT(i,j,k)>4){ VT(i,j,k) = 4;}
-			#if 0
-			if(dt>stable_time_step( DZU(k),VT(i,j,k) ) ){
-				printf("Rain (%f) fall speed of %f exceeds stable time step (%f < %f) at %d %d %d on process %d\n",
-				QRP(i,j,k)*1000,VT(i,j,k),stable_time_step( DZU(k),VT(i,j,k)) ,dt,i,j,k,rank);
-			}
-			#endif
 
 		} else {
 			VT(i,j,k) = 0;
 		}
-		//if(QRP(i,j,k)*1000>64){ printf("%d %d %d %f %f %f %f %f\n",i,j,k,outLats[j],outLons[i],QRP(i,j,k),pd,VT(i,j,k)); }
-		#if 0
-		//EXTRA_OUTPUT
 
-		//if(i==183 && j==3 && rank==1){ printf("%d %d %d %f %f %f %f %f\n",i,j,
-		//rank,outLats[j],outLons[i],QRP(i,j,k)*1000,psmlt,VT(i,j,k)); }
-
-		if(j==4){
-		
-			rate[INDEX(i,3,k)] = QSP(i,j,k);
-			rate[INDEX(i,4,k)] = pint;
-			rate[INDEX(i,28,k)] = pdepi;
-			rate[INDEX(i,29,k)] = pconv;
-			rate[INDEX(i,5,k)] = psdep;
-			rate[INDEX(i,6,k)] = pmltev;
-			rate[INDEX(i,7,k)] = psmlti;
-			rate[INDEX(i,8,k)] = psaci;
-			rate[INDEX(i,9,k)] = pcfrz;						
-			rate[INDEX(i,10,k)] = psmlt;
-			rate[INDEX(i,11,k)] = psacw_cold;
-			rate[INDEX(i,29,k)] = psacw_warm;
-			rate[INDEX(i,12,k)] = E;
-			rate[INDEX(i,13,k)] = A;
-			rate[INDEX(i,14,k)] = B;
-			rate[INDEX(i,15,k)] = temperature;
-			rate[INDEX(i,16,k)] = Lv/(cp*pib[k]) * (E + pmltev);
-			rate[INDEX(i,17,k)] = Ls/(cp*pib[k]) * (pint_p_pdepi + psdep);
-			rate[INDEX(i,18,k)] = Lf/(cp*pib[k]) * (psmlt + psmlti + psacw_cold + pcfrz) ;
-			rate[INDEX(i,19,k)] = VT(i,j,k);
-			rate[INDEX(i,20,k)] = ST(i,j,k);
-		}
-		#endif
 
 	}}}
 
@@ -532,22 +477,17 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 	
 		MI = rhou[k] * fmax(QIP(i,j,k),0) / nc;	// average mass of cloud ice particles
 
-		Dl = fmin(11.9 * sqrt(MI),dimax);
+		Dl = fmax(fmin(11.9 * sqrt(MI),dimax),1.0e-25);
 		
-		IT(i,j,k) = 1.49e4 * pow(Dl,1.31);
-		
-		#if EXTRA_OUTPUT
-		if(j==4){
-			rate[INDEX(i,30,k)] = IT(i,j,k);
-		}
-		#endif
+		IT(i,j,k) = 1.49e4 * pow(Dl,1.31);//exp(log(Dl)*1.31);
+
 	}}}
 	
 			
 	
-	/********************************
-	* Lower boundary condition
-	*********************************/
+	//--------------------------------------------
+	// Lower boundary condition
+	//--------------------------------------------
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
 
@@ -556,12 +496,52 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 		IT(i,j,0) = IT(i,j,1);
 
 	}}
+#if 0
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+	for(int k=0;k<NZ;k++){
+		
+		if(QSP(i,j,k) < 0){
+			
+			printf("%f %f %d %f\n",outLons[big_i[i]],outLats[big_j[j]],k,QSP(i,j,k)*1000);
+		}
+		
+	}}}
+#endif
+	// maybe find out why there are negative values?
+	if(PARALLEL)
+		zero_moisture(il,ih,jl,jh,fNX*fNY*fNZ);
+	else
+		zero_moisture(il,ih,jl,jh,NX*NY*NZ);
+	//--------------------------------------------
+	// Semi-Lagrangian rain fallout
+	//--------------------------------------------
+	if(RAIN_FALLOUT==2){
+		
+		hydrometeor_fallout(qrps,vts,il,ih,jl,jh,accRain);
+		hydrometeor_fallout(qips,its,il,ih,jl,jh,accSnow);
+		hydrometeor_fallout(qsps,sts,il,ih,jl,jh,accSnow);
+		
+		
+		// set rain fall speed to zero so that it
+		// does not get advected by subsequent advection
+		// calculations
+		if(PARALLEL){
+			memset(vts,0,fNX*fNY*fNZ*sizeof(double));
+			memset(sts,0,fNX*fNY*fNZ*sizeof(double));
+			memset(its,0,fNX*fNY*fNZ*sizeof(double));
+		} else {
+			memset(vts,0,NX*NY*NZ*sizeof(double));
+			memset(sts,0,NX*NY*NZ*sizeof(double));
+			memset(its,0,NX*NY*NZ*sizeof(double));
+		}
 	
-	//zero_moisture(il,ih,jl,jh,fNX*fNY*fNZ);
-	
-	if(RAIN_FALLOUT==2){ hydrometeor_fallout(qrps,vts,il,ih,jl,jh);}
-	
-	rain_rate(il,ih,jl,jh);
+	} else {
+		
+		precip_rate(il,ih,jl,jh,vts,qrps,accRain);
+		precip_rate(il,ih,jl,jh,sts,qrps,accSnow);
+		precip_rate(il,ih,jl,jh,sts,qips,accSnow);	
+	}
 	
 }
 
@@ -594,8 +574,8 @@ void get_qvsat(double temperature,double pd,double *qvsat_out,double *phi_out,do
 		*phi_out = phi;
 
 	//------------------------------------------------
-	// All snow
-	//------------------------------------------------			
+	// All ice
+	//------------------------------------------------
 	} else if(temperature < tmin) {
 		// calculate saturation mixing ratio
 		esl = SAT_VAP_ICE(temperature);
@@ -611,7 +591,7 @@ void get_qvsat(double temperature,double pd,double *qvsat_out,double *phi_out,do
 
 	//------------------------------------------------
 	// Mixed phase
-	//------------------------------------------------			
+	//------------------------------------------------
 	} else {
 
 		// calculate saturation mixing ratio
@@ -718,7 +698,8 @@ void saturation_adjustment(int il,int ih,int jl,int jh){
 			//-----------------------------------	
 			} else if(temperature<tmin){
 				Cl = 0;
-				Ci = -fmin(QIP(i,j,k),(qvsat-vapor)/(1.0+phi));	// condensable ice	
+				Ci = -fmin(QIP(i,j,k),(qvsat-vapor)/(1.0+phi));	// condensable ice
+				//printf("%d %d %d %e %f %f\n",i,j,k,Ci*1000,temperature,vapor/qvsat);	
 			//-----------------------------------
 			// Mixed phase
 			//-----------------------------------	
@@ -729,7 +710,6 @@ void saturation_adjustment(int il,int ih,int jl,int jh){
 				if(Cl+QCP(i,j,k)<=0){
 
 					Ci = -fmin(QIP(i,j,k),(qvsat-vapor+Cl)/(1.0+phii));
-					//printf("%d %d %d %e %e\n",i,j,k,Cl,Ci);
 				} else {
 					Ci = 0;
 				}
@@ -764,64 +744,10 @@ void saturation_adjustment(int il,int ih,int jl,int jh){
 		if(HEAT_BUDGET || PE_BUDGET || PV_BUDGET){
 			m_diabatic[INDEX(i,j,k)] += diabatic;
 		}
-		
-		//#if PE_BUDGET
-		//pe_m_diabatic[INDEX(i,j,k)] += diabatic * grav * (ths[INDEX(i,j,k)] / tb[k]) * (ZW(k+1)-ZW(k)) / (tbw[k+1]-tbw[k]);		
-		//#endif
-		
+				
 		if(MOISTURE_BUDGET){
 			q_diabatic[INDEX(i,j,k)] -= (Ci + Cl);	
 		}
-
-#if 0
-		EXTRA_OUTPUT
-		if(j==4){
-			
-		
-			rate[INDEX(i,21,k)] = Cl;
-			rate[INDEX(i,22,k)] = Ci;
-			rate[INDEX(i,23,k)] = (Lv/(cp*pib[k]))*Cl;
-			rate[INDEX(i,24,k)] = (Ls/(cp*pib[k]))*Ci;
-
-				
-				
-			theta = THP(i,j,k)+THBAR(i,j,k)+tb[k];			// full potential temperature is base state plus perturbation
-			vapor = QVP(i,j,k)+QBAR(i,j,k)+qb[k];			// full vapor is base state plus perturbation
-			temperature = theta*pressure;					// actual temperature
-		
-			get_qvsat(temperature,pd,&qvsat,&phi,&phil,&phii);
-
-			if(isSaturated[INDEX(i,j,k)]){
-	
-				rate[INDEX(i,25,k)] = qvsat;
-				rate[INDEX(i,26,k)] = vapor;
-				rate[INDEX(i,27,k)] = qvsat-vapor;
-			} else {
-				rate[INDEX(i,25,k)] = 0;
-				rate[INDEX(i,26,k)] = 0;
-				rate[INDEX(i,27,k)] = 0;
-			}
-				
-		}
-#endif
-
-		
-#if 0
-		if(rank==0){
-		
-			if(isSaturated[INDEX(i,j,k)] && temperature<tmax && temperature>tmin && i==104 && j==88 && k==24){
-			
-				theta = THP(i,j,k)+THBAR(i,j,k)+tb[k];			// full potential temperature is base state plus perturbation
-				vapor = QVP(i,j,k)+QBAR(i,j,k)+qb[k];			// full vapor is base state plus perturbation
-				temperature = theta*pressure;					// actual temperature
-			
-				get_qvsat(temperature,pd,&qvsat,&phi,&phil,&phii);
-			
-				printf("%d %d %d %f %f %e %f %f %f %f %f\n",i,j,k,qvsat*1000,vapor*1000,qvsat*1000-vapor*1000,
-				theta,temperature,Ci*1000,Cl*1000,ALPHA(temperature));
-			}
-		}
-#endif
 
 	}}}
 	
@@ -830,361 +756,3 @@ void saturation_adjustment(int il,int ih,int jl,int jh){
 
 
 }
-
-
-#if 0
-
-//----------------------------------------------------------------
-//  This program calculate the parameter for crystal growth rate
-//  in Bergeron process
-//----------------------------------------------------------------
-double get_a1(double temp){
-
-	int i1,i1p1;
-	double ratio;
-
-	double a1[32] = 
-	     {0.100e-10,0.7939e-7,0.7841e-6,0.3369e-5,0.4336e-5,
-	      0.5285e-5,0.3728e-5,0.1852e-5,0.2991e-6,0.4248e-6,
-	      0.7434e-6,0.1812e-5,0.4394e-5,0.9145e-5,0.1725e-4,
-	      0.3348e-4,0.1725e-4,0.9175e-5,0.4412e-5,0.2252e-5,
-	      0.9115e-6,0.4876e-6,0.3473e-6,0.4758e-6,0.6306e-6,
-	      0.8573e-6,0.7868e-6,0.7192e-6,0.6513e-6,0.5956e-6,
-	      0.5333e-6,0.4834e-6};
-
-	i1 = (int)(-temp);
-	i1p1 = i1+1;
-	ratio = -(temp)-(float)(i1-1);
-	
-	return a1[i1] + ratio*( a1[i1p1]-a1[i1] );
-	
-#if 0
-		else if(temperature < 272.9999 && temperature > 273-30.9999){
-			
-			a1 = get_a1(temperature-273.16);
-			a2 = get_a2(temperature-273.16);
-			
-			a1 = a1*pow(0.001,1.0-a2);
-			
-			nc = n0*exp(beta*(273.16-temperature));	// number concentration of ice crystals
-			
-			pcfrz = nc * one_d_rhou[k] * (a1*pow(mn,a2));
-			
-		} 
-#endif
-}
-
-//----------------------------------------------------------------
-//  This program calculate the parameter for crystal growth rate
-//  in Bergeron process
-//----------------------------------------------------------------
-double get_a2(double temp){
-
-	int i1,i1p1;
-	double ratio;
-
-	double a2[32] = 
-		{0.0100,0.4006,0.4831,0.5320,0.5307,0.5319,0.5249,
-		0.4888,0.3849,0.4047,0.4318,0.4771,0.5183,0.5463,
-		0.5651,0.5813,0.5655,0.5478,0.5203,0.4906,0.4447,
-		0.4126,0.3960,0.4149,0.4320,0.4506,0.4483,0.4460,
-		0.4433,0.4413,0.4382,0.4361};
-
-	i1 = (int)(-temp);
-	i1p1 = i1+1;
-	ratio = -(temp)-(float)(i1-1);
-	
-	return a2[i1] + ratio*( a2[i1p1]-a2[i1] );
-}
-#endif
-
-	#if 0
-		if(QVP(i,j,k)+QBAR(i,j,k)+qb[k]<0){
-			printf("qvp %d %d %d %f\n",i,j,k,(QVP(i,j,k)+QBAR(i,j,k)+qb[k])*1000);
-		}
-		
-		if(QCP(i,j,k)<0){
-			printf("qcp %d %d %d %f\n",i,j,k,QCP(i,j,k)*1000);
-		}
-		if(QRP(i,j,k)<0){
-			printf("qrp %d %d %d %f\n",i,j,k,QRP(i,j,k)*1000);
-		}
-		if(QIP(i,j,k)<0){
-			printf("qip %d %d %d %f\n",i,j,k,QIP(i,j,k)*1000);
-		}
-		if(QSP(i,j,k)<0){
-			printf("qsp %d %d %d %f\n",i,j,k,QSP(i,j,k)*1000);
-		}
-	#endif
-
-
-#if 0
-		/********************************
-		* Balance hydrometeors
-		*********************************/
-		QIP(i,j,k) += pcfrz;
-		QCP(i,j,k) -= pcfrz;
-	
-		THP(i,j,k) += (Lf/(cp*pib[k]))*pcfrz;
-	
-		QCP(i,j,k) = QCP(i,j,k) + psmlti;
-
-		QIP(i,j,k) = QIP(i,j,k) - psmlti;
-
-		total_convert = fmin(A + B,QCP(i,j,k));				// ensure autoconversion+accretion does not exceed cloud water
-	
-		QCP(i,j,k) = QCP(i,j,k) - total_convert;			// remove rain from cloud water
-	
-		QRP(i,j,k) = QRP(i,j,k) + total_convert	 + E;		// add autoconversion+accretion-evaporation to rain
-		
-		total_convert = fmin(pint+pdepi,vapor);
-
-		total_convert = -fmin(-total_convert,QIP(i,j,k));
-
-		QVP(i,j,k) = QVP(i,j,k) - total_convert - E;			// evaporation
-
-		QIP(i,j,k) = QIP(i,j,k) + total_convert;
-
-		THP(i,j,k) = THP(i,j,k) + (Lv/(cp*pib[k]))*E 
-									+ (Ls/(cp*pib[k]))*(total_convert)
-									+ (Lf/(cp*pib[k]))*psmlti;
-
-
-		;
-
-
-		total_convert = fmin(pconv + psaci,QIP(i,j,k));
-
-		QIP(i,j,k) = QIP(i,j,k) - total_convert;			// cloud ice balance
-		
-		QSP(i,j,k) =  QSP(i,j,k)  + total_convert;
-
-
-		total_convert = fmin(psacw_cold,QCP(i,j,k));
-
-		QCP(i,j,k) = QCP(i,j,k) - total_convert;
-
-		QSP(i,j,k) =  QSP(i,j,k) + total_convert;
-
-		THP(i,j,k) = THP(i,j,k) + (Lf/(cp*pib[k]))*total_convert;
-
-
-		total_convert = fmin(psacw_warm,QCP(i,j,k));
-
-		QCP(i,j,k) = QCP(i,j,k) - total_convert;
-
-		QRP(i,j,k) =  QRP(i,j,k) + total_convert;
-
-
-		total_convert = fmax(psmlt,-QSP(i,j,k));
-
-		QSP(i,j,k) = QSP(i,j,k) + total_convert;
-
-		QRP(i,j,k) =  QRP(i,j,k) - total_convert;
-
-		THP(i,j,k) = THP(i,j,k) + (Lf/(cp*pib[k]))*total_convert;
-
-
-		total_convert = fmin(psdep,vapor);
-
-		total_convert = -fmin(-total_convert,QSP(i,j,k));
-
-		QVP(i,j,k) = QVP(i,j,k) - total_convert;
-
-		QSP(i,j,k) =  QSP(i,j,k) + total_convert;
-
-		THP(i,j,k) = THP(i,j,k) + (Ls/(cp*pib[k]))*total_convert;
-
-
-		total_convert = fmin(pmltev,vapor);
-
-		total_convert = -fmin(-total_convert,QSP(i,j,k));
-
-		QVP(i,j,k) = QVP(i,j,k) - total_convert;
-
-		QSP(i,j,k) =  QSP(i,j,k) + total_convert;
-
-		THP(i,j,k) = THP(i,j,k) + (Lv/(cp*pib[k]))*total_convert;
-#endif
-	
-	
-#if 0
-		if(temperature>tmin){
-
-			/**************************************
-			* If parcel is supersaturated
-			***************************************/
-			if(vapor > qvsat){
-
-				C = (vapor-qvsat)/(1.0+phi);	// condensable water
-
-				if(USE_TURBULENT_STRESS){isSaturated[INDEX(i,j,k)] = true;}
-
-			/*************************************
-			* If parcel is subsaturated
-			**************************************/
-			} else if(vapor < qvsat && QCP(i,j,k) > 0){
-
-				C = -fmin(QCP(i,j,k),(qvsat-vapor)/(1.0+phi));	// condensable water
-
-				if(USE_TURBULENT_STRESS){
-
-					if(-C < QCP(i,j,k)){isSaturated[INDEX(i,j,k)] = true;}
-					else {isSaturated[INDEX(i,j,k)] = false;}
-				}
-
-			} else if(USE_TURBULENT_STRESS && vapor == qvsat){
-
-				isSaturated[INDEX(i,j,k)] = true;
-
-			} else if(USE_TURBULENT_STRESS){
-
-				isSaturated[INDEX(i,j,k)] = false;
-			}
-
-			QCP(i,j,k) += C;						// add condensate to cloud water
-			QVP(i,j,k) -= C;						// remove condensed cloud from vapor
-
-			THP(i,j,k) += (Lv/(cp*pib[k]))*C;		// latent heating
-
-		} else {
-	
-			/**************************************
-			* If parcel is supersaturated
-			***************************************/
-			if(vapor > qvsat){
-
-				C = (vapor-qvsat)/(1.0+phi);	// condensable water
-
-				if(USE_TURBULENT_STRESS){isSaturated[INDEX(i,j,k)] = true;}
-
-			/*************************************
-			* If parcel is subsaturated
-			**************************************/
-			} else if(vapor < qvsat && QIP(i,j,k) > 0){
-
-				C = -fmin(QIP(i,j,k),(qvsat-vapor)/(1.0+phi));	// condensable water
-
-				if(USE_TURBULENT_STRESS){
-
-					if(-C < QIP(i,j,k)){isSaturated[INDEX(i,j,k)] = true;}
-					else {isSaturated[INDEX(i,j,k)] = false;}
-				}
-
-			} else if(USE_TURBULENT_STRESS && vapor == qvsat){
-
-				isSaturated[INDEX(i,j,k)] = true;
-
-			} else if(USE_TURBULENT_STRESS){
-
-				isSaturated[INDEX(i,j,k)] = false;
-			}
-
-			QIP(i,j,k) += C;						// add condensate to cloud water
-			QVP(i,j,k) -= C;						// remove condensed cloud from vapor
-
-			THP(i,j,k) += (Ls/(cp*pib[k]))*C;		// latent heating
-	
-		}
-		
-		
-		
-		
-		
-		
-/*********************************************************************
-*
-*
-**********************************************************************/
-void hydrometeor_fallout(double *var,double *vel,int il,int ih,int jl,int jh){
-	
-	double dist,*zgrid,*zwgrid;
-	double kd;
-	int k_new;
-	int ki,kn;
-	double var_new;
-	double vel_new;
-	
-	double ZA_edges[NZ];
-	double ZA_center[NZ];
-	double QA_mass[NZ];
-	
-	if(STRETCHED_GRID){ zgrid = &zsu[0]; zwgrid = &zsw[0];}
-	else { 				zgrid = &zu[0];  zwgrid = &zw[0];}
-	
-	for(int i=il;i<ih;i++){
-	for(int j=jl;j<jh;j++){
-		
-		for(int k=0;k<NZ;k++){
-	
-			ki = INDEX(i,j,k);	// index of current hydrometeor
-			
-			ZA_edges[k] = zwgrid[k] - dt * 0.5*(vel[INDEX(i,j,k)]+vel[INDEX(i,j,k+1)]);
-			
-			//if(var[ki] > minvar_rain){
-#if 0				
-				vel_new = vel[ki];
-				
-				for(int r=0;r<5;r++){
-				
-					vel_new = get_velocity(vel,vel_new,zgrid,0.5*dt,i,j,k);
-				}
-				
-				if(i==68 && j==3 && rank==1){
-				
-					printf("%d %d %d %d %f %f %f %f\n",i,j,k,rank,var[ki],vel[ki],get_velocity(vel,vel[ki],zgrid,dt,i,j,k),vel_new);
-				}
-				//vel_new = get_velocity(vel,zgrid,0.5*dt,i,j,k);
-#endif			
-#if 1
-				ZA_center[k] = zgrid[k] - dt * vel[INDEX(i,j,k)];//vel_new;//;
-				
-
-				//kd = convert_z_to_k(dist,height_lowest_level,index_lowest_level,dz);
-				
-				//k_new = (int)kd;
-				
-				//kn = INDEX(i,j,k_new);	// nearest integer index to new location
-				#if 0
-				var_new = CubicInterpolate(			
-				var[kn-1],var[kn],var[kn+1],var[kn+2],
-				zgrid[k_new-1],zgrid[k_new],zgrid[k_new+1],zgrid[k_new+2],
-				kd-(double)k_new);
-				#endif	
-				//var_new = LinearInterpolate(var[kn],var[kn+1],kd-(double)k_new);
-				
-				//var[ki] = fmax(0,var_new);
-				
-				if(i==68 && j==3 && rank==1){
-				
-					//printf("%d %d %d %f %f %f %f %f\n",i,j,k,zgrid[k],ZA_edges[k],ZA_center[k],1000*var_new,1000*var[ki]);
-				
-					//printf("%d %d %d %d %f %f %f %f\n",i,j,k,rank,var[ki]*1000,vel[ki],get_velocity(vel,vel[ki],zgrid,dt,i,j,k),vel_new);
-				}
-				
-				//QRP(i,j,k) += (fmax(0,var_new)-var[INDEX(i,j,k)]);
-				
-				for(int k=1;k<NZ-1;k++){
-					
-					QA_mass[k] = rhou[k]*var[INDEX(i,j,k)] * (zgrid[k+1]-zgrid[k]) / (ZA_edges[k+1]-ZA_edges[k]);
-					
-					if(i==68 && j==3 && rank==1){
-				
-						printf("%d %d %d %f %f %f %f %f\n",i,j,k,1000*QA_mass[k],1000*var[INDEX(i,j,k)]*rhou[k],ZA_center[k],zgrid[k],vel[INDEX(i,j,k)]);
-				
-					}
-				}
-#endif
-				//}
-	
-		}
-		
-		
-		
-		
-		
-	}}
-}
-		
-		
-#endif	
