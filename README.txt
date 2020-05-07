@@ -38,7 +38,7 @@ There are two ways to generate model input: either from an external NetCDF file 
 
 Currently, the only option to generate a basic state from code is the one listed in the previous section (i.e. command-line option "-s"). The only option to generate an initial perturbation from code is an axisymmetric vortex based on Murthy and Boos (2018). To use this option, find the section labeled "&initialization_constants", set the values as desired, and make sure that "perturbation_init_option" is set to "1" to initialize from code and not an input NetCDF file.
 
-The python script "initialize.py" is useful for generating input files. The function initialize() converts arrays of meteorological data into a NetCDF file formatted to be read as input into the model. It currently has examples of baroclinic and barotropic jets.
+The python scripts "sample_initializations.py" and "initialize.py" are useful for generating input files. The function initialize() converts arrays of meteorological data into a NetCDF file formatted to be read as input into the model. The file "sample_initializations.py" has a number of sample initializations that demonstrate how to use this function.
 
 --------------------------------------------
 C. Model Output
