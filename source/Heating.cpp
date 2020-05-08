@@ -3,7 +3,7 @@
 #include "Heating.h"
 #include "interpolate.h"
 
-using namespace std;
+//using namespace std;
 
 /********************************************************
 *
