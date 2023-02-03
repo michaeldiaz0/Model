@@ -1,7 +1,7 @@
 
 #include "stdafx.h"
-#include "temperature.h"
-#include "surface.h"	// for t_diffusion for PV budget
+#include "budgets.h"
+#include "turbulence.h"	// for t_diffusion for PV budget
 
 #define TAUA(x) (3.55555*(x-273.15)*(x-273.15) + 106.66666*(x-273.15) + 1000.0)
 #define ALPHA(x) ( 1.0 + (x-273.15) / (tmax-tmin) )

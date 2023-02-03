@@ -23,4 +23,4 @@ localinclude="../include"
 
 cd source
 
-mpic++ -O3 -g -o ../bin/solve.exe main.cpp mpidriver.cpp solver.cpp ensemble.cpp initializer.cpp data_initializer.cpp interpolate.cpp fluxes.cpp pressure.cpp advection.cpp surface.cpp damping.cpp boundaries.cpp pcomm.cpp files.cpp util.cpp Heating.cpp kessler.cpp rutledge.cpp microphysics.cpp energy.cpp temperature.cpp trajectory.cpp laplacian.cpp process_input.cpp -L $fftwlib -lfftw3 -L $netcdflib -lnetcdf -L $mpilib -lmpi -lm -I $fftwinclude -I $netcdfinclude -I $mpiinclude -I $localinclude
+mpic++ -O3 -g -o ../bin/solve.exe main.cpp mpidriver.cpp solver.cpp ensemble.cpp initializer.cpp data_initializer.cpp interpolate.cpp fluxes.cpp pressure.cpp advection.cpp turbulence.cpp damping.cpp boundaries.cpp pcomm.cpp files.cpp util.cpp Heating.cpp kessler.cpp rutledge.cpp microphysics.cpp energy.cpp budgets.cpp trajectory.cpp laplacian.cpp process_input.cpp -L $fftwlib -lfftw3 -L $netcdflib -lnetcdf -L $mpilib -lmpi -lm -I $fftwinclude -I $netcdfinclude -I $mpiinclude -I $localinclude

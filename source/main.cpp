@@ -2,7 +2,7 @@
 #include "energy.h"
 #include "initializer.h"
 #include "trajectory.h"
-#include "temperature.h"
+#include "budgets.h"
 #include "ensemble.h"
 #include "data_initializer.h"
 #include "process_input.h"
