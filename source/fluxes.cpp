@@ -564,12 +564,7 @@ void compute_fluxes_moisture(int i,int jl,int jh){
 
 		QVCELL(j,0).top = 0;
 		QCCELL(j,0).top = 0;
-		
-		//#if RAIN_FALLOUT==1
-			QRCELL(j,0).top = -0.5*(VT(i,j,1)+VT(i,j,0)) * QRCELL(j,1).top;	// allows rain to fall out through the ground
-		//#elif RAIN_FALLOUT==2
-			//QRCELL(j,0).top = 0;
-		//#endif
+		QRCELL(j,0).top = -0.5*(VT(i,j,1)+VT(i,j,0)) * QRCELL(j,1).top;	// allows rain to fall out through the ground
 		
 		for(int k=1;k<NZ-1;k++){
 
@@ -590,13 +585,8 @@ void compute_fluxes_moisture(int i,int jl,int jh){
 
 			// rain water fluxes
 			QRCELL(j,k).east  = ub * QRCELL(j,k).east;
-			QRCELL(j,k).north = vb * QRCELL(j,k).north;
-			
-			//#if RAIN_FALLOUT==1
-				QRCELL(j,k).top = (wb-0.5*(VT(i,j,k+1)+VT(i,j,k))) * QRCELL(j,k).top;	
-			//#elif RAIN_FALLOUT==2			
-				//QRCELL(j,k).top   = wb * QRCELL(j,k).top;
-			//#endif
+			QRCELL(j,k).north = vb * QRCELL(j,k).north;			
+			QRCELL(j,k).top = (wb-0.5*(VT(i,j,k+1)+VT(i,j,k))) * QRCELL(j,k).top;	
 		}
 	}
 }
