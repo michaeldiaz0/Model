@@ -58,9 +58,10 @@ void init_fft2d(int,int);
 //void poisson_fft2d(double [NX][NY]);
 
 /**********************************************************************
-* Fast Fourier transform-based pressure solver for hydrostatic version
+* Fast Fourier transform-based pressure solver for hydrostatic version.
+* Also used to initialize winds from vorticity
 *
-* ni,nj - grid dimensions for full domain array
+* nj - j grid dimension for full domain array
 ***********************************************************************/
 void init_laplacian_solver_periodic_EW_zerograd_NS(int ni,int nj){
 
@@ -70,31 +71,31 @@ void init_laplacian_solver_periodic_EW_zerograd_NS(int ni,int nj){
 
 		vars = (laplacian_vars*) malloc(sizeof(laplacian_vars));
 
-		vars->in  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NX*nj);
-		vars->out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NX*nj);
+		vars->in  = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * ni*nj);
+		vars->out = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * ni*nj);
 
-		int n[] = {NX};
+		int n[] = {ni};
 
 		vars->forward = fftw_plan_many_dft(1, n, nj,vars->in,n,nj,1,vars->out,n,nj,1,FFTW_FORWARD, FFTW_MEASURE);
 		vars->reverse = fftw_plan_many_dft(1, n, nj,vars->out,n,nj,1,vars->in,n,nj,1,FFTW_BACKWARD,FFTW_MEASURE);
 
-		vars->kwave = (double*) calloc(sizeof(double),NX);
-		vars->lwave = (double*) calloc(sizeof(double),NY);
+		vars->kwave = (double*) calloc(sizeof(double),ni);
+		vars->lwave = (double*) calloc(sizeof(double),nj);
 
-		for(int i=0;i<NX/2;i++){	vars->kwave[i] = 2*trigpi * (double)i / NX;	}
-		for(int i=NX/2;i<NX;i++){	vars->kwave[i] = 2*trigpi * (double)(NX-i) / NX;}
+		for(int i=0;i<ni/2;i++){	vars->kwave[i] = 2*trigpi * (double)i / ni;	}
+		for(int i=ni/2;i<ni;i++){	vars->kwave[i] = 2*trigpi * (double)(ni-i) / ni;}
 
-		for(int i=0;i<NY/2;i++){	vars->lwave[i] = 2*trigpi * (double)i / NY;	}
-		for(int i=NY/2;i<NY;i++){	vars->lwave[i] = 2*trigpi * (double)(NY-i) / NY;}
+		for(int i=0;i<nj/2;i++){	vars->lwave[i] = 2*trigpi * (double)i / nj;	}
+		for(int i=nj/2;i<nj;i++){	vars->lwave[i] = 2*trigpi * (double)(nj-i) / nj;}
 
-		vars->acoef = (double*) malloc(sizeof(double)*NY);
-		vars->bcoef = (double*) malloc(sizeof(double)*NX*NY);
-		vars->ccoef = (double*) malloc(sizeof(double)*NY);
+		vars->acoef = (double*) malloc(sizeof(double)*nj);
+		vars->bcoef = (double*) malloc(sizeof(double)*ni*nj);
+		vars->ccoef = (double*) malloc(sizeof(double)*nj);
 
-		vars->P = (double*) calloc(sizeof(double),(NY+1));
-		vars->Q = (double*) calloc(sizeof(double),(NY+1));
+		vars->P = (double*) calloc(sizeof(double),(nj+1));
+		vars->Q = (double*) calloc(sizeof(double),(nj+1));
 
-		for(int j=0;j<NY;j++){
+		for(int j=0;j<nj;j++){
 
 			vars->acoef[j] = 1./(dy*dy);
 			vars->ccoef[j] = 1./(dy*dy);
@@ -102,12 +103,12 @@ void init_laplacian_solver_periodic_EW_zerograd_NS(int ni,int nj){
 		}
 
 		//vars->acoef[0] = 0;	
-		//vars->ccoef[NY-1] = 0;
+		//vars->ccoef[nj-1] = 0;
 
-		for(int i=0;i<NX;i++){
-		for(int j=0;j<NY;j++){
+		for(int i=0;i<ni;i++){
+		for(int j=0;j<nj;j++){
 
-			vars->bcoef[i*NY+j] = 2.*(cos(vars->kwave[i])-1.)/(dx*dx) - vars->ccoef[j] - vars->acoef[j];
+			vars->bcoef[i*nj+j] = 2.*(cos(vars->kwave[i])-1.)/(dx*dx) - vars->ccoef[j] - vars->acoef[j];
 		}}
 	}
 

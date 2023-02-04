@@ -1,4 +1,3 @@
-
 void advect_theta(double,int,int,int,int);
 void advect_qv(double,int,int,int,int);
 void advect_uv_velocity(double,int,int,int,int);

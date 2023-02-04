@@ -12,9 +12,7 @@
 #define SAT_VAP_ICE(t) ( 611.2 * exp(21.8745584 * (t-273.15) / (t - 7.66) ) )
 #define SAT_MIX_RATIO(e,p) ( 0.62197 * e / (p-e) )
 
-const int num_intervals = 10;
 const int fileDT = 1*60*60;
-const int trajDT = fileDT / num_intervals;
 const int startTime = 13;
 const int endTime = 0;
 
@@ -178,7 +176,6 @@ bool isSafeFromBoundaries(double i,double j,double k){
 bool RK4_Step(struct parcel *p,double *u1,double *v1,double *w1,double *u2,double *v2,double *w2,double dt,int intervals,double r){
 	
 	k_values k1,k2,k3,k4;
-	int ind;
 	const double one_d_six = 1.0/6.0;
 
 	static int counter = 0;
@@ -196,7 +193,6 @@ bool RK4_Step(struct parcel *p,double *u1,double *v1,double *w1,double *u2,doubl
 
 	double dtx = dt/dx;
 	double dty = dt/dy;
-	double dtz = dt/dz;
 
 	if( !isSafeFromBoundaries(p->ip,p->jp,p->kp) ){
 		
@@ -300,7 +296,7 @@ void print_output(struct parcel p,int i,int t){
 	// Get output variables
 	//----------------------------------------------------
 	double p_u,p_v,p_w,p_theta,p_qv,p_qc,b_qv,b_theta,b_pi,p_pi,zheight;
-	double pressure,qvsat,rh,esl,pd,temperature,vapor,theta;
+	double pressure,qvsat,esl,pd,temperature,vapor,theta;
 	double cpRd = cp / Rd;
 	double ti_ygrad,ti_zgrad,qi_ygrad,qi_zgrad;
 

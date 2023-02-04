@@ -30,6 +30,7 @@ void init_microphysics(int nx,int ny){
 	}
 
 	//run_microphysics = &rutledge_microphysics;
+
 }
 
 /******************************************************
@@ -96,7 +97,6 @@ void precip_rate(int il,int ih,int jl,int jh,double *vel,double *hydro_field,dou
 			0.5 * ( vel[INDEX(i,j,0)] + vel[INDEX(i,j,1)] ) * 
 			0.5 * ( hydro_field[INDEX(i,j,0)] + hydro_field[INDEX(i,j,1)] ) *
 			dt;
-			
 	}}
 	
 }
@@ -497,12 +497,6 @@ double get_CAPE(int i,int j,int k_p,double p_vapor,double p_temp){
 
 		// if positively buoyant then add to CAPE
 		cape += grav*(zu[k]-zu[k-1])*fmax(buoy,0.0) / vtemp;
-
-		//esl = SAT_VAP_WAT(p_temp*pressure);
-
-		//qvsat = SAT_MIX_RATIO(esl,pd);
-
-		//printf("%d %f %f %f %f %f\n",k,theta,p_temp,p_temp*pressure,p_vapor*1000,qvsat*1000);
 
 	}
 

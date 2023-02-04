@@ -444,7 +444,7 @@ void turbulent_stress_vertical(int il,int ih,int jl,int jh){
 	double wind_speed;
 	double tau_u_l,tau_u_h,tau_v_l,tau_v_h;
 	double tau_c_l,tau_c_h,tau_r_l,tau_r_h,tau_t_l,tau_t_h;
-	double drag_coef,tau_q_h,tau_q_l;
+	double tau_q_h,tau_q_l;
 	double ufric,vfric;
 
 	int k;
@@ -561,11 +561,10 @@ void turbulent_stress_vertical(int il,int ih,int jl,int jh){
 ***********************************************************************************/
 void get_Kmix(int il,int ih,int jl,int jh){
 	
-	double A,temp,dQl,dQV,thetaVH,thetaVL,qvsatH,qvsatL,pdH,pdL,tempL,tempH,qv,dQL,eslH,eslL;
-	double dUdz,dVdz,dudz,dvdz;
+	double A,temp,thetaVH,thetaVL,qvsatH,qvsatL,pdH,pdL,tempL,tempH,qv,dQL,eslH,eslL;
 	double S2;
 	double dTheta,bruntv;
-	double l,c;
+	double c;
 	
 	int k;
 	double D11,D22,D33,D12,D13,D23;
@@ -739,12 +738,10 @@ void get_Kmix_dry(int il,int ih,int jl,int jh){
 	double thetaVH,thetaVL;
 	double S2;
 	double dTheta,bruntv;
-	double l,c;
+	double c;
 	
 	int k;
 	double D11,D22,D33,D12,D13,D23;
-		
-	double cpRd = cp/Rd;
 	
 	/**************************************************************************
 	*

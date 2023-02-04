@@ -227,7 +227,6 @@ void create_vertical_shear_profile(double my_vert_shear0,double my_vert_shear1,d
 *******************************************************************************/
 void get_pressure_from_winds(double *pres,double *u){
 	
-	int mid_lat = 0;
 	double umid;
 	
 	//----------------------------------------------------------------
@@ -405,7 +404,7 @@ void initialize_basic_state_ITCZ_shear2(double hor_shear,double vert_shear0,doub
 	//-----------------------------------------------------------------------
 	// Relative humidity changes
 	//-----------------------------------------------------------------------
-	double smr,temp,pres,rh;
+	double smr,temp,pres;
 	double *base_relh = (double*) calloc(NZ,sizeof(double));
 	
 	int rh_y_min = get_point_from_lat(5);
@@ -573,8 +572,6 @@ void initialize_basic_state_idealized(){
 	if(STRETCHED_GRID){ zgrid = &zsu[0];}
 	else { 				zgrid = &zu[0]; }
 
-	double f0 = 2*7.292e-5*sin(22*3.1416/180.0);
-
 	setup_memory_allocation();
 
 	setup_coordinates(0,-90);
@@ -596,7 +593,6 @@ void initialize_basic_state_idealized(){
 
 	int lowlat = get_point_from_lat(35);
 	int higlat = get_point_from_lat(55);
-	int midlat = (higlat+lowlat)/2;
 	
 	
 	int jet_height0 = get_point_from_lat(35);
@@ -914,7 +910,7 @@ void initialize_vortex(double r_end, double zm, double zt, double tmax, double t
 	//-------------------------------------------------------------------------------------
 	// Convert to mixing ratio anomaly
 	//-------------------------------------------------------------------------------------
-	double temp,pres,smr,rhp;
+	double temp,pres,smr;
 
 	for(int k=0;k<NZ;k++){
 		
@@ -1268,7 +1264,7 @@ void initialize_from_era(double * z){
 
 	for(size_t i=0;i<xdim;i++){
 	for(size_t j=0;j<ydim;j++){
-	for(size_t k=0;k < NZ;k++){
+	for(size_t k=0;k < (size_t)NZ;k++){
 		topozinterp[d(i,j,k)] = topo2[d2(i,ydim-1-j)];
 	}}}
 
@@ -1404,7 +1400,7 @@ void initialize_from_ERA5(double * z){
 	double * topo2 = get_data2(datafile2,"z", xdim*ydim);
 	
 	for(int i=0;i<size;i++){ hgt[i] /= 9.80665;}
-	for(int i=0;i<xdim*ydim;i++){ topo2[i] /= 9.80665;}
+	for(size_t i=0;i<xdim*ydim;i++){ topo2[i] /= 9.80665;}
 	
 	/********************************************************
 	* Reverse the y- and z-coordinate
@@ -1419,7 +1415,7 @@ void initialize_from_ERA5(double * z){
 
 	for(size_t i=0;i<xdim;i++){
 	for(size_t j=0;j<ydim;j++){
-	for(size_t k=0;k < NZ;k++){
+	for(size_t k=0;k < (size_t)NZ;k++){
 		topozinterp[d(i,j,k)] = topo2[d2(i,ydim-1-j)];
 	}}}
 

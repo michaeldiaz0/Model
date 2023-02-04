@@ -122,11 +122,11 @@ double Ap,Bp;
 const double ap = 3.0e3;		// constant in linear fall speed
 
 double pcond;
-const double Rw = 461;	// gas constant for water vapor
+//const double Rw = 461;	// gas constant for water vapor
 
 double pcfrz,prfrz;
 double a1,a2;
-const double mn = 1.05e-18;
+//const double mn = 1.05e-18;
 
 double get_a1(double);
 double get_a2(double);
@@ -148,7 +148,7 @@ void init_rutledge_microphysics(){
 void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 
 	double cpRd = cp/Rd;
-	double temperature, qvsat;
+	double temperature, qvsat = 0;
 	double diabatic;
 
 	double pint_p_pdepi;
@@ -549,7 +549,12 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 
 
 /*********************************************************************
+* Calculate saturation mixing ratio for water, ice, or mixed phase
+* depending on the temperature.
 *
+* pd -> dimensional pressure (Pa)
+* phi_out, phil_out, phii_out -> correction factors for saturation adjustment
+* for different phases (l->liquid, i->ice)
 *
 **********************************************************************/
 void get_qvsat(double temperature,double pd,double *qvsat_out,double *phi_out,double *phil_out,double *phii_out){

@@ -347,7 +347,7 @@ void write_pvar_to_file(int ncid,const char *var_name,double *var,size_t tcount)
 	int var_id;
 
 	size_t start[] = {tcount,0,0,0};
-	size_t count[] = {1,NX,NY,NZ};
+	size_t count[] = {1,(size_t)NX,(size_t)NY,(size_t)NZ};
 
 	status = nc_inq_varid (ncid, var_name, &var_id);
 	if (status != NC_NOERR) handle_error(status);
@@ -401,7 +401,7 @@ void write_pvar_to_file_2d(const char *myfilename,const char *var_name,double *v
 	if (status != NC_NOERR) handle_error(status);
 
 	size_t start[] = {tcount,0,0};
-	size_t count[] = {1,NX,NY};
+	size_t count[] = {1,(size_t)NX,(size_t)NY};
 
 	status = nc_inq_varid (ncid, var_name, &var_id);
 	if (status != NC_NOERR) handle_error(status);

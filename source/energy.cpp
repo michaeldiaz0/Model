@@ -107,18 +107,14 @@ double CubicInterpolate3(double y0,double y1,double y2,double y3,double mu){
 **********************************************************************/
 double get_EKE(int xl, int xh, int yl, int yh, int zl, int zh){
 
-	double eke;
-	double umid, vmid;
-	double eke_vavg, eke_havg;
+	double umid, vmid, eke_havg;
 
 	eke_havg = 0;
-
-	//printf("%f %f",ZW(zh),ZW(zl));
 
 	for(int i=xl;i<xh;i++){
 	for(int j=yl;j<yh;j++){
 	for(int k=zl;k<zh;k++){
-			//if(i==xl && j==yl){	printf("%f %f %f %f\n",ZW(zh),ZW(zl),DZU(k),rhou[k]);}
+	
 		umid = 0.5*(U(i,j,k)+U(i+1,j,k));
 		vmid = 0.5*(V(i,j,k)+V(i,j+1,k));
 
@@ -140,7 +136,6 @@ double get_EKE(int xl, int xh, int yl, int yh, int zl, int zh){
 **********************************************************************/
 double get_CKE(int xl, int xh, int yl, int yh, int zl, int zh, double *terms){
 
-	double cke;
 	double umid, vmid, wmid;
 	double cke_vavg, cke_havg;
 
@@ -245,7 +240,6 @@ double get_CKE(int xl, int xh, int yl, int yh, int zl, int zh, double *terms){
 **********************************************************************/
 double get_PKE(int xl, int xh, int yl, int yh, int zl, int zh){
 
-	double pke;
 	double wmid;
 	double pke_vavg, pke_havg;
 
@@ -283,7 +277,6 @@ double get_PKE(int xl, int xh, int yl, int yh, int zl, int zh){
 **********************************************************************/
 double get_FKE(int xl, int xh, int yl, int yh, int zl, int zh){
 
-	double fke;
 	double umid, vmid;
 	double fke_vavg, fke_havg;
 
@@ -422,7 +415,6 @@ double get_IDKE_basic(int xl, int xh, int yl, int yh, int zl, int zh){
 
 	double dke = 0;
 	double umid, vmid,wmid,udiff_x,vdiff_x,udiff_y,vdiff_y,udiff_z,vdiff_z,udiff,vdiff;
-	double ubar_mid,vbar_mid,wbar_mid;
 	double one_d_60 = 1.0/60.0;
 	double one_d_12 = 1.0/12.0;
 	
@@ -479,7 +471,6 @@ double get_IDKE_basic(int xl, int xh, int yl, int yh, int zl, int zh){
 **********************************************************************/
 double get_gflux(int xl, int xh, int yl, int yh, int zl, int zh){
 
-	double gflux;
 	double uflux, vflux, wflux;
 	double gflux_vavg, gflux_havg;
 
@@ -551,10 +542,9 @@ double get_temp_advection(int xl, int xh, int yl, int yh, int zl, int zh){
 **********************************************************************/
 double get_pwork(int xl, int xh, int yl, int yh, int zl, int zh,int interp){
 
-    double pwork;
-    double uflux, vflux, wflux;
-    double pwork_vavg, pwork_havg;
-    double umid, vmid, wmid;
+    double uflux, vflux;
+    double pwork_havg;
+    double umid, vmid;
 
     pwork_havg = 0;
 
@@ -639,7 +629,7 @@ double get_pwork(int xl, int xh, int yl, int yh, int zl, int zh,int interp){
 **********************************************************************/
 double get_advection(int xl, int xh, int yl, int yh, int zl, int zh){
 
-	double umid=0,vmid=0,wmid = 0;
+	double umid=0,vmid=0;
 	double eke1=0,eke2 = 0;
 	double ns_flux=0,ew_flux=0,tb_flux = 0;
 	double advection = 0;

@@ -8,6 +8,21 @@
 #include "interpolate.h"
 #include "damping.h"
 
+/****************************************************************************************************
+* 
+* Calculates budgets of heat, moisture, vorticity, potential energy, and potential vorticity. The
+* vorticity budget has the option of being output as stream function. These budgets are accumulated
+* while the model is running.
+* 
+* The nameing conventions are: "pp" -> advection of perturbuation by perturbation
+*                              "bp" -> advection of perturbation by basic state
+*                              "pb" -> advection of basic state by perturbation
+*
+* Calculates QG-omega from the QG-Omega equation. This is done on an input file.
+*
+*
+****************************************************************************************************/
+
 #define VAR(i,j,k) var[INDEX(i,j,k)]
 #define INDEXB(i,j,k) ((i)*NY*NZ+(j)*NZ+(k))
 
@@ -467,7 +482,7 @@ void initialize_temperature(int size){
 }
 
 /*********************************************************************
-* Initialize variables used in temperature budget
+* Initialize variables used in potential energy budget
 *
 **********************************************************************/
 void initialize_pe(int size){
@@ -484,7 +499,7 @@ void initialize_pe(int size){
 }
 
 /*********************************************************************
-* Initialize variables used in temperature budget
+* Initialize variables used in moisture budget
 *
 **********************************************************************/
 void initialize_moisture(int size){
@@ -501,7 +516,7 @@ void initialize_moisture(int size){
 }
 
 /*********************************************************************
-*
+* Initialize variables used in vorticity budget
 *
 **********************************************************************/
 void initialize_vorticity(){
@@ -1484,37 +1499,37 @@ void calculate_omega(double *u,double *v,double *t,double *ubar,double *vbar,dou
 	
 	for(int i=0;i<ni;i++){
 	for(int j=0;j<nj;j++){
-	for(int k=0;k<NZ;k++){
+	for(int k=0;k<nk;k++){
 	
 		q1[INDEXB(i,j,k)] = 0;
 		q2[INDEXB(i,j,k)] = 0;
-		omega[INDEXB(i,j,k)] = 0;
+		o[INDEXB(i,j,k)] = 0;
 				
 	}}}
 	
 	
-	calculate_Q1(u,v,tbar,omega);
-	add_array(q1,omega);
-	calculate_Q1(ubar,vbar,t,omega);
-	add_array(q1,omega);
-	calculate_Q1(u,v,t,omega);
-	add_array(q1,omega);
+	calculate_Q1(u,v,tbar,o);
+	add_array(q1,o);
+	calculate_Q1(ubar,vbar,t,o);
+	add_array(q1,o);
+	calculate_Q1(u,v,t,o);
+	add_array(q1,o);
 
-	calculate_Q2(u,v,tbar,omega);
-	add_array(q2,omega);
-	calculate_Q2(ubar,vbar,t,omega);
-	add_array(q2,omega);
-	calculate_Q2(u,v,t,omega);
-	add_array(q2,omega);
+	calculate_Q2(u,v,tbar,o);
+	add_array(q2,o);
+	calculate_Q2(ubar,vbar,t,o);
+	add_array(q2,o);
+	calculate_Q2(u,v,t,o);
+	add_array(q2,o);
 	
 	
 	for(int i=1;i<ni-1;i++){
 	for(int j=1;j<nj-1;j++){
-	for(int k=0;k<NZ;k++){
+	for(int k=0;k<nk;k++){
 	
-		omega[INDEXB(i,j,k)] = 2.0*(0.5*(one_d_dx*(q1[INDEXB(i+1,j,k)] - q1[INDEXB(i-1,j,k)]) + one_d_dy*(q2[INDEXB(i,j+1,k)] - q2[INDEXB(i,j-1,k)])));
+		o[INDEXB(i,j,k)] = 2.0*(0.5*(one_d_dx*(q1[INDEXB(i+1,j,k)] - q1[INDEXB(i-1,j,k)]) + one_d_dy*(q2[INDEXB(i,j+1,k)] - q2[INDEXB(i,j-1,k)])));
 		
-		omega[INDEXB(i,j,k)] += DFDY(j) * 0.5* ( t[INDEXB(i+1,j,k)] - t[INDEXB(i-1,j,k)] ) * one_d_dx;
+		o[INDEXB(i,j,k)] += DFDY(j) * 0.5* ( t[INDEXB(i+1,j,k)] - t[INDEXB(i-1,j,k)] ) * one_d_dx;
 				
 	}}}
 }
@@ -1733,7 +1748,7 @@ void pv_tracer_sources(int il,int ih,int jl,int jh){
 	vector dtheta,dTheta;
 	vector dthetaDot;
 	
-	double advection_pv,dflux1,dflux2,boundary;
+	double advection_pv,dflux1,dflux2;
 	
 	int ind;
 	
