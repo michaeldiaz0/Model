@@ -24,17 +24,19 @@
 /***********************************************************************************************
 * INTERPOLATION OPERATORS
 ************************************************************************************************/
-#define INTERP_6TH_EAST( VAR,i) i_interp6th(VAR,i+1,i,i+2,i-1,i+3,i-2)
-#define INTERP_6TH_WEST( VAR,i) i_interp6th(VAR,i-1,i,i-2,i+1,i-3,i+2)
-#define INTERP_6TH_NORTH(VAR,j) j_interp6th(VAR,j+1,j,j+2,j-1,j+3,j-2)
-#define INTERP_6TH_SOUTH(VAR,j) j_interp6th(VAR,j-1,j,j-2,j+1,j-3,j+2)
-#define INTERP_6TH_TOP(  VAR,k) k_interp6th(VAR,k+1,k,k+2,k-1,k+3,k-2)
+#define INTERP_6TH_EAST(  VAR,i) i_interp6th(VAR,i+1,i,i+2,i-1,i+3,i-2)
+#define INTERP_6TH_WEST(  VAR,i) i_interp6th(VAR,i-1,i,i-2,i+1,i-3,i+2)
+#define INTERP_6TH_NORTH( VAR,j) j_interp6th(VAR,j+1,j,j+2,j-1,j+3,j-2)
+#define INTERP_6TH_SOUTH( VAR,j) j_interp6th(VAR,j-1,j,j-2,j+1,j-3,j+2)
+#define INTERP_6TH_TOP(   VAR,k) k_interp6th(VAR,k+1,k,k+2,k-1,k+3,k-2)
+#define INTERP_6TH_BOTTOM(VAR,k) k_interp6th(VAR,k-1,k,k-2,k+1,k-3,k+2)
 
-#define INTERP_5TH_EAST( VAR,SIGN,i) (INTERP_6TH_EAST( VAR,i) + one60ths * (SIGN) * i_interp5th(VAR,i+3,i-2,i+2,i-1,i+1,i))
-#define INTERP_5TH_WEST( VAR,SIGN,i) (INTERP_6TH_WEST( VAR,i) + one60ths * (SIGN) * i_interp5th(VAR,i+2,i-3,i+1,i-2,i,i-1))
-#define INTERP_5TH_NORTH(VAR,SIGN,j) (INTERP_6TH_NORTH(VAR,j) + one60ths * (SIGN) * j_interp5th(VAR,j+3,j-2,j+2,j-1,j+1,j))
-#define INTERP_5TH_SOUTH(VAR,SIGN,j) (INTERP_6TH_SOUTH(VAR,j) + one60ths * (SIGN) * j_interp5th(VAR,j+2,j-3,j+1,j-2,j,j-1))
-#define INTERP_5TH_TOP(  VAR,SIGN,k) (INTERP_6TH_TOP(  VAR,k) + one60ths * (SIGN) * k_interp5th(VAR,k+3,k-2,k+2,k-1,k+1,k))
+#define INTERP_5TH_EAST(  VAR,SIGN,i) (INTERP_6TH_EAST(  VAR,i) + one60ths * (SIGN) * i_interp5th(VAR,i+3,i-2,i+2,i-1,i+1,i))
+#define INTERP_5TH_WEST(  VAR,SIGN,i) (INTERP_6TH_WEST(  VAR,i) + one60ths * (SIGN) * i_interp5th(VAR,i+2,i-3,i+1,i-2,i,i-1))
+#define INTERP_5TH_NORTH( VAR,SIGN,j) (INTERP_6TH_NORTH( VAR,j) + one60ths * (SIGN) * j_interp5th(VAR,j+3,j-2,j+2,j-1,j+1,j))
+#define INTERP_5TH_SOUTH( VAR,SIGN,j) (INTERP_6TH_SOUTH( VAR,j) + one60ths * (SIGN) * j_interp5th(VAR,j+2,j-3,j+1,j-2,j,j-1))
+#define INTERP_5TH_TOP(   VAR,SIGN,k) (INTERP_6TH_TOP(   VAR,k) + one60ths * (SIGN) * k_interp5th(VAR,k+3,k-2,k+2,k-1,k+1,k))
+#define INTERP_5TH_BOTTOM(VAR,SIGN,k) (INTERP_6TH_BOTTOM(VAR,k) + one60ths * (SIGN) * k_interp5th(VAR,k+2,k-3,k+1,k-2,k,k-1))
 
 #define INTERP_4TH_EAST(  VAR,i) i_interp4th(VAR,i+1,i,i+2,i-1)
 #define INTERP_4TH_WEST(  VAR,i) i_interp4th(VAR,i-1,i,i-2,i+1)
@@ -56,6 +58,66 @@
 #define INTERP_2ND_SOUTH( VAR,j) j_interp2nd(VAR,j-1,j)
 #define INTERP_2ND_TOP(   VAR,k) k_interp2nd(VAR,k+1,k)
 #define INTERP_2ND_BOTTOM(VAR,k) k_interp2nd(VAR,k-1,k)
+
+/***********************************************************************************************
+* CHOOSE A HORIZONTAL INTERPOLATION ORDER AT COMPILE TIME
+************************************************************************************************/
+#if HOR_ADVECTION_ORDER == 6
+
+	#define INTERP_EAST(  VAR,SIGN,i) INTERP_6TH_EAST( VAR,i)
+	#define INTERP_WEST(  VAR,SIGN,i) INTERP_6TH_WEST( VAR,i)
+	#define INTERP_NORTH( VAR,SIGN,j) INTERP_6TH_NORTH(VAR,j)
+	#define INTERP_SOUTH( VAR,SIGN,j) INTERP_6TH_SOUTH(VAR,j)
+
+#elif HOR_ADVECTION_ORDER == 5
+
+	#define INTERP_EAST(  VAR,SIGN,i) INTERP_5TH_EAST( VAR,SIGN,i)
+	#define INTERP_WEST(  VAR,SIGN,i) INTERP_5TH_WEST( VAR,SIGN,i)
+	#define INTERP_NORTH( VAR,SIGN,j) INTERP_5TH_NORTH(VAR,SIGN,j)
+	#define INTERP_SOUTH( VAR,SIGN,j) INTERP_5TH_SOUTH(VAR,SIGN,j)
+
+#elif HOR_ADVECTION_ORDER == 4
+
+	#define INTERP_EAST(  VAR,SIGN,i) INTERP_6TH_EAST( VAR,i)
+	#define INTERP_WEST(  VAR,SIGN,i) INTERP_6TH_WEST( VAR,i)
+	#define INTERP_NORTH( VAR,SIGN,j) INTERP_6TH_NORTH(VAR,j)
+	#define INTERP_SOUTH( VAR,SIGN,j) INTERP_6TH_SOUTH(VAR,j)
+
+#elif HOR_ADVECTION_ORDER == 3
+
+	#define INTERP_EAST(  VAR,SIGN,i) INTERP_5TH_EAST( VAR,SIGN,i)
+	#define INTERP_WEST(  VAR,SIGN,i) INTERP_5TH_WEST( VAR,SIGN,i)
+	#define INTERP_NORTH( VAR,SIGN,j) INTERP_5TH_NORTH(VAR,SIGN,j)
+	#define INTERP_SOUTH( VAR,SIGN,j) INTERP_5TH_SOUTH(VAR,SIGN,j)
+
+#elif HOR_ADVECTION_ORDER == 2
+
+	#define INTERP_EAST(  VAR,SIGN,i) INTERP_6TH_EAST( VAR,i)
+	#define INTERP_WEST(  VAR,SIGN,i) INTERP_6TH_WEST( VAR,i)
+	#define INTERP_NORTH( VAR,SIGN,j) INTERP_6TH_NORTH(VAR,j)
+	#define INTERP_SOUTH( VAR,SIGN,j) INTERP_6TH_SOUTH(VAR,j)
+
+#endif
+
+/***********************************************************************************************
+* CHOOSE A VERTICAL INTERPOLATION ORDER AT COMPILE TIME
+************************************************************************************************/
+#if VER_ADVECTION_ORDER == 4
+
+	#define INTERP_TOP(   VAR,SIGN,k) INTERP_4TH_TOP(   VAR,k)
+	#define INTERP_BOTTOM(VAR,SIGN,k) INTERP_4TH_BOTTOM(VAR,k)
+
+#elif VER_ADVECTION_ORDER == 3
+
+	#define INTERP_TOP(   VAR,SIGN,k) INTERP_3RD_TOP(   VAR,SIGN,k)
+	#define INTERP_BOTTOM(VAR,SIGN,k) INTERP_3RD_BOTTOM(VAR,SIGN,k)
+
+#elif VER_ADVECTION_ORDER == 2
+
+	#define INTERP_TOP(   VAR,SIGN,k) INTERP_2ND_TOP(   VAR,k)
+	#define INTERP_BOTTOM(VAR,SIGN,k) INTERP_2ND_BOTTOM(VAR,k)
+
+#endif
 
 /***********************************************************************************************
 * SIXTH ORDER INTERPOLATION FOR ADVECTION
@@ -217,13 +279,13 @@ void compute_west(int i,int jl,int jh){
 		* Fifth order interpolation for horizontal derivatives
 		* for advected velocity
 		****************************************************/
-		UCELL(j,k).east  = INTERP_5TH_EAST(U,ut,i);
-		VCELL(j,k).east  = INTERP_5TH_EAST(V,vt,i);
-		WCELL(j,k).east  = INTERP_5TH_EAST(W,wt,i);
+		UCELL(j,k).east  = INTERP_EAST(U,ut,i);
+		VCELL(j,k).east  = INTERP_EAST(V,vt,i);
+		WCELL(j,k).east  = INTERP_EAST(W,wt,i);
 		
-		UBCELL(j,k).east  = INTERP_5TH_EAST(UBAR,signof(UCELL(j,k).ua),i);
-		VBCELL(j,k).east  = INTERP_5TH_EAST(VBAR,signof(VCELL(j,k).ua),i);
-		WBCELL(j,k).east  = INTERP_5TH_EAST(WBAR,signof(WCELL(j,k).ua),i);
+		UBCELL(j,k).east  = INTERP_EAST(UBAR,signof(UCELL(j,k).ua),i);
+		VBCELL(j,k).east  = INTERP_EAST(VBAR,signof(VCELL(j,k).ua),i);
+		WBCELL(j,k).east  = INTERP_EAST(WBAR,signof(WCELL(j,k).ua),i);
 
 		// advecting velocity for perturbation
 	#if !ISLINEAR
@@ -280,11 +342,11 @@ void compute_west_uv(int i,int jl,int jh){
 		* Fifth order interpolation for horizontal derivatives
 		* for advected velocity
 		****************************************************/
-		UCELL(j,k).east  = INTERP_5TH_EAST(U,ut,i);
+		UCELL(j,k).east  = INTERP_EAST(U,ut,i);
 		VCELL(j,k).east  = INTERP_5TH_EAST(V,vt,i);
 		
-		UBCELL(j,k).east  = INTERP_5TH_EAST(UBAR,signof(UCELL(j,k).ua),i);
-		VBCELL(j,k).east  = INTERP_5TH_EAST(VBAR,signof(VCELL(j,k).ua),i);
+		UBCELL(j,k).east  = INTERP_EAST(UBAR,signof(UCELL(j,k).ua),i);
+		VBCELL(j,k).east  = INTERP_EAST(VBAR,signof(VCELL(j,k).ua),i);
 
 		// advecting velocity for perturbation
 	#if !ISLINEAR
@@ -327,8 +389,8 @@ void compute_west_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *s
 		sign = signof(UBAR(i+1,j,k));
 	#endif
 
-		SCELL(j,k).east = INTERP_5TH_EAST(SP,sign,i);
-		BCELL(j,k).east = INTERP_5TH_EAST(SB,signof(U(i+1,j,k)),i);
+		SCELL(j,k).east = INTERP_EAST(SP,sign,i);
+		BCELL(j,k).east = INTERP_EAST(SB,signof(U(i+1,j,k)),i);
 		
 	#if !ISLINEAR
 		SCELL(j,k).east  = U(i+1,j,k) * BCELL(j,k).east  + (UBAR(i+1,j,k)+U(i+1,j,k)) * SCELL(j,k).east;
@@ -356,7 +418,7 @@ void compute_west_scalar(int i,int jl,int jh,double *s,struct cell *scell){
 
 		sign = signof(UBAR(i+1,j,k)+U(i+1,j,k));
 
-		SCELL(j,k).east = INTERP_5TH_EAST(SP,sign,i);
+		SCELL(j,k).east = INTERP_EAST(SP,sign,i);
 		
 		SCELL(j,k).east  = (UBAR(i+1,j,k)+U(i+1,j,k)) * SCELL(j,k).east;
 	}}
@@ -380,7 +442,7 @@ void compute_west_scalar(int i,int jl,int jh,double *u,double *s,struct cell *sc
 
 		sign = signof(u[INDEX(i,j,k)]);
 
-		SCELL(j,k).east = INTERP_5TH_EAST(SP,sign,i);
+		SCELL(j,k).east = INTERP_EAST(SP,sign,i);
 		
 		SCELL(j,k).east  = u[INDEX(i,j,k)] * SCELL(j,k).east;
 	}}
@@ -402,10 +464,10 @@ void compute_west_moisture(int i,int jl,int jh){
 		ubsign = signof(UBAR(i+1,j,k)+U(i+1,j,k));
 		
 		// interpolate moisture variables to the eastern face of the control volume
-		QVCELL(j,k).east  = INTERP_5TH_EAST(QV,ubsign,i);
-		QCCELL(j,k).east  = INTERP_5TH_EAST(QC,ubsign,i);
-		QRCELL(j,k).east  = INTERP_5TH_EAST(QR,ubsign,i);
-		QVBCELL(j,k).east = INTERP_5TH_EAST(QBAR,usign,i);
+		QVCELL(j,k).east  = INTERP_EAST(QV,ubsign,i);
+		QCCELL(j,k).east  = INTERP_EAST(QC,ubsign,i);
+		QRCELL(j,k).east  = INTERP_EAST(QR,ubsign,i);
+		QVBCELL(j,k).east = INTERP_EAST(QBAR,usign,i);
 	
 		// calculate fluxes
 		QVCELL(j,k).east  = ub * QVCELL(j,k).east +  U(i+1,j,k) * QVBCELL(j,k).east;
@@ -586,7 +648,7 @@ void compute_fluxes_moisture(int i,int jl,int jh){
 			// rain water fluxes
 			QRCELL(j,k).east  = ub * QRCELL(j,k).east;
 			QRCELL(j,k).north = vb * QRCELL(j,k).north;			
-			QRCELL(j,k).top = (wb-0.5*(VT(i,j,k+1)+VT(i,j,k))) * QRCELL(j,k).top;	
+			QRCELL(j,k).top = (wb-0.5*(VT(i,j,k+1)+VT(i,j,k))) * QRCELL(j,k).top;
 		}
 	}
 }
@@ -630,16 +692,16 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 			//-------------------------------------------
 			// Perturbation interpolation
 			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_5TH_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_5TH_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_3RD_TOP(  SP,wt,k);
+			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
+			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
+			SCELL(j,k).top   = INTERP_TOP(  SP,wt,k);
 
 			//-------------------------------------------
 			// Base state interpolation
 			BCELL(j,k).west  = BCELL(j,k).east;
-			BCELL(j,k).east  = INTERP_5TH_EAST( SB,utp,i);
-			BCELL(j,k).north = INTERP_5TH_NORTH(SB,vtp,j);
-			BCELL(j,k).top   = INTERP_3RD_TOP(  SB,wtp,k);
+			BCELL(j,k).east  = INTERP_EAST( SB,utp,i);
+			BCELL(j,k).north = INTERP_NORTH(SB,vtp,j);
+			BCELL(j,k).top   = INTERP_TOP(  SB,wtp,k);
 		}
 
 		/***************************************************
@@ -708,7 +770,7 @@ void interpolate_scalar(int i,int jl,int jh,double *s,struct cell *scell){
 			SCELL(j,k).west  = SCELL(j,k).east;
 			SCELL(j,k).east  = INTERP_5TH_EAST( SP,ut,i);
 			SCELL(j,k).north = INTERP_5TH_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_3RD_TOP(  SP,wt,k);
+			SCELL(j,k).top   = INTERP_TOP(  SP,wt,k);
 		}
 		
 		/***************************************************
@@ -762,7 +824,7 @@ void interpolate_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *fal
 			SCELL(j,k).west  = SCELL(j,k).east;
 			SCELL(j,k).east  = INTERP_5TH_EAST( SP,ut,i);
 			SCELL(j,k).north = INTERP_5TH_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_3RD_TOP(  SP,wt,k);
+			SCELL(j,k).top   = INTERP_TOP(  SP,wt,k);
 		}
 		
 		/***************************************************
@@ -816,7 +878,7 @@ void interpolate_scalar(int i,int jl,int jh,double *u,double *v,double *w,double
 			SCELL(j,k).west  = SCELL(j,k).east;
 			SCELL(j,k).east  = INTERP_5TH_EAST( SP,ut,i);
 			SCELL(j,k).north = INTERP_5TH_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_3RD_TOP(  SP,wt,k);
+			SCELL(j,k).top   = INTERP_TOP(  SP,wt,k);
 		}
 		
 		/***************************************************
@@ -868,31 +930,28 @@ void interpolate_moisture(int i,int jl,int jh){
 			vbsign = signof(VBAR(i,j+1,k)+V(i,j+1,k));
 			wbsign = signof(WBAR(i,j,k+1)+W(i,j,k+1));
 			
-			//#if RAIN_FALLOUT==1
-				wrsign = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(VT(i,j,k+1)+VT(i,j,k)));
-			//#elif RAIN_FALLOUT==2
-			//	wrsign = wbsign;
-			//#endif
+			wrsign = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(VT(i,j,k+1)+VT(i,j,k)));
+
 
 			QVCELL(j,k).west = QVCELL(j,k).east;
-			QVCELL(j,k).east  = INTERP_5TH_EAST( QV,ubsign,i);
-			QVCELL(j,k).north = INTERP_5TH_NORTH(QV,vbsign,j);
-			QVCELL(j,k).top   = INTERP_3RD_TOP(  QV,wbsign,k);
+			QVCELL(j,k).east  = INTERP_EAST( QV,ubsign,i);
+			QVCELL(j,k).north = INTERP_NORTH(QV,vbsign,j);
+			QVCELL(j,k).top   = INTERP_TOP(  QV,wbsign,k);
 
 			QCCELL(j,k).west = QCCELL(j,k).east;
-			QCCELL(j,k).east  = INTERP_5TH_EAST( QC,ubsign,i);
-			QCCELL(j,k).north = INTERP_5TH_NORTH(QC,vbsign,j);
-			QCCELL(j,k).top   = INTERP_3RD_TOP(  QC,wbsign,k);
+			QCCELL(j,k).east  = INTERP_EAST( QC,ubsign,i);
+			QCCELL(j,k).north = INTERP_NORTH(QC,vbsign,j);
+			QCCELL(j,k).top   = INTERP_TOP(  QC,wbsign,k);
 
 			QRCELL(j,k).west = QRCELL(j,k).east;
-			QRCELL(j,k).east  = INTERP_5TH_EAST( QR,ubsign,i);
-			QRCELL(j,k).north = INTERP_5TH_NORTH(QR,vbsign,j);
-			QRCELL(j,k).top   = INTERP_3RD_TOP(  QR,wrsign,k);
+			QRCELL(j,k).east  = INTERP_EAST( QR,ubsign,i);
+			QRCELL(j,k).north = INTERP_NORTH(QR,vbsign,j);
+			QRCELL(j,k).top   = INTERP_TOP(  QR,wrsign,k);
 
 			QVBCELL(j,k).west = QVBCELL(j,k).east;
-			QVBCELL(j,k).east  = INTERP_5TH_EAST( QBAR,usign,i);
-			QVBCELL(j,k).north = INTERP_5TH_NORTH(QBAR,vsign,j);
-			QVBCELL(j,k).top   = INTERP_3RD_TOP(  QBAR,wsign,k);
+			QVBCELL(j,k).east  = INTERP_EAST( QBAR,usign,i);
+			QVBCELL(j,k).north = INTERP_NORTH(QBAR,vsign,j);
+			QVBCELL(j,k).top   = INTERP_TOP(  QBAR,wsign,k);
 		}
 
 		/***************************************************
@@ -909,23 +968,23 @@ void interpolate_moisture(int i,int jl,int jh){
 		vsign = signof(V(i,j+1,k));
 
 		QVCELL(j,k).west = QVCELL(j,k).east;
-		QVCELL(j,k).east  = INTERP_5TH_EAST( QV,ubsign,i);
-		QVCELL(j,k).north = INTERP_5TH_NORTH(QV,vbsign,j);
+		QVCELL(j,k).east  = INTERP_EAST( QV,ubsign,i);
+		QVCELL(j,k).north = INTERP_NORTH(QV,vbsign,j);
 		QVCELL(j,k).top   = 0;
 
 		QCCELL(j,k).west = QCCELL(j,k).east;
-		QCCELL(j,k).east  = INTERP_5TH_EAST( QC,ubsign,i);
-		QCCELL(j,k).north = INTERP_5TH_NORTH(QC,vbsign,j);
+		QCCELL(j,k).east  = INTERP_EAST( QC,ubsign,i);
+		QCCELL(j,k).north = INTERP_NORTH(QC,vbsign,j);
 		QCCELL(j,k).top   = 0;
 
 		QRCELL(j,k).west = QRCELL(j,k).east;
-		QRCELL(j,k).east  = INTERP_5TH_EAST( QR,ubsign,i);
-		QRCELL(j,k).north = INTERP_5TH_NORTH(QR,vbsign,j);
+		QRCELL(j,k).east  = INTERP_EAST( QR,ubsign,i);
+		QRCELL(j,k).north = INTERP_NORTH(QR,vbsign,j);
 		QRCELL(j,k).top   = 0;
 
 		QVBCELL(j,k).west = QVBCELL(j,k).east;
-		QVBCELL(j,k).east  = INTERP_5TH_EAST( QBAR,usign,i);
-		QVBCELL(j,k).north = INTERP_5TH_NORTH(QBAR,vsign,j);
+		QVBCELL(j,k).east  = INTERP_EAST( QBAR,usign,i);
+		QVBCELL(j,k).north = INTERP_NORTH(QBAR,vsign,j);
 		QVBCELL(j,k).top   = 0;
 
 	}
@@ -1044,13 +1103,13 @@ void interpolate_velocity(int i,int jl,int jh){
 			wbsign = signof(UBCELL(j,k).wa);
 		#endif
 			UCELL(j,k).west = UCELL(j,k).east;
-			UCELL(j,k).east  = INTERP_5TH_EAST( U,ubsign,i);
-			UCELL(j,k).north = INTERP_5TH_NORTH(U,vbsign,j);
-			UCELL(j,k).top   = INTERP_3RD_TOP(  U,wbsign,k);
+			UCELL(j,k).east  = INTERP_EAST( U,ubsign,i);
+			UCELL(j,k).north = INTERP_NORTH(U,vbsign,j);
+			UCELL(j,k).top   = INTERP_TOP(  U,wbsign,k);
 			
-			UBCELL(j,k).east  = INTERP_5TH_EAST( UBAR,usign,i);
-			UBCELL(j,k).north = INTERP_5TH_NORTH(UBAR,vsign,j);
-			UBCELL(j,k).top   = INTERP_3RD_TOP(  UBAR,wsign,k);
+			UBCELL(j,k).east  = INTERP_EAST( UBAR,usign,i);
+			UBCELL(j,k).north = INTERP_NORTH(UBAR,vsign,j);
+			UBCELL(j,k).top   = INTERP_TOP(  UBAR,wsign,k);
 		
 			//---------------------------------------------------------
 			// Meridional velocity control volumes
@@ -1068,13 +1127,13 @@ void interpolate_velocity(int i,int jl,int jh){
 			wbsign = signof(VBCELL(j,k).wa);
 		#endif
 			VCELL(j,k).west  = VCELL(j,k).east;
-			VCELL(j,k).east  = INTERP_5TH_EAST( V,ubsign,i);
-			VCELL(j,k).north = INTERP_5TH_NORTH(V,vbsign,j);
-			VCELL(j,k).top   = INTERP_3RD_TOP(  V,wbsign,k);
+			VCELL(j,k).east  = INTERP_EAST( V,ubsign,i);
+			VCELL(j,k).north = INTERP_NORTH(V,vbsign,j);
+			VCELL(j,k).top   = INTERP_TOP(  V,wbsign,k);
 			
-			VBCELL(j,k).east  = INTERP_5TH_EAST( VBAR,usign,i);
-			VBCELL(j,k).north = INTERP_5TH_NORTH(VBAR,vsign,j);
-			VBCELL(j,k).top   = INTERP_3RD_TOP(  VBAR,wsign,k);
+			VBCELL(j,k).east  = INTERP_EAST( VBAR,usign,i);
+			VBCELL(j,k).north = INTERP_NORTH(VBAR,vsign,j);
+			VBCELL(j,k).top   = INTERP_TOP(  VBAR,wsign,k);
 
 			//---------------------------------------------------------
 			// Vertical velocity control volumes
@@ -1093,13 +1152,13 @@ void interpolate_velocity(int i,int jl,int jh){
 			wbsign = signof(WBCELL(j,k).wa);
 		#endif
 			WCELL(j,k).west  = WCELL(j,k).east;
-			WCELL(j,k).east  = INTERP_5TH_EAST( W,ubsign,i);
-			WCELL(j,k).north = INTERP_5TH_NORTH(W,vbsign,j);
-			WCELL(j,k).top   = INTERP_3RD_TOP(  W,wbsign,k);
+			WCELL(j,k).east  = INTERP_EAST( W,ubsign,i);
+			WCELL(j,k).north = INTERP_NORTH(W,vbsign,j);
+			WCELL(j,k).top   = INTERP_TOP(  W,wbsign,k);
 			
-			WBCELL(j,k).east  = INTERP_5TH_EAST( WBAR,usign,i);
-			WBCELL(j,k).north = INTERP_5TH_NORTH(WBAR,vsign,j);
-			WBCELL(j,k).top   = INTERP_3RD_TOP(  WBAR,wsign,k);
+			WBCELL(j,k).east  = INTERP_EAST( WBAR,usign,i);
+			WBCELL(j,k).north = INTERP_NORTH(WBAR,vsign,j);
+			WBCELL(j,k).top   = INTERP_TOP(  WBAR,wsign,k);
 	#endif
 		}
 
@@ -1126,12 +1185,12 @@ void interpolate_velocity(int i,int jl,int jh){
 		vbsign = signof(UBCELL(j,k).va);
 	#endif
 		UCELL(j,k).west = UCELL(j,k).east;
-		UCELL(j,k).east  = INTERP_5TH_EAST( U,ubsign,i);
-		UCELL(j,k).north = INTERP_5TH_NORTH(U,vbsign,j);
+		UCELL(j,k).east  = INTERP_EAST( U,ubsign,i);
+		UCELL(j,k).north = INTERP_NORTH(U,vbsign,j);
 		UCELL(j,k).top = 0;
 		
-		UBCELL(j,k).east  = INTERP_5TH_EAST( UBAR,usign,i);
-		UBCELL(j,k).north = INTERP_5TH_NORTH(UBAR,vsign,j);
+		UBCELL(j,k).east  = INTERP_EAST( UBAR,usign,i);
+		UBCELL(j,k).north = INTERP_NORTH(UBAR,vsign,j);
 		UBCELL(j,k).top = 0;
 	
 		//---------------------------------------------------------
@@ -1147,12 +1206,12 @@ void interpolate_velocity(int i,int jl,int jh){
 		vbsign = signof(VBCELL(j,k).va);
 	#endif
 		VCELL(j,k).west = VCELL(j,k).east;
-		VCELL(j,k).east  = INTERP_5TH_EAST( V,ubsign,i);
-		VCELL(j,k).north = INTERP_5TH_NORTH(V,vbsign,j);
+		VCELL(j,k).east  = INTERP_EAST( V,ubsign,i);
+		VCELL(j,k).north = INTERP_NORTH(V,vbsign,j);
 		VCELL(j,k).top = 0;
 		
-		VBCELL(j,k).east  = INTERP_5TH_EAST( VBAR,usign,i);
-		VBCELL(j,k).north = INTERP_5TH_NORTH(VBAR,vsign,j);
+		VBCELL(j,k).east  = INTERP_EAST( VBAR,usign,i);
+		VBCELL(j,k).north = INTERP_NORTH(VBAR,vsign,j);
 		VBCELL(j,k).top = 0;
 
 		//---------------------------------------------------------
@@ -1169,284 +1228,15 @@ void interpolate_velocity(int i,int jl,int jh){
 		vbsign = signof(WBCELL(j,k).va);
 	#endif
 		WCELL(j,k).west = WCELL(j,k).east;
-		WCELL(j,k).east  = INTERP_5TH_EAST( W,ubsign,i);
-		WCELL(j,k).north = INTERP_5TH_NORTH(W,vbsign,j);
+		WCELL(j,k).east  = INTERP_EAST( W,ubsign,i);
+		WCELL(j,k).north = INTERP_NORTH(W,vbsign,j);
 		WCELL(j,k).top = 0;
 		
-		WBCELL(j,k).east  = INTERP_5TH_EAST( WBAR,usign,i);
-		WBCELL(j,k).north = INTERP_5TH_NORTH(WBAR,vsign,j);
+		WBCELL(j,k).east  = INTERP_EAST( WBAR,usign,i);
+		WBCELL(j,k).north = INTERP_NORTH(WBAR,vsign,j);
 		WBCELL(j,k).top = 0;	
 #endif
 		
 	}
 
 }
-#if 0
-/*********************************************************************
-* Interpolate velocity field to the faces of each control volume for
-* a YZ cross section. Also sets the fluxes on the eastern side of the 
-* previous (i-1) YZ cross section equal to the fluxes on the western 
-* side of the new YZ cross section.
-*
-* @param i - the x-coordinate
-* @param jl,jh - the high and low index bounds for the y-coordinate
-**********************************************************************/
-void interpolate_velocity(int i,int jl,int jh){
-
-	int k;
-
-	double usign,vsign,wsign;
-	double ubsign,vbsign,wbsign;
-
-
-
-	/*********************************************************************
-	* CALCULATE ADVECTING WIND
-	**********************************************************************/
-
-	//----------------------------------------
-	// Zonal wind
-	//----------------------------------------
-	for(int j=jl;j<jh;j++){
-	for(k=1;k<NZ-1;k++){
-		
-		UCELL(j,k).ua = 0.5*(U(i+1,j,k)+U(i,j,k));
-		VCELL(j,k).ua = 0.5*(U(i+1,j,k)+U(i+1,j-1,k));
-		WCELL(j,k).ua = 0.5*(U(i+1,j,k-1)+U(i+1,j,k));
-		VCELL(j,k).other_vel = 0.25 * (U(i,j,k)+U(i+1,j,k)+U(i,j-1,k)+U(i+1,j-1,k));		
-	}}
-	
-	//----------------------------------------
-	// Meridional wind
-	//----------------------------------------
-	for(int j=jl;j<jh;j++){
-	for(k=1;k<NZ-1;k++){
-
-		UCELL(j,k).va = 0.5*(V(i,j+1,k)+V(i-1,j+1,k));
-		VCELL(j,k).va = 0.5*(V(i,j+1,k)+V(i,j,k));
-		WCELL(j,k).va = 0.5*(V(i,j+1,k-1)+V(i,j+1,k));
-		UCELL(j,k).other_vel = 0.25 * (V(i,j,k)+V(i,j+1,k)+V(i-1,j,k)+V(i-1,j+1,k));		
-	}}
-	
-	//----------------------------------------
-	// Vertical wind
-	//----------------------------------------
-	for(int j=jl;j<jh;j++){
-	for(k=1;k<NZ-1;k++){
-
-		UCELL(j,k).wa = 0.5*(W(i,j,k+1)+W(i-1,j,k+1));
-		VCELL(j,k).wa = 0.5*(W(i,j,k+1)+W(i,j-1,k+1));
-		WCELL(j,k).wa = 0.5*(W(i,j,k+1)+W(i,j,k));
-	}}
-	
-	//----------------------------------------
-	// Basic Zonal wind
-	//----------------------------------------
-	for(int j=jl;j<jh;j++){
-	for(k=1;k<NZ-1;k++){
-
-		UBCELL(j,k).ua = 0.5*(UBAR(i+1,j,k)+UBAR(i,j,k));
-		VBCELL(j,k).ua = 0.5*(UBAR(i+1,j,k)+UBAR(i+1,j-1,k));
-		WBCELL(j,k).ua = 0.5*(UBAR(i+1,j,k-1)+UBAR(i+1,j,k));
-	}}
-	
-	//----------------------------------------
-	// Basic meridional wind
-	//----------------------------------------
-	for(int j=jl;j<jh;j++){
-	for(k=1;k<NZ-1;k++){
-
-		UBCELL(j,k).va = 0.5*(VBAR(i,j+1,k)+VBAR(i-1,j+1,k));
-		VBCELL(j,k).va = 0.5*(VBAR(i,j+1,k)+VBAR(i,j,k));
-		WBCELL(j,k).va = 0.5*(VBAR(i,j+1,k-1)+VBAR(i,j+1,k));	
-	}}
-	
-	//----------------------------------------
-	// Basic vertical wind
-	//----------------------------------------
-	for(int j=jl;j<jh;j++){
-	for(k=1;k<NZ-1;k++){
-
-		UBCELL(j,k).wa = 0.5*(WBAR(i,j,k+1)+WBAR(i-1,j,k+1));
-		VBCELL(j,k).wa = 0.5*(WBAR(i,j,k+1)+WBAR(i,j-1,k+1));
-		WBCELL(j,k).wa = 0.5*(WBAR(i,j,k+1)+WBAR(i,j,k));		
-	}}
-	
-	for(int j=jl;j<jh;j++){
-	for(k=1;k<NZ-1;k++){
-
-		UCELL(j,k).usign = signof(UCELL(j,k).ua);
-		UCELL(j,k).vsign = signof(UCELL(j,k).va);
-		UCELL(j,k).wsign = signof(UCELL(j,k).wa);
-
-		UCELL(j,k).ubsign = signof(UBCELL(j,k).ua+UCELL(j,k).ua);
-		UCELL(j,k).vbsign = signof(UBCELL(j,k).va+UCELL(j,k).va);
-		UCELL(j,k).wbsign = signof(UBCELL(j,k).wa+UCELL(j,k).wa);
-		
-		VCELL(j,k).usign = signof(VCELL(j,k).ua);
-		VCELL(j,k).vsign = signof(VCELL(j,k).va);
-		VCELL(j,k).wsign = signof(VCELL(j,k).wa);
-
-		VCELL(j,k).ubsign = signof(VBCELL(j,k).ua+VCELL(j,k).ua);
-		VCELL(j,k).vbsign = signof(VBCELL(j,k).va+VCELL(j,k).va);
-		VCELL(j,k).wbsign = signof(VBCELL(j,k).wa+VCELL(j,k).wa);
-		
-		WCELL(j,k).usign = signof(WCELL(j,k).ua);
-		WCELL(j,k).vsign = signof(WCELL(j,k).va);
-		WCELL(j,k).wsign = signof(WCELL(j,k).wa);
-
-		WCELL(j,k).ubsign = signof(WBCELL(j,k).ua+WCELL(j,k).ua);
-		WCELL(j,k).vbsign = signof(WBCELL(j,k).va+WCELL(j,k).va);
-		WCELL(j,k).wbsign = signof(WBCELL(j,k).wa+WCELL(j,k).wa);
-		
-	}}
-
-	for(int j=jl;j<jh;j++){
-
-		for(k=1;k<NZ-2;k++){
-
-			// advecting velocity is calculated using 2nd order interpolation
-			/**********************************************************
-			* Interpolate the advected velocity onto each cell face
-			*
-			* The flux on the eastern side from the previous
-			* "i" interation becomes the flux on the western side.
-			* Note that this is a flux, not a velocity.
-			***********************************************************/
-
-			//---------------------------------------------------------
-			// Zonal velocity control volumes
-			//---------------------------------------------------------
-			// the sign of the advecting velocity 
-			// is needed for 5th order interpolation
-
-
-			UCELL(j,k).west = UCELL(j,k).east;
-			UCELL(j,k).east  = INTERP_5TH_EAST( U,UCELL(j,k).ubsign,i);
-			UCELL(j,k).north = INTERP_5TH_NORTH(U,UCELL(j,k).vbsign,j);
-			UCELL(j,k).top   = INTERP_3RD_TOP(  U,UCELL(j,k).wbsign,k);
-			
-			UBCELL(j,k).east  = INTERP_5TH_EAST( UBAR,UCELL(j,k).usign,i);
-			UBCELL(j,k).north = INTERP_5TH_NORTH(UBAR,UCELL(j,k).vsign,j);
-			UBCELL(j,k).top   = INTERP_3RD_TOP(  UBAR,UCELL(j,k).wsign,k);
-		
-		}
-
-		/***************************************************
-		* For the uppermost physical point (NZ-1 is a "ghost"
-		* point), we can't calculate the required 3rd order
-		* interpolation, so we can either set it to zero or
-		* use a second order interpolation.
-		****************************************************/
-		k = NZ-2;
-
-		//---------------------------------------------------------
-		// Zonal velocity control volumes
-		//---------------------------------------------------------
-		UCELL(j,k).west = UCELL(j,k).east;
-		UCELL(j,k).east  = INTERP_5TH_EAST( U,UCELL(j,k).ubsign,i);
-		UCELL(j,k).north = INTERP_5TH_NORTH(U,UCELL(j,k).vbsign,j);
-		UCELL(j,k).top = 0;
-		
-		UBCELL(j,k).east  = INTERP_5TH_EAST( UBAR,UCELL(j,k).usign,i);
-		UBCELL(j,k).north = INTERP_5TH_NORTH(UBAR,UCELL(j,k).vsign,j);
-		UBCELL(j,k).top = 0;
-	}
-	
-	for(int j=jl;j<jh;j++){
-
-		for(k=1;k<NZ-2;k++){
-
-			/**********************************************************
-			* Interpolate the advected velocity onto each cell face
-			*
-			* The flux on the eastern side from the previous
-			* "i" interation becomes the flux on the western side.
-			* Note that this is a flux, not a velocity.
-			***********************************************************/
-
-			//---------------------------------------------------------
-			// Meridional velocity control volumes
-			//---------------------------------------------------------
-			VCELL(j,k).west  = VCELL(j,k).east;
-			VCELL(j,k).east  = INTERP_5TH_EAST( V,VCELL(j,k).ubsign,i);
-			VCELL(j,k).north = INTERP_5TH_NORTH(V,VCELL(j,k).vbsign,j);
-			VCELL(j,k).top   = INTERP_3RD_TOP(  V,VCELL(j,k).wbsign,k);
-			
-			VBCELL(j,k).east  = INTERP_5TH_EAST( VBAR,VCELL(j,k).usign,i);
-			VBCELL(j,k).north = INTERP_5TH_NORTH(VBAR,VCELL(j,k).vsign,j);
-			VBCELL(j,k).top   = INTERP_3RD_TOP(  VBAR,VCELL(j,k).wsign,k);
-		}
-
-		/***************************************************
-		* For the uppermost physical point (NZ-1 is a "ghost"
-		* point), we can't calculate the required 3rd order
-		* interpolation, so we can either set it to zero or
-		* use a second order interpolation.
-		****************************************************/
-		k = NZ-2;
-
-		//---------------------------------------------------------
-		// Meridional velocity control volumes
-		//---------------------------------------------------------
-		VCELL(j,k).west = VCELL(j,k).east;
-		VCELL(j,k).east  = INTERP_5TH_EAST( V,VCELL(j,k).ubsign,i);
-		VCELL(j,k).north = INTERP_5TH_NORTH(V,VCELL(j,k).vbsign,j);
-		VCELL(j,k).top = 0;
-		
-		VBCELL(j,k).east  = INTERP_5TH_EAST( VBAR,VCELL(j,k).usign,i);
-		VBCELL(j,k).north = INTERP_5TH_NORTH(VBAR,VCELL(j,k).vsign,j);
-		VBCELL(j,k).top = 0;
-	}
-	
-	
-	for(int j=jl;j<jh;j++){
-
-		for(k=1;k<NZ-2;k++){
-
-			/**********************************************************
-			* Interpolate the advected velocity onto each cell face
-			*
-			* The flux on the eastern side from the previous
-			* "i" interation becomes the flux on the western side.
-			* Note that this is a flux, not a velocity.
-			***********************************************************/
-
-			//---------------------------------------------------------
-			// Vertical velocity control volumes
-			//---------------------------------------------------------
-			WCELL(j,k).west  = WCELL(j,k).east;
-			WCELL(j,k).east  = INTERP_5TH_EAST( W,WCELL(j,k).ubsign,i);
-			WCELL(j,k).north = INTERP_5TH_NORTH(W,WCELL(j,k).vbsign,j);
-			WCELL(j,k).top   = INTERP_3RD_TOP(  W,WCELL(j,k).wbsign,k);
-			
-			WBCELL(j,k).east  = INTERP_5TH_EAST( WBAR,WCELL(j,k).usign,i);
-			WBCELL(j,k).north = INTERP_5TH_NORTH(WBAR,WCELL(j,k).vsign,j);
-			WBCELL(j,k).top   = INTERP_3RD_TOP(  WBAR,WCELL(j,k).wsign,k);
-		}
-
-		/***************************************************
-		* For the uppermost physical point (NZ-1 is a "ghost"
-		* point), we can't calculate the required 3rd order
-		* interpolation, so we can either set it to zero or
-		* use a second order interpolation.
-		****************************************************/
-		k = NZ-2;
-
-		//---------------------------------------------------------
-		// Vertical velocity control volumes
-		//---------------------------------------------------------
-		WCELL(j,k).west = WCELL(j,k).east;
-		WCELL(j,k).east  = INTERP_5TH_EAST( W,WCELL(j,k).ubsign,i);
-		WCELL(j,k).north = INTERP_5TH_NORTH(W,WCELL(j,k).vbsign,j);
-		WCELL(j,k).top = 0;
-		
-		WBCELL(j,k).east  = INTERP_5TH_EAST( WBAR,WCELL(j,k).usign,i);
-		WBCELL(j,k).north = INTERP_5TH_NORTH(WBAR,WCELL(j,k).vsign,j);
-		WBCELL(j,k).top = 0;	
-
-	}
-	
-
-}
-#endif
