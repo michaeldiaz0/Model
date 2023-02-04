@@ -1999,17 +1999,17 @@ void create_budget_file(const char *myfilename,int type){
 	/*************************************************
 	* Add global attributes
 	**************************************************/
-     status = nc_put_att_double (ncid, NC_GLOBAL, "dx", NC_FLOAT, 1, &ndx);
-     if (status != NC_NOERR) handle_error(status);
+	status = nc_put_att_double (ncid, NC_GLOBAL, "dx", NC_FLOAT, 1, &ndx);
+	if (status != NC_NOERR) handle_error(status);
 
-     status = nc_put_att_double (ncid, NC_GLOBAL, "dy", NC_FLOAT, 1, &ndy);
-     if (status != NC_NOERR) handle_error(status);
+	status = nc_put_att_double (ncid, NC_GLOBAL, "dy", NC_FLOAT, 1, &ndy);
+	if (status != NC_NOERR) handle_error(status);
 
-     status = nc_put_att_double (ncid, NC_GLOBAL, "dz", NC_FLOAT, 1, &dz);
-     if (status != NC_NOERR) handle_error(status);
+	status = nc_put_att_double (ncid, NC_GLOBAL, "dz", NC_FLOAT, 1, &dz);
+	if (status != NC_NOERR) handle_error(status);
 
-     status = nc_put_att_text (ncid, NC_GLOBAL, "processed_data_file",strlen(filename), filename);
-     if (status != NC_NOERR) handle_error(status);
+	status = nc_put_att_text (ncid, NC_GLOBAL, "processed_data_file",strlen(filename), filename);
+	if (status != NC_NOERR) handle_error(status);
 
 	/*************************************************
 	* Create dimensions
