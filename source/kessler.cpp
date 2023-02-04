@@ -183,6 +183,9 @@ void run_kessler_microphysics(int il,int ih,int jl,int jh){
 	//--------------------------------------------
 	if(RAIN_FALLOUT==2){
 		
+		// need fall speed to calculate Lagrangian trajectories
+		calculate_eulerian_fall_speed_precip(vts, qrps, il, ih, jl, jh);
+		
 		hydrometeor_fallout(qrps,vts,il,ih,jl,jh,accRain);
 				
 		// set rain fall speed to zero so that it
