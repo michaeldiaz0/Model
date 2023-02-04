@@ -343,7 +343,7 @@ void compute_west_uv(int i,int jl,int jh){
 		* for advected velocity
 		****************************************************/
 		UCELL(j,k).east  = INTERP_EAST(U,ut,i);
-		VCELL(j,k).east  = INTERP_5TH_EAST(V,vt,i);
+		VCELL(j,k).east  = INTERP_EAST(V,vt,i);
 		
 		UBCELL(j,k).east  = INTERP_EAST(UBAR,signof(UCELL(j,k).ua),i);
 		VBCELL(j,k).east  = INTERP_EAST(VBAR,signof(VCELL(j,k).ua),i);
@@ -728,15 +728,15 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 		//-------------------------------------------
 		// Perturbation interpolation
 		SCELL(j,k).west  = SCELL(j,k).east;
-		SCELL(j,k).east  = INTERP_5TH_EAST( SP,ut,i);
-		SCELL(j,k).north = INTERP_5TH_NORTH(SP,vt,j);
+		SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
+		SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
 		SCELL(j,k).top   = k_interp2nd(SP,k+1,k);
 
 		//-------------------------------------------
 		// Base state interpolation
 		BCELL(j,k).west  = BCELL(j,k).east;
-		BCELL(j,k).east  = INTERP_5TH_EAST( SB,utp,i);
-		BCELL(j,k).north = INTERP_5TH_NORTH(SB,vtp,j);
+		BCELL(j,k).east  = INTERP_EAST( SB,utp,i);
+		BCELL(j,k).north = INTERP_NORTH(SB,vtp,j);
 		BCELL(j,k).top   = k_interp2nd(SB,k+1,k);
 	}
 }
@@ -768,8 +768,8 @@ void interpolate_scalar(int i,int jl,int jh,double *s,struct cell *scell){
 			//-------------------------------------------
 			// Perturbation interpolation
 			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_5TH_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_5TH_NORTH(SP,vt,j);
+			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
+			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
 			SCELL(j,k).top   = INTERP_TOP(  SP,wt,k);
 		}
 		
@@ -789,8 +789,8 @@ void interpolate_scalar(int i,int jl,int jh,double *s,struct cell *scell){
 		//-------------------------------------------
 		// Perturbation interpolation
 		SCELL(j,k).west  = SCELL(j,k).east;
-		SCELL(j,k).east  = INTERP_5TH_EAST( SP,ut,i);
-		SCELL(j,k).north = INTERP_5TH_NORTH(SP,vt,j);
+		SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
+		SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
 		SCELL(j,k).top   = k_interp2nd(SP,k+1,k);
 	}
 }
@@ -822,8 +822,8 @@ void interpolate_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *fal
 			//-------------------------------------------
 			// Perturbation interpolation
 			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_5TH_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_5TH_NORTH(SP,vt,j);
+			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
+			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
 			SCELL(j,k).top   = INTERP_TOP(  SP,wt,k);
 		}
 		
@@ -843,8 +843,8 @@ void interpolate_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *fal
 		//-------------------------------------------
 		// Perturbation interpolation
 		SCELL(j,k).west  = SCELL(j,k).east;
-		SCELL(j,k).east  = INTERP_5TH_EAST( SP,ut,i);
-		SCELL(j,k).north = INTERP_5TH_NORTH(SP,vt,j);
+		SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
+		SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
 		SCELL(j,k).top   = k_interp2nd(SP,k+1,k);
 	}
 }
@@ -876,8 +876,8 @@ void interpolate_scalar(int i,int jl,int jh,double *u,double *v,double *w,double
 			//-------------------------------------------
 			// Perturbation interpolation
 			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_5TH_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_5TH_NORTH(SP,vt,j);
+			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
+			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
 			SCELL(j,k).top   = INTERP_TOP(  SP,wt,k);
 		}
 		
@@ -897,8 +897,8 @@ void interpolate_scalar(int i,int jl,int jh,double *u,double *v,double *w,double
 		//-------------------------------------------
 		// Perturbation interpolation
 		SCELL(j,k).west  = SCELL(j,k).east;
-		SCELL(j,k).east  = INTERP_5TH_EAST( SP,ut,i);
-		SCELL(j,k).north = INTERP_5TH_NORTH(SP,vt,j);
+		SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
+		SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
 		SCELL(j,k).top   = k_interp2nd(SP,k+1,k);
 	}
 }
