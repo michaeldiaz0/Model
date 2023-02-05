@@ -655,7 +655,7 @@ void compute_fluxes_moisture(int i,int jl,int jh){
 
 /*********************************************************************
 * Interpolate a scalar field to the faces of each control volume for
-* a YZ cross section.
+* a YZ cross section with a basic state.
 *
 * @param i - the x-coordinate
 * @param jl,jh - the high and low index bounds for the y-coordinate
@@ -743,7 +743,7 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 
 /*********************************************************************
 * Interpolate a scalar field to the faces of each control volume for
-* a YZ cross section. Without basic state
+* a YZ cross section without a basic state
 *
 * @param i - the x-coordinate
 * @param jl,jh - the high and low index bounds for the y-coordinate
