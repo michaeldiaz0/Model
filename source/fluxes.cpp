@@ -667,7 +667,11 @@ void compute_fluxes_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *
 **********************************************************************/
 void compute_fluxes_moisture(int i,int jl,int jh){
 
-	interpolate_moisture(i,jl,jh);
+	//interpolate_moisture(i,jl,jh);
+	
+	interpolate_scalar(i, jl, jh, qcs, qccell);
+	interpolate_scalar_with_fallspeed(i, jl, jh, qrs, vts, qrcell);
+	interpolate_scalar(i, jl, jh, qvs, m_qbar, qvcell, qvbcell);
 
 	double ub,vb,wb;
 
