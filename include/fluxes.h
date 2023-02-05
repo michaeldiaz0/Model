@@ -23,6 +23,10 @@
 #define QRCELL(j,k)   qrcell[NZ*(j)+k]
 #define QVBCELL(j,k) qvbcell[NZ*(j)+k]
 
+// sign of advecting velocity
+#define SIGN_P_VEL(i,j,k) sign_p_vel[INDEX(i,j,k)]
+#define SIGN_B_VEL(i,j,k) sign_b_vel[INDEX(i,j,k)]
+
 /********************************************************
 * Data structure for interpolating scalar fluxes onto the
 * faces of a control volume.
@@ -57,16 +61,30 @@ struct vel_cell {
 	
 };
 
+/********************************************************
+* Data structure for sign of velocity components
+*********************************************************/
+struct sign_vel {
+
+	double u;
+	double v;
+	double w;
+};
+
 extern struct vel_cell *ucell,*vcell,*wcell;
 extern struct vel_cell *ubcell,*vbcell,*wbcell;
 extern struct cell *thcell,*thbcell;
 extern struct cell *qvcell,*qvbcell,*qccell,*qrcell,*ice_cell;
+extern struct sign_vel *sign_p_vel,*sign_b_vel;
 
 /********************************************************
 * Interpolation and flux procedures for advection equations
 *********************************************************/
 void initialize_flux_cells(int ny,int nz);
 void initialize_microphysics_cells(int ny,int nz);
+void initialize_sign_cells(int nx, int ny,int nz);
+
+void compute_sign_cells(int il,int ih,int jl,int jh);
 
 void compute_fluxes(int i,int jl,int jh);
 void compute_west(int i,int jl,int jh);

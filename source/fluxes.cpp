@@ -199,6 +199,7 @@ struct vel_cell *ucell,*vcell,*wcell;
 struct vel_cell *ubcell,*vbcell,*wbcell;
 struct cell *thcell,*thbcell;
 struct cell *qvcell,*qvbcell,*qccell,*qrcell,*ice_cell;
+struct sign_vel *sign_p_vel,*sign_b_vel;
 
 /***************************************************************************
 * ---------------------- FUNCTION PROTOTYPES--------------------------------
@@ -241,6 +242,16 @@ void initialize_microphysics_cells(int ny,int nz){
 }
 
 /*********************************************************************
+* 
+**********************************************************************/
+void initialize_sign_cells(int nx,int ny,int nz){
+	
+	sign_p_vel = (sign_vel*)malloc(nx*ny*nz*sizeof(sign_vel));
+	sign_b_vel = (sign_vel*)malloc(nx*ny*nz*sizeof(sign_vel));
+	
+}
+
+/*********************************************************************
 * Return the sign of x multiplied by one
 *
 **********************************************************************/
@@ -249,6 +260,33 @@ inline static double signof(double x){
 	if(x>0){ return 1;}
 	
 	return -1;
+}
+
+/*********************************************************************
+* Calculate sign of advecting velocity
+**********************************************************************/
+void compute_sign_cells(int il,int ih,int jl,int jh){
+
+	for(int i=il;i<ih;i++){	
+	for(int j=jl;j<jh;j++){
+	for(int k=1;k<NZ-1;k++){
+
+		SIGN_P_VEL(i,j,k).u = signof(U(i,j,k));
+		SIGN_P_VEL(i,j,k).v = signof(V(i,j,k));
+		SIGN_P_VEL(i,j,k).w = signof(W(i,j,k));
+
+	#if !ISLINEAR
+		SIGN_B_VEL(i,j,k).u = signof(UBAR(i,j,k)+U(i,j,k));
+		SIGN_B_VEL(i,j,k).v = signof(VBAR(i,j,k)+V(i,j,k));
+		SIGN_B_VEL(i,j,k).w = signof(WBAR(i,j,k)+W(i,j,k));
+	#else
+		SIGN_B_VEL(i,j,k).u = signof(UBAR(i,j,k));
+		SIGN_B_VEL(i,j,k).v = signof(VBAR(i,j,k));
+		SIGN_B_VEL(i,j,k).w = signof(WBAR(i,j,k));
+	#endif
+	
+	}}}
+	
 }
 
 /*********************************************************************
@@ -678,10 +716,23 @@ void compute_fluxes_moisture(int i,int jl,int jh){
 void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *scell,struct cell *bcell){
 
 	int k,kmin,kmax;
-	double ut,vt,wt,utp,vtp,wtp;
 
 	kmin = (VER_ADVECTION_ORDER+1) / 2;
 	kmax = NZ - (VER_ADVECTION_ORDER+1) / 2;
+
+	// interpolate perturbation scalar field
+	interpolate_scalar(i, jl, jh, s, scell);
+
+	for(int j=jl;j<jh;j++){
+	for(k=1;k<NZ-1;k++){
+
+		//-------------------------------------------
+		// Base state interpolation
+		BCELL(j,k).west  = BCELL(j,k).east;
+		BCELL(j,k).east  = INTERP_EAST( SB, SIGN_P_VEL(i+1,j,k).u, i);
+		BCELL(j,k).north = INTERP_NORTH(SB, SIGN_P_VEL(i,j+1,k).v, j);
+		BCELL(j,k).top   = INTERP_TOP(  SB, SIGN_P_VEL(i,j,k+1).w, k);
+	}}
 
 	//---------------------------------------------------
 	// Lower boundary points
@@ -695,31 +746,6 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 	
 		for(int j=jl;j<jh;j++){
 
-			//-------------------------------------------
-			// sign of advecting velocity
-			utp = signof(U(i+1,j,k));
-			vtp = signof(V(i,j+1,k));
-
-		#if !ISLINEAR
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-		#else
-			ut = signof(UBAR(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k));
-		#endif
-
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_2ND_TOP(SP,k);
-
-			//-------------------------------------------
-			// Base state interpolation
-			BCELL(j,k).west  = BCELL(j,k).east;
-			BCELL(j,k).east  = INTERP_EAST( SB,utp,i);
-			BCELL(j,k).north = INTERP_NORTH(SB,vtp,j);
 			BCELL(j,k).top   = INTERP_2ND_TOP(SB,k);
 		}
 	}
@@ -729,39 +755,10 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 		k = 2;
 	
 		for(int j=jl;j<jh;j++){
-			
-			//-------------------------------------------
-			// sign of advecting velocity
-			utp = signof(U(i+1,j,k));
-			vtp = signof(V(i,j+1,k));
-			wtp = signof(W(i,j,k+1));
 
-		#if !ISLINEAR
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-			wt = signof(WBAR(i,j,k+1)+W(i,j,k+1));
-		#else
-			ut = signof(UBAR(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k));
-			wt = signof(WBAR(i,j,k+1));
-		#endif	
-
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_3RD_TOP(SP,wt,k);
-
-			//-------------------------------------------
-			// Base state interpolation
-			BCELL(j,k).west  = BCELL(j,k).east;
-			BCELL(j,k).east  = INTERP_EAST( SB,utp,i);
-			BCELL(j,k).north = INTERP_NORTH(SB,vtp,j);
-			BCELL(j,k).top   = INTERP_3RD_TOP(SB,wtp,k);
+			BCELL(j,k).top   = INTERP_3RD_TOP(SB, SIGN_P_VEL(i,j,k+1).w, k);
 		}
 	}
-
 
 	//---------------------------------------------------
 	// Interior points
@@ -772,35 +769,7 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 	for(int j=jl;j<jh;j++){
 	for(k=kmin;k<kmax;k++){
 
-		//-------------------------------------------
-		// sign of advecting velocity
-		utp = signof(U(i+1,j,k));
-		vtp = signof(V(i,j+1,k));
-		wtp = signof(W(i,j,k+1));
-
-	#if !ISLINEAR
-		ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-		vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-		wt = signof(WBAR(i,j,k+1)+W(i,j,k+1));
-	#else
-		ut = signof(UBAR(i+1,j,k));
-		vt = signof(VBAR(i,j+1,k));
-		wt = signof(WBAR(i,j,k+1));
-	#endif		
-
-		//-------------------------------------------
-		// Perturbation interpolation
-		SCELL(j,k).west  = SCELL(j,k).east;
-		SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-		SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-		SCELL(j,k).top   = INTERP_TOP(  SP,wt,k);
-
-		//-------------------------------------------
-		// Base state interpolation
-		BCELL(j,k).west  = BCELL(j,k).east;
-		BCELL(j,k).east  = INTERP_EAST( SB,utp,i);
-		BCELL(j,k).north = INTERP_NORTH(SB,vtp,j);
-		BCELL(j,k).top   = INTERP_TOP(  SB,wtp,k);
+		BCELL(j,k).top   = INTERP_TOP(  SB, SIGN_P_VEL(i,j,k+1).w, k);
 	}}
 
 	//---------------------------------------------------
@@ -815,35 +784,7 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 	
 		for(int j=jl;j<jh;j++){
 
-			//-------------------------------------------
-			// sign of advecting velocity
-			utp = signof(U(i+1,j,k));
-			vtp = signof(V(i,j+1,k));
-			wtp = signof(W(i,j,k+1));
-
-		#if !ISLINEAR
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-			wt = signof(WBAR(i,j,k+1)+W(i,j,k+1));
-		#else
-			ut = signof(UBAR(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k));
-			wt = signof(WBAR(i,j,k+1));
-		#endif	
-
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_3RD_TOP(SP,wt,k);
-
-			//-------------------------------------------
-			// Base state interpolation
-			BCELL(j,k).west  = BCELL(j,k).east;
-			BCELL(j,k).east  = INTERP_EAST( SB,utp,i);
-			BCELL(j,k).north = INTERP_NORTH(SB,vtp,j);
-			BCELL(j,k).top   = INTERP_3RD_TOP(SB,wtp,k);
+			BCELL(j,k).top   = INTERP_3RD_TOP(SB, SIGN_P_VEL(i,j,k+1).w, k);
 		}
 	}
 	
@@ -853,31 +794,6 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 	
 		for(int j=jl;j<jh;j++){
 
-			//-------------------------------------------
-			// sign of advecting velocity
-			utp = signof(U(i+1,j,k));
-			vtp = signof(V(i,j+1,k));
-
-		#if !ISLINEAR
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-		#else
-			ut = signof(UBAR(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k));
-		#endif
-
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_2ND_TOP(SP,k);
-
-			//-------------------------------------------
-			// Base state interpolation
-			BCELL(j,k).west  = BCELL(j,k).east;
-			BCELL(j,k).east  = INTERP_EAST( SB,utp,i);
-			BCELL(j,k).north = INTERP_NORTH(SB,vtp,j);
 			BCELL(j,k).top   = INTERP_2ND_TOP(SB,k);
 		}
 	}
@@ -896,10 +812,18 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 void interpolate_scalar(int i,int jl,int jh,double *s,struct cell *scell){
 
 	int k,kmin,kmax;
-	double ut,vt,wt;
 	
 	kmin = (VER_ADVECTION_ORDER+1) / 2;
 	kmax = NZ - (VER_ADVECTION_ORDER+1) / 2;
+
+	for(int j=jl;j<jh;j++){
+	for(k=1;k<NZ-1;k++){
+
+		SCELL(j,k).west  = SCELL(j,k).east;
+		SCELL(j,k).east  = INTERP_EAST( SP, SIGN_B_VEL(i+1,j,k).u, i);
+		SCELL(j,k).north = INTERP_NORTH(SP, SIGN_B_VEL(i,j+1,k).v, j);
+		SCELL(j,k).top   = INTERP_TOP(  SP, SIGN_B_VEL(i,j,k+1).w, k);
+	}}
 
 	//---------------------------------------------------
 	// Lower boundary points
@@ -913,17 +837,7 @@ void interpolate_scalar(int i,int jl,int jh,double *s,struct cell *scell){
 	
 		for(int j=jl;j<jh;j++){
 
-			//-------------------------------------------
-			// sign of advecting velocity
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_2ND_TOP(SP,k);
+			SCELL(j,k).top = INTERP_2ND_TOP(SP,k);
 		}
 	}
 	
@@ -932,68 +846,37 @@ void interpolate_scalar(int i,int jl,int jh,double *s,struct cell *scell){
 		k = 2;
 	
 		for(int j=jl;j<jh;j++){
-			
-			//-------------------------------------------
-			// sign of advecting velocity
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-			wt = signof(WBAR(i,j,k+1)+W(i,j,k+1));
 
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_3RD_TOP(SP,wt,k);
+			SCELL(j,k).top = INTERP_3RD_TOP(SP, SIGN_B_VEL(i,j,k+1).w, k);
 		}
 	}
-
 
 	//---------------------------------------------------
 	// Interior points
 	// Use requested interpolation order if the stencil
 	// lies completely within the model domain
 	//---------------------------------------------------
+
 	for(int j=jl;j<jh;j++){
 	for(k=kmin;k<kmax;k++){
 
-		//-------------------------------------------
-		// sign of advecting velocity
-		ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-		vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-		wt = signof(WBAR(i,j,k+1)+W(i,j,k+1));
-
-		//-------------------------------------------
-		// Perturbation interpolation
-		SCELL(j,k).west  = SCELL(j,k).east;
-		SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-		SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-		SCELL(j,k).top   = INTERP_TOP(  SP,wt,k);
+		SCELL(j,k).top = INTERP_TOP(SP, SIGN_B_VEL(i,j,k+1).w, k);
 	}}
-	
+
 	//---------------------------------------------------
 	// Upper boundary points
 	// Use lower order interpolations if the stencil
 	// extends above the model domain
 	//---------------------------------------------------
+	
 	if(kmax < NZ-2){
 		
 		k = NZ-3;
 	
 		for(int j=jl;j<jh;j++){
 
-			//-------------------------------------------
-			// sign of advecting velocity
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-			wt = signof(WBAR(i,j,k+1)+W(i,j,k+1));
-			
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_3RD_TOP(SP,k+1,k);
+			SCELL(j,k).top = INTERP_3RD_TOP(SP, SIGN_B_VEL(i,j,k+1).w, k);
+
 		}
 	}
 	
@@ -1003,20 +886,10 @@ void interpolate_scalar(int i,int jl,int jh,double *s,struct cell *scell){
 	
 		for(int j=jl;j<jh;j++){
 
-			//-------------------------------------------
-			// sign of advecting velocity
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_2ND_TOP(SP,k);
+			SCELL(j,k).top = INTERP_2ND_TOP(SP,k);
 		}
 	}
-		
+	
 }
 
 /*********************************************************************
@@ -1236,16 +1109,12 @@ void interpolate_moisture_vertical_2nd(int i,int j,int k){
 **********************************************************************/
 void interpolate_moisture_vertical_3rd(int i,int j,int k){
 
-	double wsign,wbsign,wrsign;
-	
-	wsign = signof(W(i,j,k+1));
-	wbsign = signof(WBAR(i,j,k+1)+W(i,j,k+1));	
-	wrsign = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(VT(i,j,k+1)+VT(i,j,k)));
+	double wrsign = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(VT(i,j,k+1)+VT(i,j,k)));
 
-	QVCELL(j,k).top  = INTERP_3RD_TOP(QV,wbsign,k);
-	QCCELL(j,k).top  = INTERP_3RD_TOP(QC,wbsign,k);
-	QRCELL(j,k).top  = INTERP_3RD_TOP(QR,wrsign,k);
-	QVBCELL(j,k).top = INTERP_3RD_TOP(QBAR,wsign,k);
+	QVCELL(j,k).top  = INTERP_3RD_TOP(QV, SIGN_B_VEL(i,j,k+1).w, k);
+	QCCELL(j,k).top  = INTERP_3RD_TOP(QC, SIGN_B_VEL(i,j,k+1).w, k);
+	QRCELL(j,k).top  = INTERP_3RD_TOP(QR, wrsign, k);
+	QVBCELL(j,k).top = INTERP_3RD_TOP(QBAR, SIGN_P_VEL(i,j,k+1).w, k);
 }
 
 /*********************************************************************
@@ -1253,50 +1122,14 @@ void interpolate_moisture_vertical_3rd(int i,int j,int k){
 **********************************************************************/
 void interpolate_moisture_vertical(int i,int j,int k){
 	
-	double wsign,wbsign,wrsign;
-	
-	wsign = signof(W(i,j,k+1));
-	wbsign = signof(WBAR(i,j,k+1)+W(i,j,k+1));	
-	wrsign = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(VT(i,j,k+1)+VT(i,j,k)));
+	double wrsign = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(VT(i,j,k+1)+VT(i,j,k)));
 
-	QVCELL(j,k).top  = INTERP_TOP(QV,wbsign,k);
-	QCCELL(j,k).top  = INTERP_TOP(QC,wbsign,k);
-	QRCELL(j,k).top  = INTERP_TOP(QR,wrsign,k);
-	QVBCELL(j,k).top = INTERP_TOP(QBAR,wsign,k);
+	QVCELL(j,k).top  = INTERP_TOP(QV, SIGN_B_VEL(i,j,k+1).w, k);
+	QCCELL(j,k).top  = INTERP_TOP(QC, SIGN_B_VEL(i,j,k+1).w, k);
+	QRCELL(j,k).top  = INTERP_TOP(QR, wrsign, k);
+	QVBCELL(j,k).top = INTERP_TOP(QBAR,SIGN_P_VEL(i,j,k+1).w, k);
 	
 }
-
-/*********************************************************************
-* 
-**********************************************************************/
-void interpolate_moisture_horizontal(int i,int j,int k){
-
-	double usign,vsign;
-	double ubsign,vbsign;
-	
-	usign = signof(U(i+1,j,k));
-	vsign = signof(V(i,j+1,k));
-
-	ubsign = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-	vbsign = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-
-	QVCELL(j,k).west = QVCELL(j,k).east;
-	QVCELL(j,k).east  = INTERP_EAST( QV,ubsign,i);
-	QVCELL(j,k).north = INTERP_NORTH(QV,vbsign,j);
-
-	QCCELL(j,k).west = QCCELL(j,k).east;
-	QCCELL(j,k).east  = INTERP_EAST( QC,ubsign,i);
-	QCCELL(j,k).north = INTERP_NORTH(QC,vbsign,j);
-
-	QRCELL(j,k).west = QRCELL(j,k).east;
-	QRCELL(j,k).east  = INTERP_EAST( QR,ubsign,i);
-	QRCELL(j,k).north = INTERP_NORTH(QR,vbsign,j);
-
-	QVBCELL(j,k).west = QVBCELL(j,k).east;
-	QVBCELL(j,k).east  = INTERP_EAST( QBAR,usign,i);
-	QVBCELL(j,k).north = INTERP_NORTH(QBAR,vsign,j);
-}
-
 
 /*********************************************************************
 * Interpolate moisture fields to the faces of each control volume for
@@ -1314,6 +1147,27 @@ void interpolate_moisture(int i,int jl,int jh){
 
 	//printf("%d %d ",kmin,kmax);
 	
+	for(int j=jl;j<jh;j++){
+	for(k=1;k<NZ-1;k++){
+		
+		QVCELL(j,k).west  = QVCELL(j,k).east;
+		QVCELL(j,k).east  = INTERP_EAST( QV, SIGN_B_VEL(i+1,j,k).u, i);
+		QVCELL(j,k).north = INTERP_NORTH(QV, SIGN_B_VEL(i,j+1,k).v, j);
+
+		QCCELL(j,k).west  = QCCELL(j,k).east;
+		QCCELL(j,k).east  = INTERP_EAST( QC, SIGN_B_VEL(i+1,j,k).u, i);
+		QCCELL(j,k).north = INTERP_NORTH(QC, SIGN_B_VEL(i,j+1,k).v, j);
+
+		QRCELL(j,k).west  = QRCELL(j,k).east;
+		QRCELL(j,k).east  = INTERP_EAST( QR, SIGN_B_VEL(i+1,j,k).u, i);
+		QRCELL(j,k).north = INTERP_NORTH(QR, SIGN_B_VEL(i,j+1,k).v, j);
+
+		QVBCELL(j,k).west  = QVBCELL(j,k).east;
+		QVBCELL(j,k).east  = INTERP_EAST( QBAR, SIGN_P_VEL(i+1,j,k).u, i);
+		QVBCELL(j,k).north = INTERP_NORTH(QBAR, SIGN_P_VEL(i,j+1,k).v, j);
+		
+	}}
+	
 	//---------------------------------------------------
 	// Lower boundary points
 	// Use lower order interpolations if the stencil
@@ -1326,7 +1180,6 @@ void interpolate_moisture(int i,int jl,int jh){
 	
 		for(int j=jl;j<jh;j++){
 
-			interpolate_moisture_horizontal(i,j,k);
 			interpolate_moisture_vertical_2nd(i,j,k);
 		}
 	}
@@ -1337,7 +1190,6 @@ void interpolate_moisture(int i,int jl,int jh){
 	
 		for(int j=jl;j<jh;j++){
 			
-			interpolate_moisture_horizontal(i,j,k);
 			interpolate_moisture_vertical_3rd(i,j,k);
 		}
 	}
@@ -1350,7 +1202,6 @@ void interpolate_moisture(int i,int jl,int jh){
 	for(int j=jl;j<jh;j++){
 	for(k=kmin;k<kmax;k++){
 		
-		interpolate_moisture_horizontal(i,j,k);
 		interpolate_moisture_vertical(i,j,k);
 		
 	}}
@@ -1367,7 +1218,6 @@ void interpolate_moisture(int i,int jl,int jh){
 	
 		for(int j=jl;j<jh;j++){
 
-			interpolate_moisture_horizontal(i,j,k);
 			interpolate_moisture_vertical_3rd(i,j,k);
 		}
 	}
@@ -1378,7 +1228,6 @@ void interpolate_moisture(int i,int jl,int jh){
 	
 		for(int j=jl;j<jh;j++){
 
-			interpolate_moisture_horizontal(i,j,k);
 			interpolate_moisture_vertical_2nd(i,j,k);
 		}
 	}
