@@ -21,43 +21,6 @@
 	#define SP(i,j,k) s[fNZ*(fNY*(i)+(j))+(k)]
 	#define SB(i,j,k) sb[fNZ*(fNY*(i)+(j))+(k)]
 #endif
-/***********************************************************************************************
-* INTERPOLATION OPERATORS
-************************************************************************************************/
-#define INTERP_6TH_EAST(  VAR,i) i_interp6th(VAR,i+1,i,i+2,i-1,i+3,i-2)
-#define INTERP_6TH_WEST(  VAR,i) i_interp6th(VAR,i-1,i,i-2,i+1,i-3,i+2)
-#define INTERP_6TH_NORTH( VAR,j) j_interp6th(VAR,j+1,j,j+2,j-1,j+3,j-2)
-#define INTERP_6TH_SOUTH( VAR,j) j_interp6th(VAR,j-1,j,j-2,j+1,j-3,j+2)
-#define INTERP_6TH_TOP(   VAR,k) k_interp6th(VAR,k+1,k,k+2,k-1,k+3,k-2)
-#define INTERP_6TH_BOTTOM(VAR,k) k_interp6th(VAR,k-1,k,k-2,k+1,k-3,k+2)
-
-#define INTERP_5TH_EAST(  VAR,SIGN,i) (INTERP_6TH_EAST(  VAR,i) + one60ths * (SIGN) * i_interp5th(VAR,i+3,i-2,i+2,i-1,i+1,i))
-#define INTERP_5TH_WEST(  VAR,SIGN,i) (INTERP_6TH_WEST(  VAR,i) + one60ths * (SIGN) * i_interp5th(VAR,i+2,i-3,i+1,i-2,i,i-1))
-#define INTERP_5TH_NORTH( VAR,SIGN,j) (INTERP_6TH_NORTH( VAR,j) + one60ths * (SIGN) * j_interp5th(VAR,j+3,j-2,j+2,j-1,j+1,j))
-#define INTERP_5TH_SOUTH( VAR,SIGN,j) (INTERP_6TH_SOUTH( VAR,j) + one60ths * (SIGN) * j_interp5th(VAR,j+2,j-3,j+1,j-2,j,j-1))
-#define INTERP_5TH_TOP(   VAR,SIGN,k) (INTERP_6TH_TOP(   VAR,k) + one60ths * (SIGN) * k_interp5th(VAR,k+3,k-2,k+2,k-1,k+1,k))
-#define INTERP_5TH_BOTTOM(VAR,SIGN,k) (INTERP_6TH_BOTTOM(VAR,k) + one60ths * (SIGN) * k_interp5th(VAR,k+2,k-3,k+1,k-2,k,k-1))
-
-#define INTERP_4TH_EAST(  VAR,i) i_interp4th(VAR,i+1,i,i+2,i-1)
-#define INTERP_4TH_WEST(  VAR,i) i_interp4th(VAR,i-1,i,i-2,i+1)
-#define INTERP_4TH_NORTH( VAR,j) j_interp4th(VAR,j+1,j,j+2,j-1)
-#define INTERP_4TH_SOUTH( VAR,j) j_interp4th(VAR,j-1,j,j-2,j+1)
-#define INTERP_4TH_TOP(   VAR,k) k_interp4th(VAR,k+1,k,k+2,k-1)
-#define INTERP_4TH_BOTTOM(VAR,k) k_interp4th(VAR,k-1,k,k-2,k+1)
-
-#define INTERP_3RD_EAST(  VAR,SIGN,i) (INTERP_4TH_EAST(  VAR,i) + onetwelfth * (SIGN) * i_interp3rd(VAR,i+2,i-1,i+1,i))
-#define INTERP_3RD_WEST(  VAR,SIGN,i) (INTERP_4TH_WEST(  VAR,i) + onetwelfth * (SIGN) * i_interp3rd(VAR,i+1,i-2,i,i-1))
-#define INTERP_3RD_NORTH( VAR,SIGN,j) (INTERP_4TH_NORTH( VAR,j) + onetwelfth * (SIGN) * j_interp3rd(VAR,j+2,j-1,j+1,j))
-#define INTERP_3RD_SOUTH( VAR,SIGN,j) (INTERP_4TH_SOUTH( VAR,j) + onetwelfth * (SIGN) * j_interp3rd(VAR,j+1,j-2,j,j-1))
-#define INTERP_3RD_TOP(   VAR,SIGN,k) (INTERP_4TH_TOP(   VAR,k) + onetwelfth * (SIGN) * k_interp3rd(VAR,k+2,k-1,k+1,k))
-#define INTERP_3RD_BOTTOM(VAR,SIGN,k) (INTERP_4TH_BOTTOM(VAR,k) + onetwelfth * (SIGN) * k_interp3rd(VAR,k+1,k-2,k,k-1))
-
-#define INTERP_2ND_EAST(  VAR,i) i_interp2nd(VAR,i+1,i)
-#define INTERP_2ND_WEST(  VAR,i) i_interp2nd(VAR,i-1,i)
-#define INTERP_2ND_NORTH( VAR,j) j_interp2nd(VAR,j+1,j)
-#define INTERP_2ND_SOUTH( VAR,j) j_interp2nd(VAR,j-1,j)
-#define INTERP_2ND_TOP(   VAR,k) k_interp2nd(VAR,k+1,k)
-#define INTERP_2ND_BOTTOM(VAR,k) k_interp2nd(VAR,k-1,k)
 
 /***********************************************************************************************
 * CHOOSE A HORIZONTAL INTERPOLATION ORDER AT COMPILE TIME
@@ -118,6 +81,44 @@
 	#define INTERP_BOTTOM(VAR,SIGN,k) INTERP_2ND_BOTTOM(VAR,k)
 
 #endif
+
+/***********************************************************************************************
+* INTERPOLATION OPERATORS
+************************************************************************************************/
+#define INTERP_6TH_EAST(  VAR,i) i_interp6th(VAR,i+1,i,i+2,i-1,i+3,i-2)
+#define INTERP_6TH_WEST(  VAR,i) i_interp6th(VAR,i-1,i,i-2,i+1,i-3,i+2)
+#define INTERP_6TH_NORTH( VAR,j) j_interp6th(VAR,j+1,j,j+2,j-1,j+3,j-2)
+#define INTERP_6TH_SOUTH( VAR,j) j_interp6th(VAR,j-1,j,j-2,j+1,j-3,j+2)
+#define INTERP_6TH_TOP(   VAR,k) k_interp6th(VAR,k+1,k,k+2,k-1,k+3,k-2)
+#define INTERP_6TH_BOTTOM(VAR,k) k_interp6th(VAR,k-1,k,k-2,k+1,k-3,k+2)
+
+#define INTERP_5TH_EAST(  VAR,SIGN,i) (INTERP_6TH_EAST(  VAR,i) + one60ths * (SIGN) * i_interp5th(VAR,i+3,i-2,i+2,i-1,i+1,i))
+#define INTERP_5TH_WEST(  VAR,SIGN,i) (INTERP_6TH_WEST(  VAR,i) + one60ths * (SIGN) * i_interp5th(VAR,i+2,i-3,i+1,i-2,i,i-1))
+#define INTERP_5TH_NORTH( VAR,SIGN,j) (INTERP_6TH_NORTH( VAR,j) + one60ths * (SIGN) * j_interp5th(VAR,j+3,j-2,j+2,j-1,j+1,j))
+#define INTERP_5TH_SOUTH( VAR,SIGN,j) (INTERP_6TH_SOUTH( VAR,j) + one60ths * (SIGN) * j_interp5th(VAR,j+2,j-3,j+1,j-2,j,j-1))
+#define INTERP_5TH_TOP(   VAR,SIGN,k) (INTERP_6TH_TOP(   VAR,k) + one60ths * (SIGN) * k_interp5th(VAR,k+3,k-2,k+2,k-1,k+1,k))
+#define INTERP_5TH_BOTTOM(VAR,SIGN,k) (INTERP_6TH_BOTTOM(VAR,k) + one60ths * (SIGN) * k_interp5th(VAR,k+2,k-3,k+1,k-2,k,k-1))
+
+#define INTERP_4TH_EAST(  VAR,i) i_interp4th(VAR,i+1,i,i+2,i-1)
+#define INTERP_4TH_WEST(  VAR,i) i_interp4th(VAR,i-1,i,i-2,i+1)
+#define INTERP_4TH_NORTH( VAR,j) j_interp4th(VAR,j+1,j,j+2,j-1)
+#define INTERP_4TH_SOUTH( VAR,j) j_interp4th(VAR,j-1,j,j-2,j+1)
+#define INTERP_4TH_TOP(   VAR,k) k_interp4th(VAR,k+1,k,k+2,k-1)
+#define INTERP_4TH_BOTTOM(VAR,k) k_interp4th(VAR,k-1,k,k-2,k+1)
+
+#define INTERP_3RD_EAST(  VAR,SIGN,i) (INTERP_4TH_EAST(  VAR,i) + onetwelfth * (SIGN) * i_interp3rd(VAR,i+2,i-1,i+1,i))
+#define INTERP_3RD_WEST(  VAR,SIGN,i) (INTERP_4TH_WEST(  VAR,i) + onetwelfth * (SIGN) * i_interp3rd(VAR,i+1,i-2,i,i-1))
+#define INTERP_3RD_NORTH( VAR,SIGN,j) (INTERP_4TH_NORTH( VAR,j) + onetwelfth * (SIGN) * j_interp3rd(VAR,j+2,j-1,j+1,j))
+#define INTERP_3RD_SOUTH( VAR,SIGN,j) (INTERP_4TH_SOUTH( VAR,j) + onetwelfth * (SIGN) * j_interp3rd(VAR,j+1,j-2,j,j-1))
+#define INTERP_3RD_TOP(   VAR,SIGN,k) (INTERP_4TH_TOP(   VAR,k) + onetwelfth * (SIGN) * k_interp3rd(VAR,k+2,k-1,k+1,k))
+#define INTERP_3RD_BOTTOM(VAR,SIGN,k) (INTERP_4TH_BOTTOM(VAR,k) + onetwelfth * (SIGN) * k_interp3rd(VAR,k+1,k-2,k,k-1))
+
+#define INTERP_2ND_EAST(  VAR,i) i_interp2nd(VAR,i+1,i)
+#define INTERP_2ND_WEST(  VAR,i) i_interp2nd(VAR,i-1,i)
+#define INTERP_2ND_NORTH( VAR,j) j_interp2nd(VAR,j+1,j)
+#define INTERP_2ND_SOUTH( VAR,j) j_interp2nd(VAR,j-1,j)
+#define INTERP_2ND_TOP(   VAR,k) k_interp2nd(VAR,k+1,k)
+#define INTERP_2ND_BOTTOM(VAR,k) k_interp2nd(VAR,k-1,k)
 
 /***********************************************************************************************
 * SIXTH ORDER INTERPOLATION FOR ADVECTION
@@ -975,6 +976,80 @@ void interpolate_scalar(int i,int jl,int jh,double *u,double *v,double *w,double
 }
 
 /*********************************************************************
+* 
+**********************************************************************/
+void interpolate_moisture_vertical_2nd(int i,int j,int k){
+
+	QVCELL(j,k).top  = k_interp2nd(QV,k+1,k);
+	QCCELL(j,k).top  = k_interp2nd(QC,k+1,k);
+	QRCELL(j,k).top  = k_interp2nd(QR,k+1,k);
+	QVBCELL(j,k).top = k_interp2nd(QBAR,k+1,k);
+}
+
+/*********************************************************************
+* 
+**********************************************************************/
+void interpolate_moisture_vertical_3rd(int i,int j,int k){
+
+	double wsign,wbsign,wrsign;
+
+	QVCELL(j,k).top  = INTERP_3RD_TOP(QV,wbsign,k);
+	QCCELL(j,k).top  = INTERP_3RD_TOP(QC,wbsign,k);
+	QRCELL(j,k).top  = INTERP_3RD_TOP(QR,wrsign,k);
+	QVBCELL(j,k).top = INTERP_3RD_TOP(QBAR,wsign,k);
+}
+
+/*********************************************************************
+* 
+**********************************************************************/
+void interpolate_moisture_vertical(int i,int j,int k){
+	
+	double wsign,wbsign,wrsign;
+	
+	wsign = signof(W(i,j,k+1));
+	wbsign = signof(WBAR(i,j,k+1)+W(i,j,k+1));	
+	wrsign = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(VT(i,j,k+1)+VT(i,j,k)));
+
+	QVCELL(j,k).top  = INTERP_TOP(QV,wbsign,k);
+	QCCELL(j,k).top  = INTERP_TOP(QC,wbsign,k);
+	QRCELL(j,k).top  = INTERP_TOP(QR,wrsign,k);
+	QVBCELL(j,k).top = INTERP_TOP(QBAR,wsign,k);
+	
+}
+
+/*********************************************************************
+* 
+**********************************************************************/
+void interpolate_moisture_horizontal(int i,int j,int k){
+
+	double usign,vsign;
+	double ubsign,vbsign;
+	
+	usign = signof(U(i+1,j,k));
+	vsign = signof(V(i,j+1,k));
+
+	ubsign = signof(UBAR(i+1,j,k)+U(i+1,j,k));
+	vbsign = signof(VBAR(i,j+1,k)+V(i,j+1,k));
+
+	QVCELL(j,k).west = QVCELL(j,k).east;
+	QVCELL(j,k).east  = INTERP_EAST( QV,ubsign,i);
+	QVCELL(j,k).north = INTERP_NORTH(QV,vbsign,j);
+
+	QCCELL(j,k).west = QCCELL(j,k).east;
+	QCCELL(j,k).east  = INTERP_EAST( QC,ubsign,i);
+	QCCELL(j,k).north = INTERP_NORTH(QC,vbsign,j);
+
+	QRCELL(j,k).west = QRCELL(j,k).east;
+	QRCELL(j,k).east  = INTERP_EAST( QR,ubsign,i);
+	QRCELL(j,k).north = INTERP_NORTH(QR,vbsign,j);
+
+	QVBCELL(j,k).west = QVBCELL(j,k).east;
+	QVBCELL(j,k).east  = INTERP_EAST( QBAR,usign,i);
+	QVBCELL(j,k).north = INTERP_NORTH(QBAR,vsign,j);
+}
+
+
+/*********************************************************************
 * Interpolate moisture fields to the faces of each control volume for
 * a YZ cross section.
 *
@@ -983,112 +1058,82 @@ void interpolate_scalar(int i,int jl,int jh,double *u,double *v,double *w,double
 **********************************************************************/
 void interpolate_moisture(int i,int jl,int jh){
 
-	double usign,vsign,wsign;
-	double ubsign,vbsign,wbsign;
-	double wrsign;
-
 	int k,kmin,kmax;
 
 	kmin = (VER_ADVECTION_ORDER+1) / 2;
 	kmax = NZ - (VER_ADVECTION_ORDER+1) / 2;
 
-	for(int j=jl;j<jh;j++){
-
+	//printf("%d %d ",kmin,kmax);
+	
+	//---------------------------------------------------
+	// Lower boundary points
+	// Use lower order interpolations if the stencil
+	// extends below the grounnd
+	//---------------------------------------------------
+	
+	if(kmin > 1){ // lowest model level
+	
 		k = 1;
+	
+		for(int j=jl;j<jh;j++){
 
-		ubsign = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-		vbsign = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-		usign = signof(U(i+1,j,k));
-		vsign = signof(V(i,j+1,k));
-
-		QVCELL(j,k).west = QVCELL(j,k).east;
-		QVCELL(j,k).east  = INTERP_EAST( QV,ubsign,i);
-		QVCELL(j,k).north = INTERP_NORTH(QV,vbsign,j);
-		QVCELL(j,k).top   = k_interp2nd(QV,k+1,k);
-
-		QCCELL(j,k).west = QCCELL(j,k).east;
-		QCCELL(j,k).east  = INTERP_EAST( QC,ubsign,i);
-		QCCELL(j,k).north = INTERP_NORTH(QC,vbsign,j);
-		QCCELL(j,k).top   = k_interp2nd(QC,k+1,k);
-
-		QRCELL(j,k).west = QRCELL(j,k).east;
-		QRCELL(j,k).east  = INTERP_EAST( QR,ubsign,i);
-		QRCELL(j,k).north = INTERP_NORTH(QR,vbsign,j);
-		QRCELL(j,k).top   = k_interp2nd(QR,k+1,k);
-
-		QVBCELL(j,k).west = QVBCELL(j,k).east;
-		QVBCELL(j,k).east  = INTERP_EAST( QBAR,usign,i);
-		QVBCELL(j,k).north = INTERP_NORTH(QBAR,vsign,j);
-		QVBCELL(j,k).top   = k_interp2nd(QBAR,k+1,k);
-
-		for(k=kmin;k<kmax;k++){
-
-			usign = signof(U(i+1,j,k));
-			vsign = signof(V(i,j+1,k));
-			wsign = signof(W(i,j,k+1));
-
-			ubsign = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vbsign = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-			wbsign = signof(WBAR(i,j,k+1)+W(i,j,k+1));
-			
-			wrsign = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(VT(i,j,k+1)+VT(i,j,k)));
-
-
-			QVCELL(j,k).west = QVCELL(j,k).east;
-			QVCELL(j,k).east  = INTERP_EAST( QV,ubsign,i);
-			QVCELL(j,k).north = INTERP_NORTH(QV,vbsign,j);
-			QVCELL(j,k).top   = INTERP_TOP(  QV,wbsign,k);
-
-			QCCELL(j,k).west = QCCELL(j,k).east;
-			QCCELL(j,k).east  = INTERP_EAST( QC,ubsign,i);
-			QCCELL(j,k).north = INTERP_NORTH(QC,vbsign,j);
-			QCCELL(j,k).top   = INTERP_TOP(  QC,wbsign,k);
-
-			QRCELL(j,k).west = QRCELL(j,k).east;
-			QRCELL(j,k).east  = INTERP_EAST( QR,ubsign,i);
-			QRCELL(j,k).north = INTERP_NORTH(QR,vbsign,j);
-			QRCELL(j,k).top   = INTERP_TOP(  QR,wrsign,k);
-
-			QVBCELL(j,k).west = QVBCELL(j,k).east;
-			QVBCELL(j,k).east  = INTERP_EAST( QBAR,usign,i);
-			QVBCELL(j,k).north = INTERP_NORTH(QBAR,vsign,j);
-			QVBCELL(j,k).top   = INTERP_TOP(  QBAR,wsign,k);
+			interpolate_moisture_horizontal(i,j,k);
+			interpolate_moisture_vertical_2nd(i,j,k);
 		}
-
-		/***************************************************
-		* For the uppermost physical point (NZ-1 is a "ghost"
-		* point), we can't calculate the required 3rd order
-		* interpolation, so can either set it to zero or
-		* use a second order interpolation.
-		****************************************************/
-		k = NZ-2;
-
-		ubsign = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-		vbsign = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-		usign = signof(U(i+1,j,k));
-		vsign = signof(V(i,j+1,k));
-
-		QVCELL(j,k).west = QVCELL(j,k).east;
-		QVCELL(j,k).east  = INTERP_EAST( QV,ubsign,i);
-		QVCELL(j,k).north = INTERP_NORTH(QV,vbsign,j);
-		QVCELL(j,k).top   = 0;
-
-		QCCELL(j,k).west = QCCELL(j,k).east;
-		QCCELL(j,k).east  = INTERP_EAST( QC,ubsign,i);
-		QCCELL(j,k).north = INTERP_NORTH(QC,vbsign,j);
-		QCCELL(j,k).top   = 0;
-
-		QRCELL(j,k).west = QRCELL(j,k).east;
-		QRCELL(j,k).east  = INTERP_EAST( QR,ubsign,i);
-		QRCELL(j,k).north = INTERP_NORTH(QR,vbsign,j);
-		QRCELL(j,k).top   = 0;
-
-		QVBCELL(j,k).west = QVBCELL(j,k).east;
-		QVBCELL(j,k).east  = INTERP_EAST( QBAR,usign,i);
-		QVBCELL(j,k).north = INTERP_NORTH(QBAR,vsign,j);
-		QVBCELL(j,k).top   = 0;
-
 	}
+	
+	if(kmin > 2){	// second lowest model level
+	
+		k = 2;
+	
+		for(int j=jl;j<jh;j++){
+			
+			interpolate_moisture_horizontal(i,j,k);
+			interpolate_moisture_vertical_3rd(i,j,k);
+		}
+	}
+
+	//---------------------------------------------------
+	// Interior points
+	// Use requested interpolation order if the stencil
+	// lies completely within the model domain
+	//---------------------------------------------------
+	for(int j=jl;j<jh;j++){
+	for(k=kmin;k<kmax;k++){
+		
+		interpolate_moisture_vertical(i,j,k);
+		interpolate_moisture_horizontal(i,j,k);
+	}}
+
+	//---------------------------------------------------
+	// Upper boundary points
+	// Use lower order interpolations if the stencil
+	// extends above the model domain
+	//---------------------------------------------------
+	
+	if(kmax < NZ-2){
+		
+		k = NZ-3;
+	
+		for(int j=jl;j<jh;j++){
+
+			interpolate_moisture_horizontal(i,j,k);
+			interpolate_moisture_vertical_2nd(i,j,k);
+		}
+	}
+	
+	if(kmax < NZ-1){
+	
+		k = NZ-2;
+	
+
+		for(int j=jl;j<jh;j++){
+
+			interpolate_moisture_horizontal(i,j,k);
+			interpolate_moisture_vertical_2nd(i,j,k);
+		}
+	}
+	
 }
 
 /*********************************************************************
