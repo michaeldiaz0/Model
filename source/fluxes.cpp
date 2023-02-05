@@ -210,7 +210,7 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 void interpolate_scalar(int i,int jl,int jh,double *s,struct cell *scell);
 void interpolate_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *fall,struct cell *scell);
 void interpolate_moisture(int i,int jl,int jh);
-inline static double signof(double x);
+inline static char signof(double x);
 
 /*********************************************************************
 * 
@@ -255,7 +255,7 @@ void initialize_sign_cells(int nx,int ny,int nz){
 * Return the sign of x multiplied by one
 *
 **********************************************************************/
-inline static double signof(double x){
+inline static char signof(double x){
 	
 	if(x>0){ return 1;}
 	

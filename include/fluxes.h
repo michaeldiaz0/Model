@@ -66,9 +66,9 @@ struct vel_cell {
 *********************************************************/
 struct sign_vel {
 
-	double u;
-	double v;
-	double w;
+	char u;
+	char v;
+	char w;
 };
 
 extern struct vel_cell *ucell,*vcell,*wcell;
