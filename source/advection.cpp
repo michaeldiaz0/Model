@@ -460,9 +460,18 @@ void advect_microphysics_cell(double step,int il,int ih,int jl,int jh){
 
 		// compute all fluxes for a YZ cross section
 		compute_fluxes_moisture(i,jl-1,jh);
+		
+		
+		
+		
 #if 1
+		//compute_fluxes_scalar(i,jl-1,jh,qvs,m_qbar,qvcell,qvbcell);
 		LOOP2D_JK(jl,jh,1,NZ-1, QVP(i,j,k) = QVM(i,j,k) + step * qv_tend_cell(i,j,k) )
+			
+		//compute_fluxes_scalar(i,jl-1,jh,qcs,qccell);
 		LOOP2D_JK(jl,jh,1,NZ-1, QCP(i,j,k) = QCM(i,j,k) + step * qc_tend_cell(i,j,k) )
+			
+		//compute_fluxes_scalar_with_fallspeed(i,jl-1,jh,qrs,vts,qrcell);
 		LOOP2D_JK(jl,jh,1,NZ-1, QRP(i,j,k) = QRM(i,j,k) + step * qr_tend_cell(i,j,k) )
 #else
 		//-------------------------------------------------------

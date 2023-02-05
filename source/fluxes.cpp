@@ -667,14 +667,15 @@ void compute_fluxes_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *
 **********************************************************************/
 void compute_fluxes_moisture(int i,int jl,int jh){
 
-	//interpolate_moisture(i,jl,jh);
-	
 	interpolate_scalar(i, jl, jh, qcs, qccell);
 	interpolate_scalar_with_fallspeed(i, jl, jh, qrs, vts, qrcell);
 	interpolate_scalar(i, jl, jh, qvs, m_qbar, qvcell, qvbcell);
 
 	double ub,vb,wb;
 
+	//---------------------------------------------------------
+	// Zonal fluxes
+	//---------------------------------------------------------
 	for(int j=jl;j<jh;j++){
 
 		QVCELL(j,0).top = 0;
@@ -685,25 +686,50 @@ void compute_fluxes_moisture(int i,int jl,int jh){
 
 			// advecting velocities
 			ub = UBAR(i+1,j,k)+U(i+1,j,k);
-			vb = VBAR(i,j+1,k)+V(i,j+1,k);
-			wb = WBAR(i,j,k+1)+W(i,j,k+1);
-
 			// vapor fluxes
 			QVCELL(j,k).east  = ub * QVCELL(j,k).east  + U(i+1,j,k) * QVBCELL(j,k).east;
-			QVCELL(j,k).north = vb * QVCELL(j,k).north + V(i,j+1,k) * QVBCELL(j,k).north;
-			QVCELL(j,k).top   = wb * QVCELL(j,k).top   + W(i,j,k+1) * QVBCELL(j,k).top;		
-
 			// cloud water fluxes
 			QCCELL(j,k).east  = ub * QCCELL(j,k).east;
-			QCCELL(j,k).north = vb * QCCELL(j,k).north;
-			QCCELL(j,k).top   = wb * QCCELL(j,k).top;
-
 			// rain water fluxes
 			QRCELL(j,k).east  = ub * QRCELL(j,k).east;
-			QRCELL(j,k).north = vb * QRCELL(j,k).north;			
+		}
+	}
+	
+	//---------------------------------------------------------
+	// Meridional fluxes
+	//---------------------------------------------------------
+	for(int j=jl;j<jh;j++){
+
+		for(int k=1;k<NZ-1;k++){
+			// advecting velocities
+			vb = VBAR(i,j+1,k)+V(i,j+1,k);
+			// vapor fluxes
+			QVCELL(j,k).north = vb * QVCELL(j,k).north + V(i,j+1,k) * QVBCELL(j,k).north;	
+			// cloud water fluxes
+			QCCELL(j,k).north = vb * QCCELL(j,k).north;
+			// rain water fluxes
+			QRCELL(j,k).north = vb * QRCELL(j,k).north;
+		}
+	}
+	
+	//---------------------------------------------------------
+	// Vertical fluxes
+	//---------------------------------------------------------
+	for(int j=jl;j<jh;j++){
+
+		for(int k=1;k<NZ-1;k++){
+
+			// advecting velocities
+			wb = WBAR(i,j,k+1)+W(i,j,k+1);
+			// vapor fluxes
+			QVCELL(j,k).top   = wb * QVCELL(j,k).top   + W(i,j,k+1) * QVBCELL(j,k).top;		
+			// cloud water fluxes
+			QCCELL(j,k).top   = wb * QCCELL(j,k).top;
+			// rain water fluxes
 			QRCELL(j,k).top = (wb-0.5*(VT(i,j,k+1)+VT(i,j,k))) * QRCELL(j,k).top;
 		}
 	}
+	
 }
 
 /*********************************************************************
@@ -727,6 +753,9 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 	// interpolate perturbation scalar field
 	interpolate_scalar(i, jl, jh, s, scell);
 
+	//---------------------------------------------------
+	// Horizontal part
+	//---------------------------------------------------
 	for(int j=jl;j<jh;j++){
 	for(k=1;k<NZ-1;k++){
 
@@ -735,32 +764,39 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 		BCELL(j,k).west  = BCELL(j,k).east;
 		BCELL(j,k).east  = INTERP_EAST( SB, SIGN_P_VEL(i+1,j,k).u, i);
 		BCELL(j,k).north = INTERP_NORTH(SB, SIGN_P_VEL(i,j+1,k).v, j);
-		BCELL(j,k).top   = INTERP_TOP(  SB, SIGN_P_VEL(i,j,k+1).w, k);
 	}}
 
 	//---------------------------------------------------
-	// Lower boundary points
-	// Use lower order interpolations if the stencil
-	// extends below the grounnd
+	// Upper and lower boundary points
+	// Use lower order interpolations in vertical if 
+	// the interpolating stencil extends beyond model domain
 	//---------------------------------------------------
-	
 	if(kmin > 1){ // lowest model level
 	
-		k = 1;
-	
 		for(int j=jl;j<jh;j++){
-
-			BCELL(j,k).top   = INTERP_2ND_TOP(SB,k);
+			
+			k = 1;
+			
+			BCELL(j,k).top = INTERP_2ND_TOP(SB,k);
+			
+			k = NZ-2;
+	
+			BCELL(j,k).top = INTERP_2ND_TOP(SB,k);
 		}
 	}
 	
-	if(kmin > 2){	// second lowest model level
-	
-		k = 2;
+	if(kmin > 2){
 	
 		for(int j=jl;j<jh;j++){
 
-			BCELL(j,k).top   = INTERP_3RD_TOP(SB, SIGN_P_VEL(i,j,k+1).w, k);
+			k = 2;
+
+			BCELL(j,k).top = INTERP_3RD_TOP(SB, SIGN_P_VEL(i,j,k+1).w, k);
+			
+			k = NZ-3;
+	
+			BCELL(j,k).top = INTERP_3RD_TOP(SB, SIGN_P_VEL(i,j,k+1).w, k);
+			
 		}
 	}
 
@@ -769,38 +805,11 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 	// Use requested interpolation order if the stencil
 	// lies completely within the model domain
 	//---------------------------------------------------
-
 	for(int j=jl;j<jh;j++){
 	for(k=kmin;k<kmax;k++){
 
-		BCELL(j,k).top   = INTERP_TOP(  SB, SIGN_P_VEL(i,j,k+1).w, k);
+		BCELL(j,k).top = INTERP_TOP(  SB, SIGN_P_VEL(i,j,k+1).w, k);
 	}}
-
-	//---------------------------------------------------
-	// Upper boundary points
-	// Use lower order interpolations if the stencil
-	// extends above the model domain
-	//---------------------------------------------------
-	
-	if(kmax < NZ-2){
-		
-		k = NZ-3;
-	
-		for(int j=jl;j<jh;j++){
-
-			BCELL(j,k).top   = INTERP_3RD_TOP(SB, SIGN_P_VEL(i,j,k+1).w, k);
-		}
-	}
-	
-	if(kmax < NZ-1){
-	
-		k = NZ-2;
-	
-		for(int j=jl;j<jh;j++){
-
-			BCELL(j,k).top   = INTERP_2ND_TOP(SB,k);
-		}
-	}
 
 }
 
@@ -820,37 +829,46 @@ void interpolate_scalar(int i,int jl,int jh,double *s,struct cell *scell){
 	kmin = (VER_ADVECTION_ORDER+1) / 2;
 	kmax = NZ - (VER_ADVECTION_ORDER+1) / 2;
 
+	//---------------------------------------------------
+	// Horizontal part
+	//---------------------------------------------------
 	for(int j=jl;j<jh;j++){
 	for(k=1;k<NZ-1;k++){
 
 		SCELL(j,k).west  = SCELL(j,k).east;
 		SCELL(j,k).east  = INTERP_EAST( SP, SIGN_B_VEL(i+1,j,k).u, i);
 		SCELL(j,k).north = INTERP_NORTH(SP, SIGN_B_VEL(i,j+1,k).v, j);
-		SCELL(j,k).top   = INTERP_TOP(  SP, SIGN_B_VEL(i,j,k+1).w, k);
 	}}
 
 	//---------------------------------------------------
-	// Lower boundary points
-	// Use lower order interpolations if the stencil
-	// extends below the grounnd
+	// Upper and lower boundary points
+	// Use lower order interpolations in vertical if 
+	// the interpolating stencil extends beyond model domain
 	//---------------------------------------------------
-	
 	if(kmin > 1){ // lowest model level
-	
-		k = 1;
 	
 		for(int j=jl;j<jh;j++){
 
+			k = 1;
+
+			SCELL(j,k).top = INTERP_2ND_TOP(SP,k);
+			
+			k = NZ-2;
+	
 			SCELL(j,k).top = INTERP_2ND_TOP(SP,k);
 		}
 	}
 	
 	if(kmin > 2){	// second lowest model level
 	
-		k = 2;
-	
 		for(int j=jl;j<jh;j++){
-
+			
+			k = 2;
+			
+			SCELL(j,k).top = INTERP_3RD_TOP(SP, SIGN_B_VEL(i,j,k+1).w, k);
+			
+			k = NZ-3;
+	
 			SCELL(j,k).top = INTERP_3RD_TOP(SP, SIGN_B_VEL(i,j,k+1).w, k);
 		}
 	}
@@ -860,40 +878,12 @@ void interpolate_scalar(int i,int jl,int jh,double *s,struct cell *scell){
 	// Use requested interpolation order if the stencil
 	// lies completely within the model domain
 	//---------------------------------------------------
-
 	for(int j=jl;j<jh;j++){
 	for(k=kmin;k<kmax;k++){
 
 		SCELL(j,k).top = INTERP_TOP(SP, SIGN_B_VEL(i,j,k+1).w, k);
 	}}
 
-	//---------------------------------------------------
-	// Upper boundary points
-	// Use lower order interpolations if the stencil
-	// extends above the model domain
-	//---------------------------------------------------
-	
-	if(kmax < NZ-2){
-		
-		k = NZ-3;
-	
-		for(int j=jl;j<jh;j++){
-
-			SCELL(j,k).top = INTERP_3RD_TOP(SP, SIGN_B_VEL(i,j,k+1).w, k);
-
-		}
-	}
-	
-	if(kmax < NZ-1){
-	
-		k = NZ-2;
-	
-		for(int j=jl;j<jh;j++){
-
-			SCELL(j,k).top = INTERP_2ND_TOP(SP,k);
-		}
-	}
-	
 }
 
 /*********************************************************************
@@ -914,46 +904,53 @@ void interpolate_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *fal
 	kmax = NZ - (VER_ADVECTION_ORDER+1) / 2;
 
 	//---------------------------------------------------
-	// Lower boundary points
-	// Use lower order interpolations if the stencil
-	// extends below the grounnd
+	// Horizontal part
 	//---------------------------------------------------
-	
-	if(kmin > 1){ // lowest model level
-	
-		k = 1;
-	
+	for(int j=jl;j<jh;j++){
+	for(k=1;k<NZ-1;k++){
+
+		SCELL(j,k).west  = SCELL(j,k).east;
+		SCELL(j,k).east  = INTERP_EAST( SP,SIGN_B_VEL(i+1,j,k).u,i);
+		SCELL(j,k).north = INTERP_NORTH(SP,SIGN_B_VEL(i,j+1,k).v,j);
+	}}
+
+	//---------------------------------------------------
+	// Upper and lower boundary points
+	// Use lower order interpolations in vertical if 
+	// the interpolating stencil extends beyond model domain
+	//---------------------------------------------------
+	if(kmin > 1){
+		
 		for(int j=jl;j<jh;j++){
-
-			//-------------------------------------------
-			// sign of advecting velocity
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
+			
+			k = 1;
+			
 			SCELL(j,k).top   = k_interp2nd(SP,k+1,k);
+			
+			k = NZ-2;
+			
+			SCELL(j,k).top   = INTERP_2ND_TOP(SP,k);
 		}
 	}
 	
-	if(kmin > 2){	// second lowest model level
-	
-		k = 2;
+	if(kmin > 2){
 	
 		for(int j=jl;j<jh;j++){
+			
+			k = 2;
 			//-------------------------------------------
 			// sign of advecting velocity
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
 			wt = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(fall[INDEX(i,j,k)]+fall[INDEX(i,j,k+1)]) );
 			//-------------------------------------------
 			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
+			SCELL(j,k).top   = INTERP_3RD_TOP(SP,wt,k);
+			
+			k = NZ-3;
+			//-------------------------------------------
+			// sign of advecting velocity
+			wt = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(fall[INDEX(i,j,k)]+fall[INDEX(i,j,k+1)]) );
+			//-------------------------------------------
+			// Perturbation interpolation
 			SCELL(j,k).top   = INTERP_3RD_TOP(SP,wt,k);
 		}
 	}
@@ -968,64 +965,12 @@ void interpolate_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *fal
 
 		//-------------------------------------------
 		// sign of advecting velocity
-		ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-		vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
 		wt = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(fall[INDEX(i,j,k)]+fall[INDEX(i,j,k+1)]) );
 
 		//-------------------------------------------
 		// Perturbation interpolation
-		SCELL(j,k).west  = SCELL(j,k).east;
-		SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-		SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-		SCELL(j,k).top   = INTERP_TOP(  SP,wt,k);
-	}}
-		
-	//---------------------------------------------------
-	// Upper boundary points
-	// Use lower order interpolations if the stencil
-	// extends above the model domain
-	//---------------------------------------------------
-	
-	if(kmax < NZ-2){
-		
-		k = NZ-3;
-	
-		for(int j=jl;j<jh;j++){
-
-			//-------------------------------------------
-			// sign of advecting velocity
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-			wt = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(fall[INDEX(i,j,k)]+fall[INDEX(i,j,k+1)]) );
-
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_3RD_TOP(SP,wt,k);
-		}
-	}
-	
-	if(kmax < NZ-1){
-	
-		k = NZ-2;
-
-		for(int j=jl;j<jh;j++){
-
-			//-------------------------------------------
-			// sign of advecting velocity
-			ut = signof(UBAR(i+1,j,k)+U(i+1,j,k));
-			vt = signof(VBAR(i,j+1,k)+V(i,j+1,k));
-
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).west  = SCELL(j,k).east;
-			SCELL(j,k).east  = INTERP_EAST( SP,ut,i);
-			SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
-			SCELL(j,k).top   = INTERP_2ND_TOP(SP,k);
-		}
-	}
+		SCELL(j,k).top   = INTERP_TOP(SP,wt,k);
+	}}	
 
 }
 
@@ -1095,147 +1040,6 @@ void interpolate_scalar(int i,int jl,int jh,double *u,double *v,double *w,double
 		SCELL(j,k).north = INTERP_NORTH(SP,vt,j);
 		SCELL(j,k).top   = k_interp2nd(SP,k+1,k);
 	}
-}
-
-/*********************************************************************
-* 
-**********************************************************************/
-void interpolate_moisture_vertical_2nd(int i,int j,int k){
-
-	QVCELL(j,k).top  = k_interp2nd(QV,k+1,k);
-	QCCELL(j,k).top  = k_interp2nd(QC,k+1,k);
-	QRCELL(j,k).top  = k_interp2nd(QR,k+1,k);
-	QVBCELL(j,k).top = k_interp2nd(QBAR,k+1,k);
-}
-
-/*********************************************************************
-* 
-**********************************************************************/
-void interpolate_moisture_vertical_3rd(int i,int j,int k){
-
-	double wrsign = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(VT(i,j,k+1)+VT(i,j,k)));
-
-	QVCELL(j,k).top  = INTERP_3RD_TOP(QV, SIGN_B_VEL(i,j,k+1).w, k);
-	QCCELL(j,k).top  = INTERP_3RD_TOP(QC, SIGN_B_VEL(i,j,k+1).w, k);
-	QRCELL(j,k).top  = INTERP_3RD_TOP(QR, wrsign, k);
-	QVBCELL(j,k).top = INTERP_3RD_TOP(QBAR, SIGN_P_VEL(i,j,k+1).w, k);
-}
-
-/*********************************************************************
-* 
-**********************************************************************/
-void interpolate_moisture_vertical(int i,int j,int k){
-	
-	double wrsign = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(VT(i,j,k+1)+VT(i,j,k)));
-
-	QVCELL(j,k).top  = INTERP_TOP(QV, SIGN_B_VEL(i,j,k+1).w, k);
-	QCCELL(j,k).top  = INTERP_TOP(QC, SIGN_B_VEL(i,j,k+1).w, k);
-	QRCELL(j,k).top  = INTERP_TOP(QR, wrsign, k);
-	QVBCELL(j,k).top = INTERP_TOP(QBAR,SIGN_P_VEL(i,j,k+1).w, k);
-	
-}
-
-/*********************************************************************
-* Interpolate moisture fields to the faces of each control volume for
-* a YZ cross section.
-*
-* @param i - the x-coordinate
-* @param jl,jh - the high and low index bounds for the y-coordinate
-**********************************************************************/
-void interpolate_moisture(int i,int jl,int jh){
-
-	int k,kmin,kmax;
-
-	kmin = (VER_ADVECTION_ORDER+1) / 2;
-	kmax = NZ - (VER_ADVECTION_ORDER+1) / 2;
-
-	//printf("%d %d ",kmin,kmax);
-	
-	for(int j=jl;j<jh;j++){
-	for(k=1;k<NZ-1;k++){
-		
-		QVCELL(j,k).west  = QVCELL(j,k).east;
-		QVCELL(j,k).east  = INTERP_EAST( QV, SIGN_B_VEL(i+1,j,k).u, i);
-		QVCELL(j,k).north = INTERP_NORTH(QV, SIGN_B_VEL(i,j+1,k).v, j);
-
-		QCCELL(j,k).west  = QCCELL(j,k).east;
-		QCCELL(j,k).east  = INTERP_EAST( QC, SIGN_B_VEL(i+1,j,k).u, i);
-		QCCELL(j,k).north = INTERP_NORTH(QC, SIGN_B_VEL(i,j+1,k).v, j);
-
-		QRCELL(j,k).west  = QRCELL(j,k).east;
-		QRCELL(j,k).east  = INTERP_EAST( QR, SIGN_B_VEL(i+1,j,k).u, i);
-		QRCELL(j,k).north = INTERP_NORTH(QR, SIGN_B_VEL(i,j+1,k).v, j);
-
-		QVBCELL(j,k).west  = QVBCELL(j,k).east;
-		QVBCELL(j,k).east  = INTERP_EAST( QBAR, SIGN_P_VEL(i+1,j,k).u, i);
-		QVBCELL(j,k).north = INTERP_NORTH(QBAR, SIGN_P_VEL(i,j+1,k).v, j);
-		
-	}}
-	
-	//---------------------------------------------------
-	// Lower boundary points
-	// Use lower order interpolations if the stencil
-	// extends below the grounnd
-	//---------------------------------------------------
-	
-	if(kmin > 1){ // lowest model level
-	
-		k = 1;
-	
-		for(int j=jl;j<jh;j++){
-
-			interpolate_moisture_vertical_2nd(i,j,k);
-		}
-	}
-	
-	if(kmin > 2){	// second lowest model level
-	
-		k = 2;
-	
-		for(int j=jl;j<jh;j++){
-			
-			interpolate_moisture_vertical_3rd(i,j,k);
-		}
-	}
-
-	//---------------------------------------------------
-	// Interior points
-	// Use requested interpolation order if the stencil
-	// lies completely within the model domain
-	//---------------------------------------------------
-	for(int j=jl;j<jh;j++){
-	for(k=kmin;k<kmax;k++){
-		
-		interpolate_moisture_vertical(i,j,k);
-		
-	}}
-
-	//---------------------------------------------------
-	// Upper boundary points
-	// Use lower order interpolations if the stencil
-	// extends above the model domain
-	//---------------------------------------------------
-	
-	if(kmax < NZ-2){
-		
-		k = NZ-3;
-	
-		for(int j=jl;j<jh;j++){
-
-			interpolate_moisture_vertical_3rd(i,j,k);
-		}
-	}
-	
-	if(kmax < NZ-1){
-	
-		k = NZ-2;
-	
-		for(int j=jl;j<jh;j++){
-
-			interpolate_moisture_vertical_2nd(i,j,k);
-		}
-	}
-	
 }
 
 /*********************************************************************
