@@ -101,6 +101,22 @@ void precip_rate(int il,int ih,int jl,int jh,double *vel,double *hydro_field,dou
 	
 }
 
+/****************************************************
+* Calculate eulerian fall speed of rain
+*
+* vt -> terminal fall speed of rain (output)
+* qr -> rain water mixing ratio (input)
+*
+*****************************************************/
+void calculate_eulerian_fall_speed_precip(double *vt, double *qr, int il,int ih,int jl,int jh){
+	
+	if(MICROPHYSICS_OPTION==1){
+	
+		calculate_rain_fall_speed_kessler(vt, qr, il, ih, jl, jh);
+	}
+
+}
+
 /*********************************************************************
 * Calculate fallout of hydrometeors using a forward in time 
 * semi-Lagrangian method based on Juang and Hong (2010). Useful for

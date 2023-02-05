@@ -449,13 +449,19 @@ void advect_scalar(double step,int il,int ih,int jl,int jh,double *varm,double *
 **********************************************************************/
 void advect_microphysics_cell(double step,int il,int ih,int jl,int jh){
 
+	//--------------------------------------------------------
+	// If Eulerian rain fall integration, calculate fall speed
+	//--------------------------------------------------------
+	if(RAIN_FALLOUT==1)
+		calculate_eulerian_fall_speed_precip(vts, qrs, il, ih, jl, jh);
+
 	// Calculate the zonal flux on the eastern side of innermost column of boundary points.
 	// This will become the flux on the western side of the leftmost interior cell
 	compute_west_moisture(il-1,jl,jh);
 
-	//-------------------------------------------------------
+	//--------------------------------------------------------
 	// For each point within the east-west range
-	//-------------------------------------------------------
+	//--------------------------------------------------------
 	for(int i=il;i<ih;i++){
 
 		// compute all fluxes for a YZ cross section
