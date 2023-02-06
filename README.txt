@@ -1,12 +1,12 @@
 This program is an idealized numerical model that solves the anelastic equations of motion for the atmosphere based on a perturbation / basic state decomposition. It includes a microphysics and turbulence parameterization and can be run on parallel architecture. The equations and the numerical methods used to solve them are described in more detail in the following series of publications:
 
-Diaz, M., and W. R. Boos, 2019: Barotropic growth of monsoon depressions. Quart. J. Roy. Meteor. Soc., 145, 824–844, https://doi.org/10.1002/qj.3467.
+Diaz, M., and W. R. Boos, 2019a: Barotropic growth of monsoon depressions. Quart. J. Roy. Meteor. Soc., 145, 824–844, https://doi.org/10.1002/qj.3467.
 
-Diaz, M., and W. R. Boos, 2019: Monsoon depression amplification by moist barotropic instability in a vertically sheared environment. Quart. J. Roy. Meteor. Soc., 145, 2666–2684, https://doi.org/10.1002/qj.3585.
+Diaz, M., and W. R. Boos, 2019b: Monsoon depression amplification by moist barotropic instability in a vertically sheared environment. Quart. J. Roy. Meteor. Soc., 145, 2666–2684, https://doi.org/10.1002/qj.3585.
 
-Diaz, M., and W. R. Boos, 2021: Evolution of idealized vortices in monsoon-like shears: Application to monsoon depressions. J. Atmos. Sci., 78, 1207–1225, https://doi.org/10.1175/JAS-D-20-0286.1.
+Diaz, M., and W. R. Boos, 2021a: Evolution of idealized vortices in monsoon-like shears: Application to monsoon depressions. J. Atmos. Sci., 78, 1207–1225, https://doi.org/10.1175/JAS-D-20-0286.1.
 
-Diaz, M., and W. R. Boos, 2021: The influence of surface heat fluxes on the growth of idealized monsoon depressions. J. Atmos. Sci., 78, 2013–2027, https://doi.org/10.1175/JAS-D-20-0359.1.
+Diaz, M., and W. R. Boos, 2021b: The influence of surface heat fluxes on the growth of idealized monsoon depressions. J. Atmos. Sci., 78, 2013–2027, https://doi.org/10.1175/JAS-D-20-0359.1.
 
 -------------------------------------------------------------
 I. COMPILATION
@@ -32,11 +32,11 @@ mpirun -np 4 ./solve.exe -f input_params.txt
 
 The number following "-np" is the number of processes to use. If this doesn't work, you may need to set the execution path to include the "bin" file in the MPI directory.
 
-A basic state with both horizontal and vertical shear from a soon to be submitted paper can be generated using the command line option "-s". For example,
+A basic state with both horizontal and vertical shear used in Diaz and Boos (2021a,b) can be generated using the command line option "-s". For example,
 
 mpirun -np 4 ./solve.exe -f input_params.txt -s "1.0 -2.0 -1.0"
 
-where the first value is the maximum vorticity (x 10^-4 1/s), the second is the upper-level shear (x 10^-3 m/s/km), and the third is the lower-level shear (x 10^-3 m/s/km). In order for this option to work, the value for "basic_state_init_option" needs to be set to "1" to direct the program to generate the basic state from code and not an input file.
+where the first value is the maximum vorticity (x 10^-4 1/s), the second is the upper-level shear (x 10^-3 m/s/km), and the third is the lower-level shear (x 10^-3 m/s/km). In order for this option to work, the value for "basic_state_init_option" needs to be set to "1" to direct the program to generate the basic state from code and not from an input file.
 
 --------------------------------------------
 B. Model Input
