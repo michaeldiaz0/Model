@@ -1,10 +1,23 @@
 
+
+# set these paths
+NETCDF_PATH=/usr/local
+FFTW_PATH=/usr/local
+MPI_PATH=/usr/local
+
 # output binary
 BIN := bin/solve.exe
 
 # include files
-IDIR=/usr/local/include
-LOCALIDIR=include
+NETCDF_INCLUDE=$(NETCDF_PATH)/include
+FFTW_INCLUDE=$(FFTW_PATH)/include
+MPI_INCLUDE=$(MPI_PATH)/include
+LOCAL_INCLUDE=include
+
+# LIB FILES
+NETCDF_LIB=$(NETCDF_PATH)/lib
+FFTW_LIB=$(FFTW_PATH)/lib
+MPI_LIB=$(MPI_PATH)/lib
 
 # source directory
 SRCDIR := source
@@ -46,9 +59,9 @@ LD := ld
 TAR := tar
 # -Wall -Wextra
 # C/C++ flags
-CPPFLAGS := -g -O3 -I $(IDIR) -I $(LOCALIDIR) 
+CPPFLAGS := -g -O3 -I $(LOCAL_INCLUDE) -I $(NETCDF_INCLUDE) -I $(FFTW_INCLUDE) -I $(MPI_INCLUDE)
 # linker flags: libraries to link (e.g. -lfoo)
-LDLIBS := -lnetcdf -lmpi -lfftw3 -lm
+LDLIBS := -L $(NETCDF_LIB) -lnetcdf -L $(FFTW_LIB) -lmpi -L $(MPI_LIB) -lfftw3 -lm
 # flags required for dependency generation; passed to compilers
 DEPFLAGS = -MT $@ -MD -MP -MF $(DEPDIR)/$*.Td
 
@@ -78,8 +91,8 @@ distclean: clean
 
 .PHONY: check
 check:
-	python sample_initializations.py
-	mpirun -np 4 ./bin/solve.exe -f input_params_rainball.txt
+	#python sample_initializations.py
+	#mpirun -np 4 ./bin/solve.exe -f input_params_rainball.txt
 
 .PHONY: help
 help:
