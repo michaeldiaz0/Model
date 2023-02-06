@@ -1,4 +1,12 @@
-This program is an idealized numerical model that solves the anelastic equations of motion for the atmosphere based on a perturbation / basic state decomposition. It includes a microphysics and turbulence parameterization and can be run on parallel architecture. The equations and the numerical methods used to solve them are described in more detail in Diaz and Boos (2019a) and Diaz and Boos (2019b).
+This program is an idealized numerical model that solves the anelastic equations of motion for the atmosphere based on a perturbation / basic state decomposition. It includes a microphysics and turbulence parameterization and can be run on parallel architecture. The equations and the numerical methods used to solve them are described in more detail in the following series of publications:
+
+Diaz, M., and W. R. Boos, 2019: Barotropic growth of monsoon depressions. Quart. J. Roy. Meteor. Soc., 145, 824–844, https://doi.org/10.1002/qj.3467.
+
+Diaz, M., and W. R. Boos, 2019: Monsoon depression amplification by moist barotropic instability in a vertically sheared environment. Quart. J. Roy. Meteor. Soc., 145, 2666–2684, https://doi.org/10.1002/qj.3585.
+
+Diaz, M., and W. R. Boos, 2021: Evolution of idealized vortices in monsoon-like shears: Application to monsoon depressions. J. Atmos. Sci., 78, 1207–1225, https://doi.org/10.1175/JAS-D-20-0286.1.
+
+Diaz, M., and W. R. Boos, 2021: The influence of surface heat fluxes on the growth of idealized monsoon depressions. J. Atmos. Sci., 78, 2013–2027, https://doi.org/10.1175/JAS-D-20-0359.1.
 
 -------------------------------------------------------------
 I. COMPILATION
