@@ -7,6 +7,7 @@
 #include "initializer.h"
 #include "data_initializer.h"
 #include "pressure.h"
+#include "pcomm.h"
 
 /******************************************************************************
 * Handles higher-level initialization and focuses on initialization from model
@@ -54,6 +55,8 @@ double *m_diabatic,*q_diabatic;
 // TOPOGRAPHY AND FRICTION ARRAYS
 //--------------------------------------
 double *itopo,*iistopo,*iuistopo,*ivistopo,*ifriction;
+double *frictions;
+double *istopos,*uistopos,*vistopos;
 //--------------------------------------
 // VERTICALLY VARYING BASIC STATE
 //--------------------------------------
@@ -81,7 +84,15 @@ double rhoavg = 0;
 double mtime = 0;
 int bigcounter = 0;
 
+//--------------------------------------
+// Grid dimensions
+//--------------------------------------
 int NX,NY,NZ,NYNZ;
+
+int myNX,myNY,myNZ;	// dimensions of subarrays without halo boundaries
+int fNX,fNY,fNZ;	// full dimensions of subarrays
+int pNX,pNY,pNZ;	// dimensions of arrays for pressure solver
+int fNYfNZ;
 
 double dx;
 double dy;

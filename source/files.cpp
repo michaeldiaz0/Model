@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "pcomm.h"
 
 void handle_file_error(int,const char*);
 void add_attribute(int ncid,const char *att_name,const char *value);
@@ -11,6 +12,10 @@ double * temp_storage;
 char filename[len];
 char inputPerturbationFileName[len];
 char inputBasicStateFileName[len];
+
+#if !PARALLEL
+int rank = 0;
+#endif
 
 /********************************************************
 * 
@@ -59,7 +64,7 @@ void create_outfile(const char *myfilename, bool basestate,bool modelBaseState,b
 	if(NC64BIT){
 		status = nc_create(myfilename,NC_CLOBBER|NC_64BIT_OFFSET, &ncid);
 	} else {
-		#if !PARALLEL_IO && !PARALLEL
+		#if !PARALLEL_IO
 			status = nc_create(myfilename,NC_CLOBBER, &ncid);
 		#else
 			status = nc_create_par(myfilename,NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, MPI_COMM_WORLD,MPI_INFO_NULL,&ncid);

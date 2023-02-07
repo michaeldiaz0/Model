@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "fftw3.h"
 #include "boundaries.h"
+#include "pcomm.h"
 
 /***************************************************************************
 * ------------------------------ MACROS ------------------------------------
@@ -63,6 +64,11 @@ double *kwave,*lwave;
 double *acoef,*bcoef,*ccoef;
 double *P,*Q;
 double *rhs;
+
+double *pres_row,*ipres_row;
+double *pres_col,*ipres_col;
+
+
 
 //double div_avg[NX][NY];
 //double sor[3][NX][NY];
@@ -811,7 +817,7 @@ void poisson_fft3d(int ni,int nj,int nk,double step){
 		IN3D(i,j,NZ-1)[1] = 0;
 	}}
 }
-
+#if PARALLEL
 /**********************************************************************
 * Set up fast Fourier transform-based pressure solver for parallel version
 *
@@ -928,7 +934,7 @@ void p_init_fft3d(int ni,int nj,int nk,int snx,int sny,int snz){
 	}
 	
 }
-#if PARALLEL
+
 /**********************************************************************
 * This is the parallel version.
 * Solve the anelastic pressure equation using Fast Fourier transforms

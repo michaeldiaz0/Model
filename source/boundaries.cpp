@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "boundaries.h"
+#include "pcomm.h"
 
 #define VERBOSE_BOUNDARIES false
 

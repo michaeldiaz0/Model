@@ -1,4 +1,5 @@
 
+HAS_MPI=FALSE
 
 # set these paths
 NETCDF_PATH=/usr/local
@@ -23,11 +24,26 @@ MPI_LIB=$(MPI_PATH)/lib
 SRCDIR := source
 
 # source files
+
+ifeq ($(HAS_MPI),TRUE)
+
 _SRCS := \
-    main.cpp mpidriver.cpp solver.cpp ensemble.cpp initializer.cpp data_initializer.cpp \
+    main.cpp solver.cpp initializer.cpp data_initializer.cpp \
    	interpolate.cpp fluxes.cpp pressure.cpp advection.cpp turbulence.cpp damping.cpp boundaries.cpp \
-   	pcomm.cpp files.cpp util.cpp Heating.cpp kessler.cpp rutledge.cpp microphysics.cpp energy.cpp \
-   	budgets.cpp trajectory.cpp laplacian.cpp process_input.cpp
+   	files.cpp util.cpp Heating.cpp kessler.cpp rutledge.cpp microphysics.cpp energy.cpp \
+   	 trajectory.cpp laplacian.cpp process_input.cpp driver_serial.cpp \
+	 driver_parallel.cpp budgets.cpp pcomm.cpp ensemble.cpp mpi_setup.cpp
+
+else
+
+_SRCS := \
+    main.cpp solver.cpp initializer.cpp data_initializer.cpp \
+   	interpolate.cpp fluxes.cpp pressure.cpp advection.cpp turbulence.cpp damping.cpp boundaries.cpp \
+   	files.cpp util.cpp Heating.cpp kessler.cpp rutledge.cpp microphysics.cpp energy.cpp \
+   	trajectory.cpp laplacian.cpp process_input.cpp \
+	driver_serial.cpp
+	 
+endif
 
 SRCS = $(patsubst %,$(SRCDIR)/%,$(_SRCS))
 
@@ -52,7 +68,11 @@ $(shell mkdir -p $(dir $(OBJS)) >/dev/null)
 $(shell mkdir -p $(dir $(DEPS)) >/dev/null)
 
 # C++ compiler
+ifeq ($(HAS_MPI),TRUE)
 CXX := mpicc
+else
+CXX := g++
+endif
 # linker
 LD := ld
 # tar
@@ -70,7 +90,7 @@ COMPILE.c = $(CC) $(DEPFLAGS) $(CFLAGS) $(CPPFLAGS) -c -o $@
 # compile C++ source files
 COMPILE.cc = $(CXX) $(DEPFLAGS) $(CXXFLAGS) $(CPPFLAGS) -c -o $@
 # link object files to binary
-LINK.o = $(LD) $(LDFLAGS) $(LDLIBS) -o $@
+LINK.o = $(LDFLAGS) $(LDLIBS) -o $@
 # precompile step
 PRECOMPILE =
 # postcompile step
@@ -99,10 +119,13 @@ help:
 	@echo available targets: all dist clean distclean check
 
 $(BIN): $(OBJS)
-	$(LINK.o) $^
+	@echo ""
+	$(CXX) $(LIBFLAGS) -o $(BIN) $(LINK.o) $^
+#$(LINK.o) $^
 
 $(OBJDIR)/%.o: %.cpp
 $(OBJDIR)/%.o: %.cpp $(DEPDIR)/%.d
+	@echo ""
 	$(PRECOMPILE)
 	$(COMPILE.cc) $<
 	$(POSTCOMPILE)

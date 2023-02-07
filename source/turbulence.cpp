@@ -2,6 +2,7 @@
 #include "turbulence.h"
 #include "interpolate.h"
 #include "budgets.h"
+#include "pcomm.h"
 
 #if PARALLEL
 	#define KMIX(i,j,k)   Kmix[(i)*fNYfNZ+(j)*fNZ+(k)]

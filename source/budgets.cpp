@@ -7,6 +7,7 @@
 #include "boundaries.h"
 #include "interpolate.h"
 #include "damping.h"
+#include "pcomm.h"
 
 /****************************************************************************************************
 * 

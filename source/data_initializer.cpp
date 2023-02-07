@@ -5,6 +5,7 @@
 #include "boundaries.h"
 #include "initializer.h"
 #include "data_initializer.h"
+#include "pcomm.h"
 
 /******************************************************************************
 * Handles to details of putting data onto the model grids. Focuses on

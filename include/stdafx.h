@@ -231,7 +231,6 @@ extern struct input_params inputs;
 
 // Model Header Files
 #include "model.h"
-#include "pvars.h"
 #include "microphysics.h"
 #include "file.h"
 #include "util.h"
