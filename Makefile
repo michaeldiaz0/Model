@@ -1,5 +1,5 @@
 
-HAS_MPI=FALSE
+HAS_MPI=TRUE
 
 # set these paths
 NETCDF_PATH=/usr/local

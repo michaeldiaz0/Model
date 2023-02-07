@@ -137,7 +137,7 @@ void linear_integrate_rk3(){
 * integration. One full step consists of three smaller steps.
 *
 **********************************************************************/
-void integrate_rk3(){
+void s_integrate_rk3(){
 
 	double steps[] = {1./3.,0.5,1.0};	// fractional time steps for RK
 	int size = NX*NY*NZ;
@@ -244,15 +244,13 @@ void integrate_rk3(){
 * @param count - number of steps to advance model
 * @param infile - optional parameter to write energy budget data to file
 **********************************************************************/
-void run_serial_model(int count,FILE *infile){
+void s_run_model(int count,FILE *infile){
 
 	int counter = 0;	
 	double elapsed;
 	double total_cputime = 0;
 	bool isFirstStep = true;
 	int timer_counter = 0;
-	
-	initialize_serial();
 	
 	clock_t start_time = clock(),finis_time;
 
@@ -281,7 +279,7 @@ void run_serial_model(int count,FILE *infile){
 		// Run model forward one time step
 		//------------------------------------------------------
 		if(ISLINEAR){ linear_integrate_rk3();}
-		else { integrate_rk3();}
+		else { s_integrate_rk3();}
 
 		if(OUTPUT_TO_FILE && bigcounter % outfilefreq == 0 && ENSEMBLE==0){
 			
@@ -322,4 +320,15 @@ void run_serial_model(int count,FILE *infile){
 		isFirstStep = false;
 	}
 
+}
+
+/*********************************************************************
+* 
+**********************************************************************/
+void run_serial_model(int count,FILE *infile){
+
+	initialize_serial();
+	
+	s_run_model(count,infile);
+	
 }
