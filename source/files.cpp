@@ -659,7 +659,7 @@ void output_meteorological_fields_to_file(
 	write3d(filename,"u-wind",us, tcount);
 	write3d(filename,"v-wind",vs, tcount);
 	write3d(filename,"w-wind",ws, tcount);
-	write3d(filename,"pi",    pis,tcount); // is this done already in calling subroutine?
+	write3d(filename,"pi",    pis,tcount);
 	write3d(filename,"theta", ths,tcount);
 
 	//------------------------------------------------------

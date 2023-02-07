@@ -148,6 +148,7 @@ void initialize_from_output_serial(const char *,size_t);
 void initialize_from_output_parallel(const char *,size_t);
 void initialize_basic_state_from_output_file(const char*);
 int get_file_start_time();
+void column_average_density();
 
 /******************************************************************************
 * Takes the structure that has stored the input from the input file with grid
@@ -754,17 +755,9 @@ void initialize_basic_state_from_reanalysis(){
 	init_topography();
 
 	//----------------------------------------------------------------
-	// Column averaged density
+	// Column averaged density for hydrostatic version
 	//----------------------------------------------------------------
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	
-		RHOAVG2DFULL(i,j) = 0;
-
-		for(int k=HTOPOFULL(i,j)+1;k<NZ-1;k++){ RHOAVG2DFULL(i,j) = RHOAVG2DFULL(i,j) + rhou[k]*tbv[k];}
-
-		RHOAVG2DFULL(i,j) = RHOAVG2DFULL(i,j)/((double)(NZ-2-HTOPOFULL(i,j)));
-	}}
+	column_average_density();
 
 	//----------------------------------------------------------------
 	// Initialize arrays for SOR
@@ -1288,6 +1281,28 @@ void init_topography_to_zero(){
 }
 
 /*********************************************************************
+* Column averaged density
+**********************************************************************/
+void column_average_density(){
+	
+	double zsum = 0;
+
+	for(int i=0;i<NX;i++){
+	for(int j=0;j<NY;j++){
+
+		RHOAVG2DFULL(i,j) = 0;
+		zsum = 0;
+
+		for(int k=HTOPOFULL(i,j)+1;k<NZ-1;k++){ 
+			RHOAVG2DFULL(i,j) = RHOAVG2DFULL(i,j) + rhou[k]*tbv[k]*DZU(k);
+			zsum += DZU(k);
+		}
+
+		RHOAVG2DFULL(i,j) = RHOAVG2DFULL(i,j) / zsum;
+	}}
+}
+
+/*********************************************************************
 * Alter basic state humidity
 **********************************************************************/
 void change_humidity(){
@@ -1791,6 +1806,8 @@ void initialize_from_output_parallel(const char *myfilename,size_t time){
 		if(rank==0){ free(zlevs); free(var); free(var_interpz); free(myLons); free(myLats);}
 	}
 	
+
+	
 }
 #endif
 /*********************************************************************
@@ -2136,7 +2153,7 @@ void initialize_basic_state_from_output_file(const char *myfilename){
 		
 			free(topo2);
 		}
-		
+				
 		//------------------------------------------------------------------------------
 		// Deallocate memory local to this subroutine
 		//------------------------------------------------------------------------------
@@ -2149,6 +2166,12 @@ void initialize_basic_state_from_output_file(const char *myfilename){
 	if(VERBOSE){ print_vertical_basic_state();}
 	
 	if(USE_TERRAIN){ init_topography();}
+	
+	//----------------------------------------------------------------
+	// Column averaged density for hydrostatic version
+	//----------------------------------------------------------------
+	column_average_density();
+
 			
 }
 

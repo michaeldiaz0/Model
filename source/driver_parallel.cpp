@@ -1,5 +1,4 @@
 #include "stdafx.h"
-#include "mpi.h"
 #include "Heating.h"
 #include "advection.h"
 #include "energy.h"

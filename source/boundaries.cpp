@@ -317,6 +317,26 @@ void upper_lower_boundaries_zero(double *var,int il,int ih,int jl,int jh){
 *
 *
 **********************************************************************/
+void mirror_boundaries_2d(double * s){
+
+	for(int j=0;j<NY;j++){
+
+		s[INDEX2D(   0,j)] = s[INDEX2D(   1,j)];
+		s[INDEX2D(NX-1,j)] = s[INDEX2D(NX-2,j)];
+	}
+
+	for(int i=0;i<NX;i++){
+
+		s[INDEX2D(i,   0)] = s[INDEX2D(i,1   )];
+		s[INDEX2D(i,NY-1)] = s[INDEX2D(i,NY-2)];
+	}
+
+}
+
+/*********************************************************************
+*
+*
+**********************************************************************/
 void mirror_boundaries(double * s){
 
 	for(int k=1;k<NZ-1;k++){

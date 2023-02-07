@@ -140,7 +140,7 @@ void integrate_non_hydro(double step,int il,int ih,int jl, int jh){
 * from Lipps and Hemler (1982)
 **********************************************************************/
 void w_velocity_LH(int il,int ih,int jl,int jh){
-
+	
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
 

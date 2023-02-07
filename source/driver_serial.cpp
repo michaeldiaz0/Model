@@ -186,7 +186,7 @@ void integrate_rk3(){
 		}
 		/*******************************************************
 		* If using the hydrostatic equation set, calculate the
-		* velocity for the new momentum field.
+		* vertical velocity for the new momentum field.
 		********************************************************/
 		if(HYDROSTATIC){ w_velocity_LH(1,NX-1,1,NY-1);}
 
@@ -248,6 +248,9 @@ void run_serial_model(int count,FILE *infile){
 
 	int counter = 0;	
 	double elapsed;
+	double total_cputime = 0;
+	bool isFirstStep = true;
+	int timer_counter = 0;
 	
 	initialize_serial();
 	
@@ -257,17 +260,6 @@ void run_serial_model(int count,FILE *infile){
 	// Step through model 'count' number of times
 	//------------------------------------------------------
 	while(counter<count){
-
-		//------------------------------------------------------
-		// Time each time step
-		//------------------------------------------------------
-		finis_time = clock();
-
-		elapsed = ((double) (finis_time - start_time)) / CLOCKS_PER_SEC;
-		
-		if(VERBOSE){ printf("time %0.3f hr %0.3f s\n",mtime/3600,elapsed);}
-
-		start_time = clock();
 
 		optional_output(infile);
 
@@ -282,7 +274,7 @@ void run_serial_model(int count,FILE *infile){
 			
 			write_time_to_file(filename,file_time_counter);
 			
-			file_time_counter++;
+			
 		}
 
 		//------------------------------------------------------
@@ -291,12 +283,43 @@ void run_serial_model(int count,FILE *infile){
 		if(ISLINEAR){ linear_integrate_rk3();}
 		else { integrate_rk3();}
 
-		write_pvar_to_file(filename,"pi",pis,file_time_counter);
+		if(OUTPUT_TO_FILE && bigcounter % outfilefreq == 0 && ENSEMBLE==0){
+			
+			if(!isRestartRun || !isFirstStep)
+				write_pvar_to_file(filename,"pi",pis,file_time_counter);
+			
+			file_time_counter++;
+			
+			if(VERBOSE && !isFirstStep){
+				print_time_estimates(total_cputime,total_cputime,timer_counter);
+			}
+			
+			total_cputime = 0;
+			timer_counter = 0;
+		}
+
+		//------------------------------------------------------
+		// Time each time step
+		//------------------------------------------------------
+		finis_time = clock();
+
+		elapsed = ((double) (finis_time - start_time)) / CLOCKS_PER_SEC;
+
+		total_cputime += elapsed;
+		timer_counter += 1;
+			
+
+		if(VERBOSE){ printf("time %0.3f hr %0.3f s\n",mtime/3600,elapsed);}
+		fflush(stdout);
+
+		start_time = clock();
 
 		mtime += dt;	// elapsed physical time
 		
 		bigcounter++;	// total time steps (if this function is called multiple times)
 		counter++;		// time steps within this loop
+		
+		isFirstStep = false;
 	}
 
 }
