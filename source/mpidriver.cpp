@@ -27,14 +27,11 @@
 #define BCAST_NY(var) MPI_Bcast(&var[0],NY,MPI_DOUBLE,0,MPI_COMM_WORLD)
 #define BCAST_NZ(var) MPI_Bcast(&var[0],NZ,MPI_DOUBLE,0,MPI_COMM_WORLD)
 
+
 MPI_Comm comm_cart,comm_row,comm_col;
 
-int myNX,myNY,myNZ;	// dimensions of subarrays without halo boundaries
-int fNX,fNY,fNZ;	// full dimensions of subarrays
-int pNX,pNY,pNZ;	// dimensions of arrays for pressure solver
-int fNYfNZ;
-
-int coords[2];
+int *scounts,*rcounts,*sdisps,*rdisps;
+MPI_Datatype *types;
 
 // ranks of neighboring processes
 int west,east,south,north;
@@ -42,35 +39,6 @@ int nw_corner=MPI_PROC_NULL;
 int ne_corner=MPI_PROC_NULL;
 int sw_corner=MPI_PROC_NULL;
 int se_corner=MPI_PROC_NULL;
-
-int error_status = 0;
-
-int rank,row_rank,col_rank;
-int dims[] = {0,0};
-int numtasks;
-int row_size;
-int col_size;
-
-// index within the larger domain
-int *big_i,*big_j;
-
-// sizes of subarrays on each process
-int *s_nx,*s_ny,*s_nz,*s_ny_p,*s_nx_p;
-
-// starting and ending indices of each process within the full domain arrays
-int *ibs,*ibe,*jbs,*jbe,*kbs,*kbe,*jbs_p,*ibs_p;
-
-int *scounts,*rcounts,*sdisps,*rdisps;
-MPI_Datatype *types;
-
-double *pres_row,*ipres_row;
-double *pres_col,*ipres_col;
-
-double *frictions;
-double *istopos,*uistopos,*vistopos;
-
-int size,size2;
-
 
 void p_integrate_hydro(double,int,int,int,int,int);
 void p_run_model(int,FILE *infile=NULL);

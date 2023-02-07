@@ -173,7 +173,7 @@ const int qvar_count = 8;
 const char qvar_names[qvar_count][20] = {"qpp_hor_adv","qpp_vert_adv","qpb_hor_adv","qpb_vert_adv",
 										 "qbp_hor_adv","qbp_vert_adv","qdiff","qm_diabatic"};
 
-double *qpp_hor_adv,*qpp_vert_adv,*qpb_hor_adv,*qpb_vert_adv,*qbp_hor_adv,*qbp_vert_adv,*qdiff,*q_diabatic;
+double *qpp_hor_adv,*qpp_vert_adv,*qpb_hor_adv,*qpb_vert_adv,*qbp_hor_adv,*qbp_vert_adv,*qdiff;
 
 //---------------------------------------------------
 // Omega equation
@@ -244,7 +244,6 @@ const char pv_tracer_names[pv_tracer_var_count][20] = {"pv","PV_advect","pv_diab
 //---------------------------------------------------
 double *smallArray;
 bool smallArrayIsInitialized = false;
-double *m_diabatic;
 
 int subNX;// = NX/grid_ratio;
 int subNY;// = NY/grid_ratio;

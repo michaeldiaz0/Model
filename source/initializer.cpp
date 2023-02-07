@@ -47,6 +47,10 @@ double *vts,*sts,*its;
 //--------------------------------------
 double *accRain,*accSnow;
 //--------------------------------------
+// Accumulated diabatic processes 
+//--------------------------------------
+double *m_diabatic,*q_diabatic;
+//--------------------------------------
 // TOPOGRAPHY AND FRICTION ARRAYS
 //--------------------------------------
 double *itopo,*iistopo,*iuistopo,*ivistopo,*ifriction;
@@ -1381,7 +1385,7 @@ double get_QV_Sat(double temperature,double pressure){
 
 	return 0.62197 * esl / (pressure-esl);
 }
-
+#if PARALLEL
 /*********************************************************************
 * Load data from model output file for use as an initial condition for 
 * the perturbation fields. Assumes that the current model grid settings 
@@ -1470,7 +1474,7 @@ void load_from_output_2d(const char *filename,const char *varname,double *var,in
 		}
 	}
 }
-
+#endif
 /*********************************************************************
 * Compare the values of two arrays. Return true if they are the same
 * within a given tolerance level, false otherwise.
@@ -1570,7 +1574,7 @@ void interpolate_from_output(
 		}
 
 }
-
+#if PARALLEL
 /*********************************************************************
 * Load data for perturbation fields from file for use as an initial condition 
 * and interpolate it to the model grid.
@@ -1621,7 +1625,7 @@ void load_interpolate_from_output(
 		mvar[i] = var[i];
 	}
 }
-
+#endif
 /*********************************************************************
 * Get the dimensions and grid spacing from a file a tell whether or not
 * they match the model's grid spacing and dimensions
@@ -1662,7 +1666,7 @@ int get_file_dims(const char *myfilename,size_t *xdim,size_t *ydim,size_t *zdim,
 	return same;
 }
 
-
+#if PARALLEL
 /*********************************************************************
 * Initialize model perturbation fields from input file. Will determine
 * whether or not interpolation is required.
@@ -1777,7 +1781,7 @@ void initialize_from_output_parallel(const char *myfilename,size_t time){
 	}
 	
 }
-
+#endif
 /*********************************************************************
 * Initialize model perturbation fields from input file. Will determine
 * whether or not interpolation is required.

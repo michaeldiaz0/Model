@@ -259,7 +259,7 @@ void solve_hydrostatic_pressure(double step){
 				PI(i,j,k) += PI(i,j,NZ-1);
 #endif
 }
-
+#if PARALLEL
 /**********************************************************************
 * Parallel pressure solver for hydrostatic model
 *
@@ -404,7 +404,7 @@ void p_solve_hydrostatic_pressure(double step){
 				PI(i,j,k) += PI(i,j,NZ-1);
 	
 }
-
+#endif
 /*********************************************************************
 * Calculate hydrostatic pressure
 **********************************************************************/
@@ -928,7 +928,7 @@ void p_init_fft3d(int ni,int nj,int nk,int snx,int sny,int snz){
 	}
 	
 }
-
+#if PARALLEL
 /**********************************************************************
 * This is the parallel version.
 * Solve the anelastic pressure equation using Fast Fourier transforms
@@ -1075,7 +1075,7 @@ void p_poisson_fft3d(double step){
 	}}
 
 }
-
+#endif
 /**********************************************************************
 * Fast Fourier transform-based pressure solver
 ***********************************************************************/

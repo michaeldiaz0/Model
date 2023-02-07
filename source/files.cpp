@@ -59,7 +59,7 @@ void create_outfile(const char *myfilename, bool basestate,bool modelBaseState,b
 	if(NC64BIT){
 		status = nc_create(myfilename,NC_CLOBBER|NC_64BIT_OFFSET, &ncid);
 	} else {
-		#if !PARALLEL_IO
+		#if !PARALLEL_IO && !PARALLEL
 			status = nc_create(myfilename,NC_CLOBBER, &ncid);
 		#else
 			status = nc_create_par(myfilename,NC_NETCDF4 | NC_CLOBBER | NC_MPIIO, MPI_COMM_WORLD,MPI_INFO_NULL,&ncid);
@@ -418,7 +418,7 @@ void write_pvar_to_file_2d(const char *myfilename,const char *var_name,double *v
 	if (status != NC_NOERR) handle_error(status);
 }
 
-#if !PARALLEL_IO
+#if !PARALLEL_IO && PARALLEL
 /********************************************************
 * Write data for single perturbation variable at a single 
 * time to the netcdf file for parallel version.
@@ -452,7 +452,7 @@ void parallel_write_pvar_to_file_2d(const char *myfilename,const char *var_name,
 	if(rank==0){ write_pvar_to_file_2d(myfilename,var_name,output_to_file_2d,tcount);}
 	
 }
-#else
+#elif PARALLEL
 /********************************************************
 * 
 *********************************************************/

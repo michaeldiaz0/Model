@@ -193,6 +193,7 @@ void set_terrain(double * var,double *topo,int size){
 	for(int i=0;i<size;i++){ var[i] *= topo[i];}
 }
 
+#if PARALLEL
 /*****************************************************************
 * 
 ******************************************************************/
@@ -216,6 +217,7 @@ void diff_terrain_vars(int size){
 	diff_terrain(thps,w_bound,istopos,size);
 
 }
+#endif
 
 /*********************************************************************
 * Substeps within RK3 loop
