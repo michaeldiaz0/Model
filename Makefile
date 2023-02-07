@@ -61,7 +61,7 @@ TAR := tar
 # C/C++ flags
 CPPFLAGS := -g -O3 -I $(LOCAL_INCLUDE) -I $(NETCDF_INCLUDE) -I $(FFTW_INCLUDE) -I $(MPI_INCLUDE)
 # linker flags: libraries to link (e.g. -lfoo)
-LDLIBS := -L $(NETCDF_LIB) -lnetcdf -L $(FFTW_LIB) -lmpi -L $(MPI_LIB) -lfftw3 -lm
+LDLIBS := -L $(NETCDF_LIB) -lnetcdf -L $(FFTW_LIB) -lfftw3 -L $(MPI_LIB) -lmpi  -lm
 # flags required for dependency generation; passed to compilers
 DEPFLAGS = -MT $@ -MD -MP -MF $(DEPDIR)/$*.Td
 
