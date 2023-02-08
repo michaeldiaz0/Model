@@ -498,12 +498,12 @@ def jordan_sounding(outfile):
 def main():
 
 	try:
-		#rain_ball("../model_input/rainball.nc")
-		#thunderstorm_basicstate("../model_input/thunderstorm.nc")
-		#jordan_sounding("../model_input/hurricane.nc")
+		#rain_ball("rainball.nc")
+		#thunderstorm_basicstate("thunderstorm.nc")
+		#jordan_sounding("hurricane.nc")
 		
-		baroclinic_jet("../model_input/baroclinicjet.nc")
-		#barotropic_jet("../model_input/barotropicjet.nc")
+		baroclinic_jet("baroclinicjet.nc")
+		#barotropic_jet("barotropicjet.nc")
 		
 	except:
 

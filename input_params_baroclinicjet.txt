@@ -38,8 +38,8 @@ shift_prime_meridian : 0
 | often to output results to a file
 | (in number of time steps)
 ---------------------------------------
-time_steps		 : 1584
-output_frequency :	72
+time_steps		 : 3168
+output_frequency : 	72
 
 ----------------------------------------
 | Grid level to begin upper-level damping
@@ -64,7 +64,7 @@ verbose : 1
 | 1 - from a compiled subroutine
 ----------------------------------------
 basic_state_init_option		:	0
-perturbation_init_option	:	0
+perturbation_init_option	:	1
 ----------------------------------------
 | Restart a simulation from where it
 | left off, recording results into the
@@ -75,7 +75,7 @@ is_restart_run : 0
 | Time at which to start reading
 | from perturbation input file
 ----------------------------------------
-perturbationFileTime	: 37
+perturbationFileTime	: 8
 ----------------------------------------
 | Time at which to start writing to the
 | output file (if NOT creating a new file)
@@ -112,7 +112,7 @@ run_vorticity_budget :	0
 | 1 - Kessler warm rain microphysics
 | 2 - Rutledge/Hong ice microphysics
 ----------------------------------------
-microphysics_option : 2
+microphysics_option : 0
 ----------------------------------------
 | How flow-relative rain vertical 
 | advection is handled
@@ -168,19 +168,19 @@ west : 5
 ----------------------------------------
 | File extensions. Ignored if left blank.
 ----------------------------------------
-input_file_base		:		
-output_file_base	:	/Users/michaeldiaz/Desktop/model_output/	
+input_file_base		: ./ 
+output_file_base	: ./
 
 ----------------------------------------
 | Input files
 ----------------------------------------
-basic_state_input_file	:	/Users/michaeldiaz/Desktop/model_input/baroclinicjet.nc
-perturbation_input_file	:	/Users/michaeldiaz/Desktop/model_output/outfile0419_0.nc
+basic_state_input_file	: baroclinicjet.nc
+perturbation_input_file	: outfile0419_1.nc baroclinicjet.nc
 
 ----------------------------------------
 | Output files
 ----------------------------------------
-output_file				  :	outfile0419_1.nc
+output_file				  :	outfile0211_0.nc
 heat_budget_filename	  :	temp_budget1130_0.nc
 moisture_budget_filename  :	moisture_budget1130_0.nc
 pe_budget_filename		  :	pe_budget1130_0.nc
@@ -202,7 +202,7 @@ vorticity_budget_filename :	vort_budget1129_0.nc
 ----------------------------------------
 vortex_initialize : 1 (1->yes,0->no)
 vortex_latitude : 45.0
-vortex_longitude : 70.0
+vortex_longitude : 150.0
 vortex_radius : 1000000 (meters)
 vortex_upper_warm_anomaly : 2.5 (K)
 vortex_lower_cold_anomaly : -2.05 (K)
