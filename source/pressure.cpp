@@ -76,7 +76,7 @@ double *div_avg;
 void p_solve_hydrostatic_pressure(double);
 void solve_hydrostatic_pressure(double);
 
-void init_fft2d(int,int);
+void init_fft2d(int,int,int,int);
 void init_fft3d(int,int,int);
 void p_init_fft3d(int,int,int,int,int,int);
 void init_fft3d_real(int,int,int,double,double,double);
@@ -103,7 +103,7 @@ void initialize_pressure_solver(){
 		//-----------------------------------------------------------
 		if(HYDROSTATIC){ // HYDROSTATIC
 		//-----------------------------------------------------------
-			init_fft2d(NX,myNY);
+			init_fft2d(NX,myNY,NX,NY);
 		//-----------------------------------------------------------
 		} else {		// NON-HYDROSTATIC
 		//-----------------------------------------------------------
@@ -115,9 +115,9 @@ void initialize_pressure_solver(){
 		if(HYDROSTATIC){ // HYDROSTATIC
 		//-----------------------------------------------------------
 			if(PERIODIC_BOUNDARIES)
-                init_fft2d(NX-6,NY);
+                init_fft2d(NX-6,NY,NX-6,NY);
             else
-                init_fft2d(NX,NY);
+                init_fft2d(NX,NY,NX,NY);
 		//-----------------------------------------------------------
 		} else {		// NON-HYDROSTATIC
 		//-----------------------------------------------------------
@@ -573,35 +573,40 @@ void SOR(int itr,int iterations,double p[3][NX][NY],double div_avg[NX][NY]){
 *
 * ni,nj - grid dimensions for full domain array
 ***********************************************************************/
-void init_fft2d(int ni,int nj){
-
+/**********************************************************************
+* Fast Fourier transform-based pressure solver for hydrostatic version
+*
+* ni,nj - grid dimensions for full domain array
+***********************************************************************/
+void init_fft2d(int ni,int nj,int nx,int ny){
+	
 	div_avg = (double*) calloc(sizeof(double),ni*nj);
+	
+	in2d = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * nx*nj);
+	out2d = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * nx*nj);
 
-	in2d = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * ni*nj);
-	out2d = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * ni*nj);
-
-	int n[] = {ni};
+	int n[] = {nx};
 
 	p1 = fftw_plan_many_dft(1, n, nj,in2d,n,nj,1,out2d,n,nj,1,FFTW_FORWARD, FFTW_MEASURE);
 	p2 = fftw_plan_many_dft(1, n, nj,out2d,n,nj,1,in2d,n,nj,1,FFTW_BACKWARD,FFTW_MEASURE);
 
-	kwave = (double*) calloc(sizeof(double),ni);
-	lwave = (double*) calloc(sizeof(double),nj);
+	kwave = (double*) calloc(sizeof(double),nx);
+	lwave = (double*) calloc(sizeof(double),ny);
 
-	for(int i=0;i<ni/2;i++){	kwave[i] = 2*trigpi * (double)i / ni;	}
-	for(int i=ni/2;i<ni;i++){	kwave[i] = 2*trigpi * (double)(ni-i) / ni;}
+	for(int i=0;i<nx/2;i++){	kwave[i] = 2*trigpi * (double)i / nx;	}
+	for(int i=nx/2;i<nx;i++){	kwave[i] = 2*trigpi * (double)(nx-i) / nx;}
 
-	for(int i=0;i<nj/2;i++){	lwave[i] = 2*trigpi * (double)i / nj;	}
-	for(int i=nj/2;i<nj;i++){	lwave[i] = 2*trigpi * (double)(nj-i) / nj;}
+	for(int i=0;i<ny/2;i++){	lwave[i] = 2*trigpi * (double)i / ny;	}
+	for(int i=ny/2;i<ny;i++){	lwave[i] = 2*trigpi * (double)(ny-i) / ny;}
 
-	acoef = (double*) malloc(sizeof(double)*nj);
-	bcoef = (double*) malloc(sizeof(double)*ni*nj);
-	ccoef = (double*) malloc(sizeof(double)*nj);
+	acoef = (double*) malloc(sizeof(double)*ny);
+	bcoef = (double*) malloc(sizeof(double)*nx*ny);
+	ccoef = (double*) malloc(sizeof(double)*ny);
 
-	P = (double*) calloc(sizeof(double),(nj+1));
-	Q = (double*) calloc(sizeof(double),(nj+1));
+	P = (double*) calloc(sizeof(double),(ny+1));
+	Q = (double*) calloc(sizeof(double),(ny+1));
 
-	for(int j=0;j<nj;j++){
+	for(int j=0;j<ny;j++){
 
 		acoef[j] = 1./(dy*dy);
 		ccoef[j] = 1./(dy*dy);
@@ -609,10 +614,10 @@ void init_fft2d(int ni,int nj){
 	}
 
 	acoef[0] = 0;	
-	ccoef[nj-1] = 0;
+	ccoef[ny-1] = 0;
 
-	for(int i=0;i<ni;i++){
-	for(int j=0;j<nj;j++){
+	for(int i=0;i<nx;i++){
+	for(int j=0;j<ny;j++){
 
 		BCOEF(i,j) = 2.*(cos(kwave[i])-1.)/(dx*dx) - ccoef[j] - acoef[j];
 		

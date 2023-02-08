@@ -26,7 +26,7 @@ add diffusion to snow and ice
 */
 
 // compile parallel (1) or serial (0) version
-#define PARALLEL 0
+#define PARALLEL 1
 
 #if 1
 
@@ -63,7 +63,7 @@ const int index_lowest_level = 1;		// what is the index of this level?
 //--------------------------------------
 // Equation set
 //--------------------------------------
-#define HYDROSTATIC 1			// hydrostatic option (no longer works)
+#define HYDROSTATIC 0			// hydrostatic option (no longer works)
 #define ISLINEAR 0				// linearize equation set
 #define USE_LINEAR_FRICTION 0	// linear friction in lowest model level(s)
 extern int USE_TURBULENT_STRESS;// use turbulence parameterization
