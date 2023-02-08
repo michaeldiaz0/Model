@@ -190,6 +190,22 @@ void s_integrate_rk3(){
 		********************************************************/
 		if(HYDROSTATIC){ w_velocity_LH(1,NX-1,1,NY-1);}
 
+    
+#if 0
+        // divergence calcuation
+        for(int i=1;i<NX-1;i++){
+        for(int j=1;j<NY-1;j++){
+        for(int k=1;k<NZ-1;k++){
+            
+            WM(i,j,k) = rhou[k]*( UP(i+1,j,k)-UP(i,j,k) )*one_d_dx + 
+                             rhou[k]*( VP(i,j+1,k)-VP(i,j,k) )*one_d_dy + 
+                           ( rhow[k+1]*W(i,j,k+1)-rhow[k]*W(i,j,k) )*ONE_D_DZ(k);
+            if(abs(WM(i,j,k)) > 1.0e-8){
+            printf("%e\n",WM(i,j,k));
+            }
+
+        }}}
+#endif
 		/*******************************************************
 		* Handle all boundary conditions
 		********************************************************/

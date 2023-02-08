@@ -133,7 +133,7 @@ void init_kmix(int nx,int ny,int nz,double *zlevs){
 	//------------------------------------------------------
 	// Set vertical mixing length values
 	//------------------------------------------------------
-	for(int k=0;k<nz;k++){
+	for(int k=1;k<nz;k++){
 		
 		deltaZ = (zlevs[k]-zlevs[k-1]);
 		

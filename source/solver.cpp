@@ -48,6 +48,8 @@ void integrate_hydro(double step,int itr,int il,int ih,int jl, int jh){
 	******************************************************************/
 	advect_uv_velocity(step,il+3,ih-3,jl+3,jh-3);
 
+	if(USE_TURBULENT_STRESS){ apply_velocity_diffusion(step,il+3,ih-3,jl+3,jh-3);}
+
 	/*****************************************************************
 	* Zero out values at or below the terrain for velocity field
 	******************************************************************/
@@ -72,6 +74,40 @@ void integrate_hydro(double step,int itr,int il,int ih,int jl, int jh){
 		VP(i,j,k) -= step*(dty*cp*tbv[k]*(PI(i,j,k)-PI(i,j-1,k)));
 		
 	}}}
+
+#if 0
+
+    double *div_avg;
+
+
+	div_avg = (double*) calloc(sizeof(double),NX*NY);
+
+	/*****************************************************************
+	* Calculate vertical density-weighted average of the divergence
+	* of the new momentum field
+	******************************************************************/
+	double zsum = 0;
+	
+	for(int i=1;i<NX-1;i++){
+	for(int j=1;j<NY-1;j++){
+	
+		div_avg[INDEX2D(i,j)] = 0;
+		zsum = 0;
+		
+		// sum each vertical level
+		for(int k=HTOPO(i,j)+1;k<NZ-1;k++){
+			div_avg[INDEX2D(i,j)] = div_avg[INDEX2D(i,j)] + rhou[k] * DZU(k) * ( (UP(i+1,j,k)-UP(i,j,k))*one_d_dx + (VP(i,j+1,k)-VP(i,j,k) )*one_d_dy);
+			zsum += DZU(k);
+		}
+			
+		// vertical average
+		div_avg[INDEX2D(i,j)] = div_avg[INDEX2D(i,j)] / ( cp * zsum * step*dt );
+        if(abs(div_avg[INDEX2D(i,j)]) > 1.0e-6)
+            printf("%d %d %e\n",i,j,div_avg[INDEX2D(i,j)]);
+	}}
+
+    free(div_avg);
+#endif
 }
 
 /*********************************************************************
@@ -155,7 +191,7 @@ void w_velocity_LH(int il,int ih,int jl,int jh){
 					( 
 						-(UP(i+1,j,k-1) - UP(i,j,k-1) ) * one_d_dx	
 		      			-(VP(i,j+1,k-1) - VP(i,j,k-1) ) * one_d_dy
-					)*dz/mu[k];
+					)*dz/mu[k-1];
 		}
 	}}
 }

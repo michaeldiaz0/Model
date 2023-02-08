@@ -4,6 +4,11 @@
 #include "pcomm.h"
 
 
+#if HYDROSTATIC
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)
+#else
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)/(cp*tbv[k])
+#endif
 
 /****************************************************
 * Initialize moisture variables
@@ -34,11 +39,11 @@ void run_kessler_microphysics(int il,int ih,int jl,int jh){
 		/**********************************************
 		* Get full values of thermodynamic variables
 		***********************************************/
-		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		// full potential temperature is base state plus perturbation		
-		pressure = PI(i,j,k)/(cp*tbv[k]) + PBAR(i,j,k);	// full pressure is base state plus perturbation
- 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		// full vapor is base state plus perturbation
-		temperature = theta*pressure;					// actual temperature
-		pd = p0*pow(pressure,cpRd);						// dimensional pressure
+		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		    // full potential temperature is base state plus perturbation		
+		pressure = CONVERT_PRESSURE(i,j,k) + PBAR(i,j,k);	// full pressure is base state plus perturbation
+ 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		    // full vapor is base state plus perturbation
+		temperature = theta*pressure;					    // actual temperature
+		pd = p0*pow(pressure,cpRd);						    // dimensional pressure
 
 		/**********************************************
 		* Autoconversion
@@ -226,53 +231,3 @@ void run_kessler_microphysics(int il,int ih,int jl,int jh){
 
 }
 
-
-#if 0
-
-/*********************************************************************
-*
-*
-**********************************************************************/
-void zero_moisture(int il,int ih,int jl,int jh,int size){
-	
-	for(int i=0;i<size;i++) 
-		if(qcps[i] < 0){ qcps[i] = 0;}
-	
-	for(int i=0;i<size;i++)
-		if(qrps[i] < 0){ qrps[i] = 0;}
-	
-	for(int i=il;i<ih;i++){
-	for(int j=jl;j<jh;j++){
-	for(int k=1;k<NZ-1;k++){
-	
-		// Remove negative values for moisture variables
-		if(QVP(i,j,k)+QBAR(i,j,k)+qb[k] < 0){ QVP(i,j,k) = -(QBAR(i,j,k)+qb[k]);}
-		//if(QCP(i,j,k) < 0){ QCP(i,j,k) = 0;}
-		//if(QRP(i,j,k) < 0){ QRP(i,j,k) = 0;}
-	}}}
-	
-}
-
-/*********************************************************************
-* Substeps within RK3 loop
-**********************************************************************/
-void microphysics_advance_inner(size_t num_bytes){
-
-	switch_array(&qvs,&qvps);
-	switch_array(&qcs,&qcps);
-	switch_array(&qrs,&qrps);	
-}
-
-/*********************************************************************
-* Final step for RK3
-**********************************************************************/
-void microphysics_advance(size_t num_bytes){
-
-	memcpy(qvms,qvps,num_bytes);
-	memcpy(qcms,qcps,num_bytes);
-	memcpy(qrms,qrps,num_bytes);
-
-	microphysics_advance_inner(num_bytes);
-}
-
-#endif

@@ -26,7 +26,7 @@ add diffusion to snow and ice
 */
 
 // compile parallel (1) or serial (0) version
-#define PARALLEL 1
+#define PARALLEL 0
 
 #if 1
 

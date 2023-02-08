@@ -549,3 +549,21 @@ void periodic_boundaries_east_west(double *var){
 		var[FULL_ARRAY_INDEX(NX-1,j,k)] = var[FULL_ARRAY_INDEX(5,j,k)];
 	}}
 }
+
+/*********************************************************************
+* Period east-west boundaries for serial version. Assumes three grid
+* points are repeated. For 2D arrays.
+*
+**********************************************************************/
+void periodic_boundaries_east_west_2d(double *var){
+
+	for(int j=0;j<NY;j++){
+
+		var[INDEX2D(0,j)] 	= var[INDEX2D(NX-6,j)];
+		var[INDEX2D(1,j)] 	= var[INDEX2D(NX-5,j)];
+		var[INDEX2D(2,j)]   = var[INDEX2D(NX-4,j)];
+		var[INDEX2D(NX-3,j)] = var[INDEX2D(3,j)];
+		var[INDEX2D(NX-2,j)] = var[INDEX2D(4,j)]; 
+		var[INDEX2D(NX-1,j)] = var[INDEX2D(5,j)];
+	}
+}
