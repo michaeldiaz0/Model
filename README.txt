@@ -12,9 +12,19 @@ Diaz, M., and W. R. Boos, 2021b: The influence of surface heat fluxes on the gro
 I. COMPILATION
 -------------------------------------------------------------
 
-This program requires three external libraries: NetCDF (the file format, downloadable at https://www.unidata.ucar.edu/software/netcdf/), FFTW3 (a Fast Fourier Transform library, downloadable at http://www.fftw.org), and an implementation of MPI (the parallel programming library, for example, OpenMPI). To compile, locate either the file "compile.sh" or the Makefile. In either file, you will need to set the file paths on the first few lines to your own compiled versions of the NetCDF, FFTW3, and MPI libraries. The directories pointed to by these paths must contain the "include" and "lib" subdirectories to each library. The MPI compiler wrappers (e.g. mpic++) must also be in the execution path. Run either "./compile.sh" or "make". If compilation is successful, the executable "solve.exe" will appear in the "bin" folder.
+This program requires three external libraries: NetCDF (the file format, downloadable at https://www.unidata.ucar.edu/software/netcdf/), FFTW3 (a Fast Fourier Transform library, downloadable at http://www.fftw.org), and an implementation of MPI (the parallel programming library, for example, OpenMPI).
+
+With shell script
+
+Locate the file "compile.sh". You will first need to set the file paths on the first few lines to your own compiled versions of the NetCDF, FFTW3, and MPI libraries. The directories pointed to by these paths must contain the "include" and "lib" subdirectories to each library. The MPI compiler wrappers (e.g. mpic++) must also be in the execution path. Run "./compile.sh". If compilation is successful, the executable "solve.exe" will appear in the "bin" folder.
+
+With Makefile
+
+Locate the file Makefile. Set the appropriate paths as indicated on the first few lines. If no MPI library is available, set HAS_MPI to FALSE to compile the serial version (also must set a preprocessor variable as indicate below). You may need to change the names of the compilers with the variable CXX. When the Makefile is correctly configured, run `make` or `make all`. To undue compilation, run `make clean`.
 
 To switch between the parallel and serial version, locate the file "stdafx.h" in the "include" directory. Locate the line with "#define PARALLEL". Set it to "#define PARALLEL 0" for the serial version and "#define PARALLEL 1" for the parallel version. The program must be recompiled when switching between parallel and serial.
+
+Other compile-time options include a switch between the hydrostatic and non-hydrostatic version, and the linear and non-linear version. The linear version does not work in parallel.
 
 -------------------------------------------------------------
 II. RUNNING
@@ -84,6 +94,12 @@ Note that most of the variables are split into perturbation, basic state, and ba
 The model output files are formatted similarly to the input files and can therefore be read as input. The input text file provides several ways to exploit this similarity using the options "is_restart_run", "perturbationFileTime", "startOutfileAt", and "create_new_output_file". However, be aware that restarting from a model output file may yield slightly different results than running straight through, since the output data is stored as single precision floating point values but the model is run with double precision.
 
 The model can also output multiple budgets, including temperature, moisture, potential energy, potential vorticity, and stream function. Note that these budgets are accumulated between output times and are therefore not instantaneous. Currently, the budget work for only the parallel version of the code.
+
+--------------------------------------------
+D. Quick instructions for running
+--------------------------------------------
+
+Run `python sample_initializations.py` to generate an input basic state file. By default, it is the baroclinic jet basic state and is labeled 'baroclinicjet.nc'. Then run `./bin/solve.exe -f input_params_baroclinicjet.txt` for the serial version or `mpiexec -np 4 ./bin/solve.exe -f input_params_baroclinicjet.txt` for the parallel version (with four processes for this example). The output file name is specified is the input_params file as 'output_file'. This file can be read and plotted using the sample python scripts.
 
 -------------------------------------------------------------
 III. PLOTTING
