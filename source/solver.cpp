@@ -115,7 +115,7 @@ void integrate_non_hydro(double step,int il,int ih,int jl, int jh){
 	//-----------------------------------------------------------------
 	// Solve anelastic pressure equation
 	//-----------------------------------------------------------------
-	//solve_pressure(step);
+	solve_pressure(step);
 	
 	//-----------------------------------------------------------------
 	// Apply pressure gradient force to velocity field

@@ -86,7 +86,7 @@ def plot_winds_temperature_pressure(infile,outfile,time):
 	#-----------------------------------
 	# make line contour plot
 	#-----------------------------------	
-	#cs = m.contour(x,y,p,linewidths=1,colors='k')
+	cs = m.contour(x,y,p,linewidths=1,colors='k')
 	
 	#-----------------------------------
 	# make vector plot
