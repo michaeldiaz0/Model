@@ -70,10 +70,6 @@ double *pres_col,*ipres_col;
 
 double *div_avg;
 
-
-//double div_avg[NX][NY];
-//double sor[3][NX][NY];
-
 /***************************************************************************
 * ---------------------- FUNCTION PROTOTYPES--------------------------------
 ****************************************************************************/
@@ -160,6 +156,7 @@ void solve_pressure(double step){
                 solve_hydrostatic_pressure(step);
 
                 mirror_boundaries(&PI(0,0,0));
+				
             } else {
 
 				periodic_uvw_boundaries();
@@ -167,9 +164,6 @@ void solve_pressure(double step){
                 solve_hydrostatic_pressure(step);
 
 				periodic_pressure_boundaries();
-
-	//for(int i=0;i<10;i++)
-    //    printf("a %d %f\n",i,PI(i,100,8));
 
             }
 		/********************************************************************
@@ -234,70 +228,51 @@ void solve_pressure(double step){
 ***********************************************************************/
 void solve_hydrostatic_pressure(double step){
 
+	int buf,buf2;
+	
+	if(PERIODIC_BOUNDARIES){
+		buf = 3;
+		buf2 = 3;
+	} else {
+		buf = 1;
+		buf2 = 0;
+	}
+
 	/*****************************************************************
 	* Calculate vertical density-weighted average of the divergence
 	* of the new momentum field
 	******************************************************************/
 	double zsum = 0;
 	
-    if(!PERIODIC_BOUNDARIES){
-        for(int i=1;i<NX-1;i++){
-        for(int j=1;j<NY-1;j++){
+    for(int i=buf;i<NX-buf;i++){
+    for(int j=1;j<NY-1;j++){
+    
+        div_avg[INDEX2D(i-buf2,j)] = 0;
+        zsum = 0;
         
-            div_avg[INDEX2D(i,j)] = 0;
-            zsum = 0;
+        // sum each vertical level
+        for(int k=HTOPO(i,j)+1;k<NZ-1;k++){
+            div_avg[INDEX2D(i-buf2,j)] += rhou[k] * DZU(k) * ( (UP(i+1,j,k)-UP(i,j,k))*one_d_dx + (VP(i,j+1,k)-VP(i,j,k) )*one_d_dy);
+            zsum += DZU(k);
+        }
             
-            // sum each vertical level
-            for(int k=HTOPO(i,j)+1;k<NZ-1;k++){
-                div_avg[INDEX2D(i,j)] = div_avg[INDEX2D(i,j)] + rhou[k] * DZU(k) * ( (UP(i+1,j,k)-UP(i,j,k))*one_d_dx + (VP(i,j+1,k)-VP(i,j,k) )*one_d_dy);
-                zsum += DZU(k);
-            }
-                
-            // vertical average
-            div_avg[INDEX2D(i,j)] = div_avg[INDEX2D(i,j)] / ( cp * zsum * step*dt );
-        }}
-    } else {
-        for(int i=3;i<NX-3;i++){
-        for(int j=1;j<NY-1;j++){
-        
-            div_avg[INDEX2D(i-3,j)] = 0;
-            zsum = 0;
-            
-            // sum each vertical level
-            for(int k=HTOPO(i,j)+1;k<NZ-1;k++){
-                div_avg[INDEX2D(i-3,j)] = div_avg[INDEX2D(i-3,j)] + rhou[k] * DZU(k) * ( (UP(i+1,j,k)-UP(i,j,k))*one_d_dx + (VP(i,j+1,k)-VP(i,j,k) )*one_d_dy);
-                zsum += DZU(k);
-            }
-                
-            // vertical average
-            div_avg[INDEX2D(i-3,j)] = div_avg[INDEX2D(i-3,j)] / ( cp * zsum * step*dt );
-            if(abs(div_avg[INDEX2D(i-3,j)])>1.0e-5){
-               // printf("f %d %d %f\n",i,j,div_avg[INDEX2D(i-3,j)]);
-            }
-        }}
-    }
-	// update boundaries
-     //   periodic_boundaries_east_west_2d(div_avg);
-    //else
+        // vertical average
+        div_avg[INDEX2D(i-buf2,j)] /= ( cp * zsum * step*dt );
+
+    }}
+    
+
     if(!PERIODIC_BOUNDARIES)
         mirror_boundaries_2d(div_avg);
+	else
+		mirror_boundaries_ns_2d(div_avg,0,NX-6);
   
-	for(int i=0;i<10;i++)
-        printf("p %d %f\n",i,PI(i,100,8));
-	for(int i=3;i<10;i++){
-        //printf("d %d %f\n",i,div_avg[INDEX2D(i-3,100)]);
-    }
 	/*****************************************************************
 	* Solve Laplacian equation for pressure field required 
 	* to balance divergence tendencies from advection
 	******************************************************************/
-    if(!PERIODIC_BOUNDARIES)
-        poisson_fft2d(div_avg,NX,NY);
-    else
-        poisson_fft2d(div_avg,NX-6,NY);
+    poisson_fft2d(div_avg,NX-2*buf2,NY);
 
-	for(int i=3;i<10;i++)
-        printf("e %d %f\n",i,div_avg[INDEX2D(i-3,100)]);
 	/*********************************************************************
 	* Calculate hydrostatic pressure
 	**********************************************************************/
@@ -306,21 +281,9 @@ void solve_hydrostatic_pressure(double step){
 	/*****************************************************
 	* Calcuate top lid pressure
 	******************************************************/
-    if(!PERIODIC_BOUNDARIES){
-        for(int i=1;i<NX-1;i++)
-        for(int j=1;j<NY-1;j++)
-            PI(i,j,NZ-1) = (div_avg[INDEX2D(i,j)] - PI(i,j,0)) / RHOAVG2D(i,j);
-	
-    } else {
-
-        for(int i=3;i<NX-3;i++)
-        for(int j=1;j<NY-1;j++)
-            PI(i,j,NZ-1) = (div_avg[INDEX2D(i-3,j)] - PI(i,j,0)) / RHOAVG2D(i,j);
-    }
-
-	//for(int i=1;i<NX-1;i++)
-	//for(int j=1;j<NY-1;j++)
-		//printf("%f ",RHOAVG2DFULL(i,j));
+    for(int i=buf;i<NX-buf;i++)
+    for(int j=1;j<NY-1;j++)
+        PI(i,j,NZ-1) = (div_avg[INDEX2D(i-buf2,j)] - PI(i,j,0)) / RHOAVG2D(i,j);
 
 	/*****************************************************
 	* Calcuate total perturbation pressure
@@ -497,12 +460,12 @@ void hydrostatic_pressure(int il,int ih,int jl,int jh){
 		for(int j=jl;j<jh;j++){
 
 			PI(i,j,NZ-1) = 0;
-			PI(i,j,NZ-2) = -0.5*(grav/cp)*((THP(i,j,NZ-2)*(1.+0.61*QVP(i,j,NZ-2)-QCP(i,j,NZ-2)-QRP(i,j,NZ-2)))/(tbv[NZ-2]*tbv[NZ-2]))*DZW(NZ-1);
+			PI(i,j,NZ-2) = -0.5*(grav/cp)*((TH(i,j,NZ-2)*(1.+0.61*QV(i,j,NZ-2)-QC(i,j,NZ-2)-QR(i,j,NZ-2)))/(tbv[NZ-2]*tbv[NZ-2]))*DZW(NZ-1);
 
 			for(int k=NZ-3;k>0;k--){
 			
-				tup = (THP(i,j,k+1)*(1.+0.61*QVP(i,j,k+1)-QCP(i,j,k+1)-QRP(i,j,k+1)))/(tbv[k+1]*tbv[k+1]);
-				tdn = (THP(i,j,k)*(1.+0.61*QVP(i,j,k)-QCP(i,j,k)-QRP(i,j,k)))/(tbv[k]*tbv[k]);
+				tup = (TH(i,j,k+1)*(1.+0.61*QV(i,j,k+1)-QC(i,j,k+1)-QR(i,j,k+1)))/(tbv[k+1]*tbv[k+1]);
+				tdn = (TH(i,j,k)*(1.+0.61*QV(i,j,k)-QC(i,j,k)-QR(i,j,k)))/(tbv[k]*tbv[k]);
 				PI(i,j,k) = PI(i,j,k+1)-0.5*(grav/cp)*(tup+tdn)*DZW(k+1);
 			}
 		
@@ -652,6 +615,8 @@ void init_fft2d(int ni,int nj){
 	for(int j=0;j<nj;j++){
 
 		BCOEF(i,j) = 2.*(cos(kwave[i])-1.)/(dx*dx) - ccoef[j] - acoef[j];
+		
+		if(j==0){ BCOEF(i,j) = -rhow[2]/(dx*dx);}
 	}}
 
 }

@@ -14,6 +14,7 @@ void init_boundaries(int eastLength,int westLength,int northLength,int southLeng
 void mirror_boundaries(double * s);
 void periodic_boundaries();
 void mirror_boundaries_2d(double * s);
+void mirror_boundaries_ns_2d(double * s,int,int);
 void p_mirror_boundaries(double*,int,int,int,int,int,int,int);
 void upper_lower_boundaries(double *);
 void periodic_ew_sponge_ns_boundaries();
