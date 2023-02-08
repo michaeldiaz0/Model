@@ -175,7 +175,7 @@ output_file_base	: ./
 | Input files
 ----------------------------------------
 basic_state_input_file	: baroclinicjet.nc
-perturbation_input_file	: outfile0419_1.nc baroclinicjet.nc
+perturbation_input_file	: baroclinicjet.nc
 
 ----------------------------------------
 | Output files
