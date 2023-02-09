@@ -90,7 +90,7 @@ endif
 ifeq ($(HAS_MPI),TRUE)
 LDLIBS := -L $(NETCDF_LIB) -lnetcdf -L $(FFTW_LIB) -lfftw3 -L $(MPI_LIB) -lmpi  -lm
 else
-LDLIBS := -L $(NETCDF_LIB) -lnetcdf -L $(FFTW_LIB) -lfftw3 -L -lm
+LDLIBS := -L $(NETCDF_LIB) -lnetcdf -L $(FFTW_LIB) -lfftw3 -lm
 endif
 
 # flags required for dependency generation; passed to compilers
