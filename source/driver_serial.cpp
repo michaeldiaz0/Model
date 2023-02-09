@@ -3,6 +3,7 @@
 #include "turbulence.h"
 #include "Heating.h"
 #include "energy.h"
+#include "fluxes.h"
 #include "damping.h"
 #include "boundaries.h"
 #include "initializer.h"
@@ -152,6 +153,9 @@ void s_integrate_rk3(){
 	* Runge-Kutta Loop
 	********************************************************/
 	for(int s=0;s<3;s++){
+		
+		// sign of advection for upwind biased derivatives
+		compute_sign_cells(0,NX,0,NY);
 		
 		/*******************************************************
 		* Solve momentum and pressure equations using either

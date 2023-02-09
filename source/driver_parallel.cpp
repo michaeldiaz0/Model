@@ -119,7 +119,8 @@ void p_integrate_rk3(){
 		
 		calculate_budgets(s,&steps[0]);
 	
-		compute_sign_cells(3,fNX-3,3,fNY-3);
+		// sign of advection for upwind biased derivatives
+		compute_sign_cells(0,fNX,0,fNY);
 
 		/*******************************************************
 		* Solve momentum and pressure equations using either

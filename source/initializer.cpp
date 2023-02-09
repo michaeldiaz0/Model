@@ -542,6 +542,7 @@ void setup_memory_allocation(){
 	} else {
 		initialize_flux_cells(NY,NZ);
 		initialize_microphysics_cells(NY,NZ);
+		initialize_sign_cells(NX,NY,NZ);
 
 		initialize_subarray(NX,NY,NZ);
 
