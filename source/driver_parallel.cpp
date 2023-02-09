@@ -77,6 +77,7 @@ void initialize_parallel_model(){
 
 	initialize_flux_cells(fNY,fNZ);
 	initialize_microphysics_cells(fNY,fNZ);
+	initialize_sign_cells(fNX,fNY,fNZ);
 
 	initialize_pressure_solver();
 	
@@ -118,6 +119,8 @@ void p_integrate_rk3(){
 		
 		calculate_budgets(s,&steps[0]);
 	
+		compute_sign_cells(3,fNX-3,3,fNY-3);
+
 		/*******************************************************
 		* Solve momentum and pressure equations using either
 		* the hydrostatic or non-hydrostatic equation set
