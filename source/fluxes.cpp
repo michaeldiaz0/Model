@@ -771,34 +771,36 @@ void interpolate_scalar(int i,int jl,int jh,double *s,double *sb,struct cell *sc
 	// Use lower order interpolations in vertical if 
 	// the interpolating stencil extends beyond model domain
 	//---------------------------------------------------
-	if(kmin > 1){ // lowest model level
+	#if VER_ADVECTION_ORDER > 2
 	
-		for(int j=jl;j<jh;j++){
-			
-			k = 1;
-			
-			BCELL(j,k).top = INTERP_2ND_TOP(SB,k);
-			
-			k = NZ-2;
-	
-			BCELL(j,k).top = INTERP_2ND_TOP(SB,k);
-		}
+	for(int j=jl;j<jh;j++){
+		
+		k = 1;
+		
+		BCELL(j,k).top = INTERP_2ND_TOP(SB,k);
+		
+		k = NZ-2;
+
+		BCELL(j,k).top = INTERP_2ND_TOP(SB,k);
 	}
 	
-	if(kmin > 2){
+	#endif
 	
-		for(int j=jl;j<jh;j++){
-
-			k = 2;
-
-			BCELL(j,k).top = INTERP_3RD_TOP(SB, SIGN_P_VEL(i,j,k+1).w, k);
-			
-			k = NZ-3;
+	#if VER_ADVECTION_ORDER > 4
 	
-			BCELL(j,k).top = INTERP_3RD_TOP(SB, SIGN_P_VEL(i,j,k+1).w, k);
-			
-		}
+	for(int j=jl;j<jh;j++){
+
+		k = 2;
+
+		BCELL(j,k).top = INTERP_3RD_TOP(SB, SIGN_P_VEL(i,j,k+1).w, k);
+		
+		k = NZ-3;
+
+		BCELL(j,k).top = INTERP_3RD_TOP(SB, SIGN_P_VEL(i,j,k+1).w, k);
+		
 	}
+		
+	#endif
 
 	//---------------------------------------------------
 	// Interior points
@@ -845,33 +847,35 @@ void interpolate_scalar(int i,int jl,int jh,double *s,struct cell *scell){
 	// Use lower order interpolations in vertical if 
 	// the interpolating stencil extends beyond model domain
 	//---------------------------------------------------
-	if(kmin > 1){ // lowest model level
+	#if VER_ADVECTION_ORDER > 2
 	
-		for(int j=jl;j<jh;j++){
+	for(int j=jl;j<jh;j++){
 
-			k = 1;
+		k = 1;
 
-			SCELL(j,k).top = INTERP_2ND_TOP(SP,k);
-			
-			k = NZ-2;
-	
-			SCELL(j,k).top = INTERP_2ND_TOP(SP,k);
-		}
+		SCELL(j,k).top = INTERP_2ND_TOP(SP,k);
+		
+		k = NZ-2;
+
+		SCELL(j,k).top = INTERP_2ND_TOP(SP,k);
 	}
+		
+	#endif
+		
+	#if VER_ADVECTION_ORDER > 4
 	
-	if(kmin > 2){	// second lowest model level
-	
-		for(int j=jl;j<jh;j++){
-			
-			k = 2;
-			
-			SCELL(j,k).top = INTERP_3RD_TOP(SP, SIGN_B_VEL(i,j,k+1).w, k);
-			
-			k = NZ-3;
-	
-			SCELL(j,k).top = INTERP_3RD_TOP(SP, SIGN_B_VEL(i,j,k+1).w, k);
-		}
+	for(int j=jl;j<jh;j++){
+		
+		k = 2;
+		
+		SCELL(j,k).top = INTERP_3RD_TOP(SP, SIGN_B_VEL(i,j,k+1).w, k);
+		
+		k = NZ-3;
+
+		SCELL(j,k).top = INTERP_3RD_TOP(SP, SIGN_B_VEL(i,j,k+1).w, k);
 	}
+		
+	#endif
 
 	//---------------------------------------------------
 	// Interior points
@@ -919,41 +923,43 @@ void interpolate_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *fal
 	// Use lower order interpolations in vertical if 
 	// the interpolating stencil extends beyond model domain
 	//---------------------------------------------------
-	if(kmin > 1){
+	#if VER_ADVECTION_ORDER > 2
 		
-		for(int j=jl;j<jh;j++){
-			
-			k = 1;
-			
-			SCELL(j,k).top   = k_interp2nd(SP,k+1,k);
-			
-			k = NZ-2;
-			
-			SCELL(j,k).top   = INTERP_2ND_TOP(SP,k);
-		}
+	for(int j=jl;j<jh;j++){
+		
+		k = 1;
+		
+		SCELL(j,k).top   = INTERP_2ND_TOP(SP,k);
+		
+		k = NZ-2;
+		
+		SCELL(j,k).top   = INTERP_2ND_TOP(SP,k);
 	}
 	
-	if(kmin > 2){
+	#endif
 	
-		for(int j=jl;j<jh;j++){
-			
-			k = 2;
-			//-------------------------------------------
-			// sign of advecting velocity
-			wt = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(fall[INDEX(i,j,k)]+fall[INDEX(i,j,k+1)]) );
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).top   = INTERP_3RD_TOP(SP,wt,k);
-			
-			k = NZ-3;
-			//-------------------------------------------
-			// sign of advecting velocity
-			wt = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(fall[INDEX(i,j,k)]+fall[INDEX(i,j,k+1)]) );
-			//-------------------------------------------
-			// Perturbation interpolation
-			SCELL(j,k).top   = INTERP_3RD_TOP(SP,wt,k);
-		}
+	#if VER_ADVECTION_ORDER > 4
+	
+	for(int j=jl;j<jh;j++){
+		
+		k = 2;
+		//-------------------------------------------
+		// sign of advecting velocity
+		wt = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(fall[INDEX(i,j,k)]+fall[INDEX(i,j,k+1)]) );
+		//-------------------------------------------
+		// Perturbation interpolation
+		SCELL(j,k).top   = INTERP_3RD_TOP(SP,wt,k);
+		
+		k = NZ-3;
+		//-------------------------------------------
+		// sign of advecting velocity
+		wt = signof(WBAR(i,j,k+1)+W(i,j,k+1)-0.5*(fall[INDEX(i,j,k)]+fall[INDEX(i,j,k+1)]) );
+		//-------------------------------------------
+		// Perturbation interpolation
+		SCELL(j,k).top   = INTERP_3RD_TOP(SP,wt,k);
 	}
+	
+	#endif
 	
 	//---------------------------------------------------
 	// Interior points
@@ -1319,29 +1325,31 @@ void interpolate_velocity(int i,int jl,int jh){
 	// extends below the grounnd
 	//---------------------------------------------------
 	
-	if(kmin > 1){ // lowest model level
+	#if VER_ADVECTION_ORDER > 2
 	
-		k = 1;
-	
-		for(int j=jl;j<jh;j++){
+	k = 1;
 
-			advecting_velocity(i,j,k);
-			interpolate_velocity_horizontal(i,j,k);
-			interpolate_velocity_vertical_2nd(i,j,k);
-		}
+	for(int j=jl;j<jh;j++){
+
+		advecting_velocity(i,j,k);
+		interpolate_velocity_horizontal(i,j,k);
+		interpolate_velocity_vertical_2nd(i,j,k);
 	}
 	
-	if(kmin > 2){	// second lowest model level
+	#endif
 	
-		k = 2;
+	#if VER_ADVECTION_ORDER > 4
 	
-		for(int j=jl;j<jh;j++){
+	k = 2;
 
-			advecting_velocity(i,j,k);
-			interpolate_velocity_horizontal(i,j,k);
-			interpolate_velocity_vertical_3rd(i,j,k);
-		}
+	for(int j=jl;j<jh;j++){
+
+		advecting_velocity(i,j,k);
+		interpolate_velocity_horizontal(i,j,k);
+		interpolate_velocity_vertical_3rd(i,j,k);
 	}
+	
+	#endif
 
 	//---------------------------------------------------
 	// Interior points
@@ -1363,29 +1371,30 @@ void interpolate_velocity(int i,int jl,int jh){
 	// extends above the model domain
 	//---------------------------------------------------
 	
-	if(kmax < NZ-2){
+	#if VER_ADVECTION_ORDER > 4
 		
-		k = NZ-3;
-	
-		for(int j=jl;j<jh;j++){
+	k = NZ-3;
 
-			advecting_velocity(i,j,k);
-			interpolate_velocity_horizontal(i,j,k);
-			interpolate_velocity_vertical_3rd(i,j,k);
-		}
+	for(int j=jl;j<jh;j++){
+
+		advecting_velocity(i,j,k);
+		interpolate_velocity_horizontal(i,j,k);
+		interpolate_velocity_vertical_3rd(i,j,k);
 	}
 	
-	if(kmax < NZ-1){
+	#endif
 	
-		k = NZ-2;
+	#if VER_ADVECTION_ORDER > 2
 	
+	k = NZ-2;
 
-		for(int j=jl;j<jh;j++){
+	for(int j=jl;j<jh;j++){
 
-			advecting_velocity(i,j,k);
-			interpolate_velocity_horizontal(i,j,k);
-			interpolate_velocity_vertical_2nd(i,j,k);
-		}
+		advecting_velocity(i,j,k);
+		interpolate_velocity_horizontal(i,j,k);
+		interpolate_velocity_vertical_2nd(i,j,k);
 	}
+	
+	#endif
 
 }

@@ -476,7 +476,7 @@ void advect_microphysics_cell(double step,int il,int ih,int jl,int jh){
 		LOOP2D_JK(jl,jh,1,NZ-1, QRP(i,j,k) = QRM(i,j,k) + step * qr_tend_cell(i,j,k) )
 #else
 		//-------------------------------------------------------
-		* For each point within the north-south range
+		// For each point within the north-south range
 		//-------------------------------------------------------
 		for(int j=jl;j<jh;j++){
 		for(int k=1;k<NZ-1;k++){
