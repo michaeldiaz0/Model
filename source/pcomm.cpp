@@ -1,10 +1,12 @@
 #include "stdafx.h"
 #include "mpi.h"
+#include "pcomm.h"
 
-extern int *scounts,*rcounts,*sdisps,*rdisps;
-extern MPI_Datatype *types;
-
-extern MPI_Comm comm_cart,comm_row,comm_col;
+/*********************************************
+* Indexing
+*********************************************/
+#define I(i,j,k) ((i)*myNY*myNZ + (j)*myNZ + (k))	// within subarray interior points without boundaries
+#define I2(i,j,k) ((i)*fNY*fNZ + (j)*fNZ + (k))	// subarrays with boundaries
 
 MPI_Datatype mysubarray[4];
 MPI_Datatype mysubarray_2d[4];
@@ -19,6 +21,33 @@ MPI_Request *requests;
 MPI_Status status;
 MPI_Status *statuses;
 
+MPI_Comm comm_cart,comm_row,comm_col;
+
+int *scounts,*rcounts,*sdisps,*rdisps;
+MPI_Datatype *types;
+
+// which row or column a process is in
+int rank,row_rank,col_rank;
+
+int numtasks;	// number of processes
+int row_size;	// processes per row
+int col_size;	// processes per column
+
+int dims[] = {0,0};
+
+// ranks of neighboring processes
+int west,east,south,north;
+int nw_corner=MPI_PROC_NULL;
+int ne_corner=MPI_PROC_NULL;
+int sw_corner=MPI_PROC_NULL;
+int se_corner=MPI_PROC_NULL;
+
+/*********************************************
+* every process will know this grid information 
+* about every other process
+*********************************************/
+int *s_nx,*s_ny,*s_nz,*s_nx_p,*s_ny_p;	// grid dimensions of each process
+int *ibs,*ibe,*jbs,*jbe,*kbs,*kbe,*jbs_p,*ibs_p; // starting and ending indices of each process within the full domain arrays
 //-------------------------------------------------
 // A collection of information to help with sending
 // and receiving data using AlltoAll MPI commands
@@ -155,6 +184,27 @@ void distributeArray(double *svar){
 	}
 }
 #endif
+
+/*********************************************************************
+* Broadcast data
+*
+* @param size - number of elements
+**********************************************************************/
+void broadcast_data_int(int size,int *var){
+	
+	MPI_Bcast(var,size,MPI_INT,0,MPI_COMM_WORLD);
+}
+
+/*********************************************************************
+* Broadcast data
+*
+* @param size - number of elements
+**********************************************************************/
+void broadcast_data_bool(int size,int *var){
+	
+	MPI_Bcast(var,size,MPI_INT,0,MPI_COMM_WORLD);
+}
+
 /*********************************************************************
 * Distribute initial data to each process
 *

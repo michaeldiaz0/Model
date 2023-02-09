@@ -16,6 +16,11 @@
 #define SAT_VAP_ICE(t) ( 611.2 * exp(21.8745584 * (t-273.15) / (t - 7.66) ) )
 #define SAT_MIX_RATIO(e,p) ( 0.62197 * e / (p-e) )
 
+#if HYDROSTATIC
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)
+#else
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)/(cp*tbv[k])
+#endif
 
 double A,C,E,cvent,vtden,qrr,pd,theta,pressure,phi,vapor,total_convert,total_convert2;
 double qvl_sat,qvi_sat; // saturation mixing ratio / vapor pressure with respect to water
@@ -164,11 +169,11 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 		/**********************************************
 		* Get full values of thermodynamic variables
 		***********************************************/
-		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		// full potential temperature is base state plus perturbation		
-		pressure = PI(i,j,k)/(cp*tbv[k]) + PBAR(i,j,k);	// full pressure is base state plus perturbation
- 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		// full vapor is base state plus perturbation
-		temperature = theta*pressure;					// actual temperature
-		pd = p0*pow(pressure,cpRd);						// dimensional pressure
+		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		    // full potential temperature is base state plus perturbation		
+		pressure = CONVERT_PRESSURE(i,j,k) + PBAR(i,j,k);	// full pressure is base state plus perturbation
+ 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		    // full vapor is base state plus perturbation
+		temperature = theta*pressure;					    // actual temperature
+		pd = p0*pow(pressure,cpRd);						    // dimensional pressure
 	
 		// calculate saturation mixing ratio
 		esl = SAT_VAP_WAT(temperature);
@@ -646,11 +651,11 @@ void saturation_adjustment(int il,int ih,int jl,int jh){
 		/**********************************************
 		* Get full values of thermodynamic variables
 		***********************************************/
-		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		// full potential temperature is base state plus perturbation		
-		pressure = PI(i,j,k)/(cp*tbv[k]) + PBAR(i,j,k);	// full pressure is base state plus perturbation
- 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		// full vapor is base state plus perturbation
-		temperature = theta*pressure;					// actual temperature
-		pd = p0*pow(pressure,cpRd);						// dimensional pressure
+		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		    // full potential temperature is base state plus perturbation		
+		pressure = CONVERT_PRESSURE(i,j,k) + PBAR(i,j,k);	// full pressure is base state plus perturbation
+ 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		    // full vapor is base state plus perturbation
+		temperature = theta*pressure;					    // actual temperature
+		pd = p0*pow(pressure,cpRd);						    // dimensional pressure
 
 
 		get_qvsat(temperature,pd,&qvsat,&phi,&phil,&phii);

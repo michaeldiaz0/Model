@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "fftw3.h"
 #include "boundaries.h"
+#include "pcomm.h"
 
 /***************************************************************************
 * ------------------------------ MACROS ------------------------------------
@@ -64,8 +65,10 @@ double *acoef,*bcoef,*ccoef;
 double *P,*Q;
 double *rhs;
 
-//double div_avg[NX][NY];
-//double sor[3][NX][NY];
+double *pres_row,*ipres_row;
+double *pres_col,*ipres_col;
+
+double *div_avg;
 
 /***************************************************************************
 * ---------------------- FUNCTION PROTOTYPES--------------------------------
@@ -73,7 +76,7 @@ double *rhs;
 void p_solve_hydrostatic_pressure(double);
 void solve_hydrostatic_pressure(double);
 
-void init_fft2d(int,int);
+void init_fft2d(int,int,int,int);
 void init_fft3d(int,int,int);
 void p_init_fft3d(int,int,int,int,int,int);
 void init_fft3d_real(int,int,int,double,double,double);
@@ -81,7 +84,7 @@ void init_fft3d_real(int,int,int,double,double,double);
 void poisson_fft3d(int,int,int,double);
 void poisson_fft3d_real(int,int,int);
 void p_poisson_fft3d(double);
-//void poisson_fft2d(double [NX][NY]);
+void poisson_fft2d(double *,int,int);
 void hydrostatic_pressure(int,int,int,int);
 void divergence3d(double);
 void divergence3d_periodic(int,int,int,int,double);
@@ -100,7 +103,7 @@ void initialize_pressure_solver(){
 		//-----------------------------------------------------------
 		if(HYDROSTATIC){ // HYDROSTATIC
 		//-----------------------------------------------------------
-			init_fft2d(NX,myNY);
+			init_fft2d(NX,myNY,NX,NY);
 		//-----------------------------------------------------------
 		} else {		// NON-HYDROSTATIC
 		//-----------------------------------------------------------
@@ -111,7 +114,10 @@ void initialize_pressure_solver(){
 		//-----------------------------------------------------------
 		if(HYDROSTATIC){ // HYDROSTATIC
 		//-----------------------------------------------------------
-			init_fft2d(NX,NY);
+			if(PERIODIC_BOUNDARIES)
+                init_fft2d(NX-6,NY,NX-6,NY);
+            else
+                init_fft2d(NX,NY,NX,NY);
 		//-----------------------------------------------------------
 		} else {		// NON-HYDROSTATIC
 		//-----------------------------------------------------------
@@ -143,12 +149,23 @@ void solve_pressure(double step){
 		* ---------------------- SERIAL VERSION ---------------------------
 		*******************************************************************/
 		#if !PARALLEL
-			mirror_boundaries(&UP(0,0,0));
-			mirror_boundaries(&VP(0,0,0));
+			if(!PERIODIC_BOUNDARIES){
+                mirror_boundaries(&UP(0,0,0));
+                mirror_boundaries(&VP(0,0,0));
 
-			solve_hydrostatic_pressure(step);
+                solve_hydrostatic_pressure(step);
 
-			mirror_boundaries(&PI(0,0,0));
+                mirror_boundaries(&PI(0,0,0));
+				
+            } else {
+
+				periodic_uvw_boundaries();
+
+                solve_hydrostatic_pressure(step);
+
+				periodic_pressure_boundaries();
+
+            }
 		/********************************************************************
 		* ---------------------- PARALLEL VERSION ---------------------------
 		*********************************************************************/
@@ -210,32 +227,51 @@ void solve_pressure(double step){
 * 
 ***********************************************************************/
 void solve_hydrostatic_pressure(double step){
-#if 0
+
+	int buf,buf2;
+	
+	if(PERIODIC_BOUNDARIES){
+		buf = 3;
+		buf2 = 3;
+	} else {
+		buf = 1;
+		buf2 = 0;
+	}
+
 	/*****************************************************************
 	* Calculate vertical density-weighted average of the divergence
 	* of the new momentum field
 	******************************************************************/
-	for(int i=1;i<NX-1;i++){
-	for(int j=1;j<NY-1;j++){
+	double zsum = 0;
 	
-		div_avg[i][j] = 0;
-		
-		// sum each vertical level
-		for(int k=HTOPO(i,j)+1;k<NZ-1;k++)
-			div_avg[i][j] = div_avg[i][j] + rhou[k] * ( (UP(i+1,j,k)-UP(i,j,k))*one_d_dx + (VP(i,j+1,k)-VP(i,j,k) )*one_d_dy);
+    for(int i=buf;i<NX-buf;i++){
+    for(int j=1;j<NY-1;j++){
+    
+        div_avg[INDEX2D(i-buf2,j)] = 0;
+        zsum = 0;
+        
+        // sum each vertical level
+        for(int k=HTOPO(i,j)+1;k<NZ-1;k++){
+            div_avg[INDEX2D(i-buf2,j)] += rhou[k] * DZU(k) * ( (UP(i+1,j,k)-UP(i,j,k))*one_d_dx + (VP(i,j+1,k)-VP(i,j,k) )*one_d_dy);
+            zsum += DZU(k);
+        }
+            
+        // vertical average
+        div_avg[INDEX2D(i-buf2,j)] /= ( cp * zsum * step*dt );
 
-		// vertical average
-		div_avg[i][j] = div_avg[i][j] / ( cp * (double)(NZ-2-HTOPO(i,j)) * step*dt );
-	}}
+    }}
+    
 
-	// update boundaries
-	mirror_boundaries2d(div_avg);
-
+    if(!PERIODIC_BOUNDARIES)
+        mirror_boundaries_2d(div_avg);
+	else
+		mirror_boundaries_ns_2d(div_avg,0,NX-6);
+  
 	/*****************************************************************
 	* Solve Laplacian equation for pressure field required 
 	* to balance divergence tendencies from advection
 	******************************************************************/
-	poisson_fft2d(div_avg);
+    poisson_fft2d(div_avg,NX-2*buf2,NY);
 
 	/*********************************************************************
 	* Calculate hydrostatic pressure
@@ -245,9 +281,9 @@ void solve_hydrostatic_pressure(double step){
 	/*****************************************************
 	* Calcuate top lid pressure
 	******************************************************/
-	for(int i=1;i<NX-1;i++)
-	for(int j=1;j<NY-1;j++)
-			PI(i,j,NZ-1) = (div_avg[i][j] - PI(i,j,0)) / RHOAVG2D(i,j);
+    for(int i=buf;i<NX-buf;i++)
+    for(int j=1;j<NY-1;j++)
+        PI(i,j,NZ-1) = (div_avg[INDEX2D(i-buf2,j)] - PI(i,j,0)) / RHOAVG2D(i,j);
 
 	/*****************************************************
 	* Calcuate total perturbation pressure
@@ -257,32 +293,38 @@ void solve_hydrostatic_pressure(double step){
 	for(int j=0;j<NY;j++)
 			for(int k=1;k<NZ-1;k++)
 				PI(i,j,k) += PI(i,j,NZ-1);
-#endif
-}
 
+
+}
+#if PARALLEL
 /**********************************************************************
 * Parallel pressure solver for hydrostatic model
 *
 * @param step - fractional time step in Runge-Kutta loop
 ***********************************************************************/
 void p_solve_hydrostatic_pressure(double step){
-
+	
 	/*****************************************************************
 	* Calculate the vertical density-weighted average of the divergence
 	* of the new momentum field. Have each process compute its portion
 	* of the array.
 	******************************************************************/
+	double zsum = 0;
+		
 	for(int i=3;i<fNX-3;i++){
 	for(int j=3;j<fNY-3;j++){
 	
 		PRES_ROW(i+ibs[rank]-3,j-3) = 0;
+		zsum = 0;
 		
 		// sum each vertical level
-		for(int k=HTOPO(i,j)+1;k<NZ-1;k++)
-			PRES_ROW(i+ibs[rank]-3,j-3) += rhou[k] * ( (UP(i+1,j,k)-UP(i,j,k))*one_d_dx + (VP(i,j+1,k)-VP(i,j,k) )*one_d_dy);
+		for(int k=HTOPO(i,j)+1;k<NZ-1;k++){
+			PRES_ROW(i+ibs[rank]-3,j-3) += rhou[k] * DZU(k) * ( (UP(i+1,j,k)-UP(i,j,k))*one_d_dx + (VP(i,j+1,k)-VP(i,j,k) )*one_d_dy);
+			zsum += DZU(k);
+		}
 
 		// vertical average
-		PRES_ROW(i+ibs[rank]-3,j-3) = PRES_ROW(i+ibs[rank]-3,j-3) / ( cp * (double)(NZ-2-HTOPO(i,j)) * step*dt );
+		PRES_ROW(i+ibs[rank]-3,j-3) = PRES_ROW(i+ibs[rank]-3,j-3) / ( cp * zsum * step*dt );
 	}}
 	
 	/*****************************************************************
@@ -404,7 +446,7 @@ void p_solve_hydrostatic_pressure(double step){
 				PI(i,j,k) += PI(i,j,NZ-1);
 	
 }
-
+#endif
 /*********************************************************************
 * Calculate hydrostatic pressure
 **********************************************************************/
@@ -418,13 +460,13 @@ void hydrostatic_pressure(int il,int ih,int jl,int jh){
 		for(int j=jl;j<jh;j++){
 
 			PI(i,j,NZ-1) = 0;
-			PI(i,j,NZ-2) = -0.5*(grav/cp)*((THP(i,j,NZ-2)*(1.+0.61*QVP(i,j,NZ-2)-QCP(i,j,NZ-2)-QRP(i,j,NZ-2)))/(tbv[NZ-2]*tbv[NZ-2]))*dz;
+			PI(i,j,NZ-2) = -0.5*(grav/cp)*((TH(i,j,NZ-2)*(1.+0.61*QV(i,j,NZ-2)-QC(i,j,NZ-2)-QR(i,j,NZ-2)))/(tbv[NZ-2]*tbv[NZ-2]))*DZW(NZ-1);
 
 			for(int k=NZ-3;k>0;k--){
 			
-				tup = (THP(i,j,k+1)*(1.+0.61*QVP(i,j,k+1)-QCP(i,j,k+1)-QRP(i,j,k+1)))/(tbv[k+1]*tbv[k+1]);
-				tdn = (THP(i,j,k)*(1.+0.61*QVP(i,j,k)-QCP(i,j,k)-QRP(i,j,k)))/(tbv[k]*tbv[k]);
-				PI(i,j,k) = PI(i,j,k+1)-0.5*(grav/cp)*(tup+tdn)*dz;
+				tup = (TH(i,j,k+1)*(1.+0.61*QV(i,j,k+1)-QC(i,j,k+1)-QR(i,j,k+1)))/(tbv[k+1]*tbv[k+1]);
+				tdn = (TH(i,j,k)*(1.+0.61*QV(i,j,k)-QC(i,j,k)-QR(i,j,k)))/(tbv[k]*tbv[k]);
+				PI(i,j,k) = PI(i,j,k+1)-0.5*(grav/cp)*(tup+tdn)*DZW(k+1);
 			}
 		
 		}}
@@ -435,13 +477,16 @@ void hydrostatic_pressure(int il,int ih,int jl,int jh){
 		for(int j=jl;j<jh;j++){
 
 			PI(i,j,NZ-1) = 0;
-			PI(i,j,NZ-2) = -0.5*(grav/cp)*((THP(i,j,NZ-2)*(1.+0.61*QVP(i,j,NZ-2)))/(tbv[NZ-2]*tbv[NZ-2]))*dz;
+			//PI(i,j,NZ-2) = -0.5*(grav/cp)*((THP(i,j,NZ-2)*(1.+0.61*QVP(i,j,NZ-2)))/(tbv[NZ-2]*tbv[NZ-2]))*DZW(NZ-1);
+			PI(i,j,NZ-2) = -0.5*(grav/cp)*((TH(i,j,NZ-2)*(1))/(tbv[NZ-2]*tbv[NZ-2]))*DZW(NZ-1);
 
 			for(int k=NZ-3;k>0;k--){
 			
-				tup = (THP(i,j,k+1)*(1.+0.61*QVP(i,j,k+1)))/(tbv[k+1]*tbv[k+1]);
-				tdn = (THP(i,j,k)*(1.+0.61*QVP(i,j,k)))/(tbv[k]*tbv[k]);
-				PI(i,j,k) = PI(i,j,k+1)-0.5*(grav/cp)*(tup+tdn)*dz;
+				tup = (TH(i,j,k+1)*(1.))/(tbv[k+1]*tbv[k+1]);
+				tdn = (TH(i,j,k  )*(1.))/(tbv[k]*tbv[k]);
+				//tup = (TH(i,j,k+1)*(1.+0.61*QVP(i,j,k+1)))/(tbv[k+1]*tbv[k+1]);
+				//tdn = (TH(i,j,k)*(1.+0.61*QVP(i,j,k)))/(tbv[k]*tbv[k]);
+				PI(i,j,k) = PI(i,j,k+1)-0.5*(grav/cp)*(tup+tdn)*DZW(k+1);
 			}
 		
 		}}
@@ -450,15 +495,21 @@ void hydrostatic_pressure(int il,int ih,int jl,int jh){
 	/*****************************************************
 	*	Calculate column average hydrostatic pressure
 	******************************************************/
+	double zsum = 0;
+	
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
 	
 		PI(i,j,0) = 0;
+		zsum = 0;
 	
-		for(int k=HTOPO(i,j)+1;k<NZ-1;k++)
-			PI(i,j,0) += rhou[k]*tbv[k]*PI(i,j,k);
+		for(int k=HTOPO(i,j)+1;k<NZ-1;k++){
 			
-		PI(i,j,0) /= ((double)(NZ-2-HTOPO(i,j)));
+			PI(i,j,0) += rhou[k]*tbv[k]*PI(i,j,k)*DZU(k);
+			zsum += DZU(k);
+		}
+			
+		PI(i,j,0) /= zsum;
 
 	}}
 
@@ -522,33 +573,40 @@ void SOR(int itr,int iterations,double p[3][NX][NY],double div_avg[NX][NY]){
 *
 * ni,nj - grid dimensions for full domain array
 ***********************************************************************/
-void init_fft2d(int ni,int nj){
+/**********************************************************************
+* Fast Fourier transform-based pressure solver for hydrostatic version
+*
+* ni,nj - grid dimensions for full domain array
+***********************************************************************/
+void init_fft2d(int ni,int nj,int nx,int ny){
+	
+	div_avg = (double*) calloc(sizeof(double),ni*nj);
+	
+	in2d = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * nx*nj);
+	out2d = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * nx*nj);
 
-	in2d = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NX*nj);
-	out2d = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * NX*nj);
-
-	int n[] = {NX};
+	int n[] = {nx};
 
 	p1 = fftw_plan_many_dft(1, n, nj,in2d,n,nj,1,out2d,n,nj,1,FFTW_FORWARD, FFTW_MEASURE);
 	p2 = fftw_plan_many_dft(1, n, nj,out2d,n,nj,1,in2d,n,nj,1,FFTW_BACKWARD,FFTW_MEASURE);
 
-	kwave = (double*) calloc(sizeof(double),NX);
-	lwave = (double*) calloc(sizeof(double),NY);
+	kwave = (double*) calloc(sizeof(double),nx);
+	lwave = (double*) calloc(sizeof(double),ny);
 
-	for(int i=0;i<NX/2;i++){	kwave[i] = 2*trigpi * (double)i / NX;	}
-	for(int i=NX/2;i<NX;i++){	kwave[i] = 2*trigpi * (double)(NX-i) / NX;}
+	for(int i=0;i<nx/2;i++){	kwave[i] = 2*trigpi * (double)i / nx;	}
+	for(int i=nx/2;i<nx;i++){	kwave[i] = 2*trigpi * (double)(nx-i) / nx;}
 
-	for(int i=0;i<NY/2;i++){	lwave[i] = 2*trigpi * (double)i / NY;	}
-	for(int i=NY/2;i<NY;i++){	lwave[i] = 2*trigpi * (double)(NY-i) / NY;}
+	for(int i=0;i<ny/2;i++){	lwave[i] = 2*trigpi * (double)i / ny;	}
+	for(int i=ny/2;i<ny;i++){	lwave[i] = 2*trigpi * (double)(ny-i) / ny;}
 
-	acoef = (double*) malloc(sizeof(double)*NY);
-	bcoef = (double*) malloc(sizeof(double)*NX*NY);
-	ccoef = (double*) malloc(sizeof(double)*NY);
+	acoef = (double*) malloc(sizeof(double)*ny);
+	bcoef = (double*) malloc(sizeof(double)*nx*ny);
+	ccoef = (double*) malloc(sizeof(double)*ny);
 
-	P = (double*) calloc(sizeof(double),(NY+1));
-	Q = (double*) calloc(sizeof(double),(NY+1));
+	P = (double*) calloc(sizeof(double),(ny+1));
+	Q = (double*) calloc(sizeof(double),(ny+1));
 
-	for(int j=0;j<NY;j++){
+	for(int j=0;j<ny;j++){
 
 		acoef[j] = 1./(dy*dy);
 		ccoef[j] = 1./(dy*dy);
@@ -556,36 +614,38 @@ void init_fft2d(int ni,int nj){
 	}
 
 	acoef[0] = 0;	
-	ccoef[NY-1] = 0;
+	ccoef[ny-1] = 0;
 
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
+	for(int i=0;i<nx;i++){
+	for(int j=0;j<ny;j++){
 
 		BCOEF(i,j) = 2.*(cos(kwave[i])-1.)/(dx*dx) - ccoef[j] - acoef[j];
+		
+		if(j==0){ BCOEF(i,j) = -rhow[2]/(dx*dx);}
 	}}
 
 }
-#if 0
+
 /**********************************************************************
 * Fast Fourier transform-based pressure solver
 ***********************************************************************/
-void poisson_fft2d(double Fxy[NX][NY]){
+void poisson_fft2d(double *Fxy,int ni, int nj){
 
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
+	for(int i=0;i<ni;i++){
+	for(int j=0;j<nj;j++){
 
-		IN2D(i,j)[0] = Fxy[i][j];
+		IN2D(i,j)[0] = Fxy[INDEX2D(i,j)];
 		IN2D(i,j)[1] = 0;
 
 	}}
 
 	fftw_execute(p1);
 
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
+	for(int i=0;i<ni;i++){
+	for(int j=0;j<nj;j++){
 
-		OUT2D(i,j)[0] = OUT2D(i,j)[0] / NX;
-		OUT2D(i,j)[1] = OUT2D(i,j)[1] / NX;
+		OUT2D(i,j)[0] = OUT2D(i,j)[0] / ni;
+		OUT2D(i,j)[1] = OUT2D(i,j)[1] / ni;
 
 	}}
 
@@ -594,10 +654,10 @@ void poisson_fft2d(double Fxy[NX][NY]){
 	******************************************************************/
 	double denom;
 
-	for(int i=0;i<NX;i++){
+	for(int i=0;i<ni;i++){
 
 		// forward elimination
-		for(int j=0;j<NY;j++){
+		for(int j=0;j<nj;j++){
 
 			denom = BCOEF(i,j) + acoef[j]*P[j];
 
@@ -607,10 +667,10 @@ void poisson_fft2d(double Fxy[NX][NY]){
 		}
 
 		// backward substitution
-		for(int j=NY-2;j>=0;j--){ OUT2D(i,j)[0] = P[j+1]*OUT2D(i,j+1)[0] + Q[j+1];}
+		for(int j=nj-2;j>=0;j--){ OUT2D(i,j)[0] = P[j+1]*OUT2D(i,j+1)[0] + Q[j+1];}
 
 		// forward elimination
-		for(int j=0;j<NY;j++){
+		for(int j=0;j<nj;j++){
 
 			denom = BCOEF(i,j) + acoef[j]*P[j];
 
@@ -620,22 +680,22 @@ void poisson_fft2d(double Fxy[NX][NY]){
 		}
 
 		// backward substitution
-		for(int j=NY-2;j>=0;j--){ OUT2D(i,j)[1] = P[j+1]*OUT2D(i,j+1)[1] + Q[j+1];}
+		for(int j=nj-2;j>=0;j--){ OUT2D(i,j)[1] = P[j+1]*OUT2D(i,j+1)[1] + Q[j+1];}
 
 	}
 
 	fftw_execute(p2);
 	
 
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
+	for(int i=0;i<ni;i++){
+	for(int j=0;j<nj;j++){
 
-		Fxy[i][j] = IN2D(i,j)[0];
+		Fxy[INDEX2D(i,j)] = IN2D(i,j)[0];
 
 	}}
 
 }
-#endif
+
 /**********************************************************************
 * Fast Fourier transform-based pressure solver for serial version
 *
@@ -811,7 +871,7 @@ void poisson_fft3d(int ni,int nj,int nk,double step){
 		IN3D(i,j,NZ-1)[1] = 0;
 	}}
 }
-
+#if PARALLEL
 /**********************************************************************
 * Set up fast Fourier transform-based pressure solver for parallel version
 *
@@ -1075,7 +1135,7 @@ void p_poisson_fft3d(double step){
 	}}
 
 }
-
+#endif
 /**********************************************************************
 * Fast Fourier transform-based pressure solver
 ***********************************************************************/
@@ -1263,7 +1323,7 @@ void divergence3d(double step){
 	int nj = NY;
 	int nk = NZ;
 
-	// divergence calcuation
+	// divergence calculation
 	for(int i=1;i<NX-1;i++){
 	for(int j=1;j<NY-1;j++){
 	for(int k=1;k<NZ-1;k++){
@@ -1313,7 +1373,7 @@ void divergence3d_periodic(int il,int ih,int jl,int jh,double step){
 	int nj = NY;
 	int nk = NZ;
 
-	// divergence calcuation
+	// divergence calculation
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
 	for(int k=1;k<NZ-1;k++){

@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "pcomm.h"
 
 /*******************************************************************************
 * 
@@ -7,7 +8,14 @@
 #define SAT_VAP_ICE(t) ( 611.2 * exp(21.8745584 * (t-273.15) / (t - 7.66) ) )
 #define SAT_MIX_RATIO(e,p) ( 0.62197 * e / (p-e) )
 
+#if HYDROSTATIC
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)
+#else
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)/(cp*tbv[k])
+#endif
+
 double piecewise_interp(double *zin,double *zout,double *qin,double *qout,int zlevs,int,int);
+
 
 /***********************************************************************************
 * 
@@ -468,7 +476,8 @@ double get_CAPE(int i,int j,int k_p,double p_vapor,double p_temp){
 		//----------------------------------------------
 		theta = TH(i,j,k) + THBAR(i,j,k);// + tb[k];		// full potential temperature is base state plus perturbation		
 		//pressure = PI(i,j,k)/(cp*tbv[k]) + PBAR(i,j,k);	// full pressure is base state plus perturbation			
-		pressure = PI(i,j,k)/(cp*tb[k]) + PBAR(i,j,k);	// full pressure is base state plus perturbation
+		pressure = CONVERT_PRESSURE(i,j,k) + PBAR(i,j,k);	// full pressure is base state plus perturbation
+		//pressure = PI(i,j,k)/(cp*tb[k]) + PBAR(i,j,k);	// full pressure is base state plus perturbation
 		temperature = theta*pressure;					// actual temperature
 		vapor = QV(i,j,k_p) + QBAR(i,j,k);// + qb[k];
 		pd = p0*pow(pressure,cpRd);

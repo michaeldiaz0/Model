@@ -1,0 +1,1 @@
+void run_parallel_model(int argc, char *argv[]);
