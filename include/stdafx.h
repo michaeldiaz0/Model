@@ -53,7 +53,7 @@ extern int outfilefreq;
 // Grid stretching
 //--------------------------------------------------------
 extern double height_lowest_level; // height of lowest full level in meters
-const int index_lowest_level = 1;		// what is the index of this level?
+const int index_lowest_level = 1;  // what is the index of this level?
 
 //--------------------------------------
 // Version to execute
@@ -66,19 +66,19 @@ const int index_lowest_level = 1;		// what is the index of this level?
 #define HYDROSTATIC 1			// hydrostatic option (should work now?)
 #define ISLINEAR 0				// linearize equation set
 #define USE_LINEAR_FRICTION 0	// linear friction in lowest model level(s)
-extern int USE_TURBULENT_STRESS;// use turbulence parameterization
 #define RESTING_BASIC_STATE 0	// set all basic state terms to zero (doesn't work with some options)
-#define HOR_ADVECTION_ORDER 5	// order of horizontal advection terms (2 through 6)
-#define VER_ADVECTION_ORDER 3	// order of vertical advection terms (2 through 3)
+#define HOR_ADVECTION_ORDER 2	// order of horizontal advection terms (2 through 6)
+#define VER_ADVECTION_ORDER 2	// order of vertical advection terms (2 through 3)
+extern int USE_TURBULENT_STRESS;// use turbulence parameterization
 //--------------------------------------
 // Physics options
 //--------------------------------------
 extern int MICROPHYSICS_OPTION;		// 0:None 1:Kessler 2:Rutludge
-#define USE_TERRAIN 0				// 0:no, 1:yes
 extern int SURFACE_HEAT_FLUX;		// 0:no, 1:yes
 extern double WATER_TEMP_C;			// water temperature in Celsius (for surface heat fluxes)
-#define USE_LANDSEA_FROM_FILE 0		// 0:no, 1:yes
 extern int RAIN_FALLOUT;			// 1:Eulerian 2:Semi-Lagrangian
+#define USE_TERRAIN 0				// 0:no, 1:yes
+#define USE_LANDSEA_FROM_FILE 0		// 0:no, 1:yes
 //--------------------------------------
 // For linearized equation set
 //--------------------------------------
