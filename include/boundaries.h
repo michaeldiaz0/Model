@@ -9,11 +9,12 @@ extern int jsbuffer;
 void apply_boundary_condition(int);
 void apply_boundary_condition_microphysics(int);
 
+void periodic_boundaries_east_west_2d(double *var);
 void init_boundaries(int eastLength,int westLength,int northLength,int southLength,int halo);
 void mirror_boundaries(double * s);
 void periodic_boundaries();
-//void mirror_boundaries2d(double[NX][NY]);
-//void mirror_boundaries(double[NX][NY][NZ]);
+void mirror_boundaries_2d(double * s);
+void mirror_boundaries_ns_2d(double * s,int,int);
 void p_mirror_boundaries(double*,int,int,int,int,int,int,int);
 void upper_lower_boundaries(double *);
 void periodic_ew_sponge_ns_boundaries();

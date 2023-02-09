@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "boundaries.h"
+#include "pcomm.h"
 
 #define VERBOSE_BOUNDARIES false
 
@@ -142,29 +143,30 @@ void apply_boundary_condition(int mpi_proc_null){
 			
 			sponge_boundaries(ups,NX,NY);
 			sponge_boundaries(vps,NX,NY);
-			sponge_boundaries(wps,NX,NY);
 			sponge_boundaries(thps,NX,NY);
 			
 			upper_lower_boundaries(ups,1,NX,1,NY);
 			upper_lower_boundaries(vps,1,NX,1,NY);
 			upper_lower_boundaries(thps,1,NX,1,NY);
 			
-			upper_lower_boundaries_zero(wps,1,NX,1,NY);
+			if(HYDROSTATIC){
+				sponge_boundaries(ws,NX,NY);
+				upper_lower_boundaries_zero(ws,1,NX,1,NY);
+			} else {
+				sponge_boundaries(wps,NX,NY);
+				upper_lower_boundaries_zero(wps,1,NX,1,NY);				
+			}
 		//-------------------------------------------------------
 		// PERIODIC BOUNDARIES / SERIAL VERSION
-		//-------------------------------------------------------			
+		//-------------------------------------------------------
 		} else {
-			//printf("here\n");
-			//upper_lower_boundaries();
-			
+
 			sponge_boundaries_north_south(ups,NX,NY);
-			sponge_boundaries_north_south(vps,NX,NY);
-			sponge_boundaries_north_south(wps,NX,NY);
+			sponge_boundaries_north_south(vps,NX,NY);		
 			sponge_boundaries_north_south(thps,NX,NY);
 			
 			periodic_boundaries_east_west(ups);
 			periodic_boundaries_east_west(vps);		
-			periodic_boundaries_east_west(wps);	
 			periodic_boundaries_east_west(pis);
 			periodic_boundaries_east_west(thps);
 			
@@ -172,7 +174,18 @@ void apply_boundary_condition(int mpi_proc_null){
 			upper_lower_boundaries(vps,1,NX,1,NY);
 			upper_lower_boundaries(thps,1,NX,1,NY);
 			
-			upper_lower_boundaries_zero(wps,1,NX,1,NY);
+			if(HYDROSTATIC){
+				sponge_boundaries_north_south(ws,NX,NY);
+				periodic_boundaries_east_west(ws);
+				upper_lower_boundaries_zero(ws,1,NX,1,NY);
+				
+			} else {
+				sponge_boundaries_north_south(wps,NX,NY);
+				periodic_boundaries_east_west(wps);
+				upper_lower_boundaries_zero(wps,1,NX,1,NY);	
+			}
+			
+			
 			
 			//periodic_ew_sponge_ns_boundaries();
 		}
@@ -299,7 +312,7 @@ void upper_lower_boundaries(double *var,int il,int ih,int jl,int jh){
 }
 
 /*********************************************************************
-* Apply top and bottom boundary conditions
+* Set top and bottom boundary values to zero
 **********************************************************************/
 void upper_lower_boundaries_zero(double *var,int il,int ih,int jl,int jh){
 	
@@ -313,8 +326,39 @@ void upper_lower_boundaries_zero(double *var,int il,int ih,int jl,int jh){
 }
 
 /*********************************************************************
-*
-*
+* Mirror boundaries on the edges of the domain for a 2D array
+**********************************************************************/
+void mirror_boundaries_2d(double * s){
+
+	for(int j=0;j<NY;j++){
+
+		s[INDEX2D(   0,j)] = s[INDEX2D(   1,j)];
+		s[INDEX2D(NX-1,j)] = s[INDEX2D(NX-2,j)];
+	}
+
+	for(int i=0;i<NX;i++){
+
+		s[INDEX2D(i,   0)] = s[INDEX2D(i,1   )];
+		s[INDEX2D(i,NY-1)] = s[INDEX2D(i,NY-2)];
+	}
+
+}
+
+/*********************************************************************
+* Mirror boundaries on the north and south edges of the domain
+* for a 2D array
+**********************************************************************/
+void mirror_boundaries_ns_2d(double * s,int il,int ih){
+
+	for(int i=il;i<ih;i++){
+
+		s[INDEX2D(i,   0)] = s[INDEX2D(i,1   )];
+		s[INDEX2D(i,NY-1)] = s[INDEX2D(i,NY-2)];
+	}
+}
+
+/*********************************************************************
+* Mirror boundaries on the edges of the domain for a 3D array
 **********************************************************************/
 void mirror_boundaries(double * s){
 
@@ -527,4 +571,22 @@ void periodic_boundaries_east_west(double *var){
 		var[FULL_ARRAY_INDEX(NX-2,j,k)] = var[FULL_ARRAY_INDEX(4,j,k)]; 
 		var[FULL_ARRAY_INDEX(NX-1,j,k)] = var[FULL_ARRAY_INDEX(5,j,k)];
 	}}
+}
+
+/*********************************************************************
+* Period east-west boundaries for serial version. Assumes three grid
+* points are repeated. For 2D arrays.
+*
+**********************************************************************/
+void periodic_boundaries_east_west_2d(double *var){
+
+	for(int j=0;j<NY;j++){
+
+		var[INDEX2D(0,j)] 	= var[INDEX2D(NX-6,j)];
+		var[INDEX2D(1,j)] 	= var[INDEX2D(NX-5,j)];
+		var[INDEX2D(2,j)]   = var[INDEX2D(NX-4,j)];
+		var[INDEX2D(NX-3,j)] = var[INDEX2D(3,j)];
+		var[INDEX2D(NX-2,j)] = var[INDEX2D(4,j)]; 
+		var[INDEX2D(NX-1,j)] = var[INDEX2D(5,j)];
+	}
 }

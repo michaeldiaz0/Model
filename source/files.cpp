@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "pcomm.h"
 
 void handle_file_error(int,const char*);
 void add_attribute(int ncid,const char *att_name,const char *value);
@@ -11,6 +12,10 @@ double * temp_storage;
 char filename[len];
 char inputPerturbationFileName[len];
 char inputBasicStateFileName[len];
+
+#if !PARALLEL
+int rank = 0;
+#endif
 
 /********************************************************
 * 
@@ -418,7 +423,7 @@ void write_pvar_to_file_2d(const char *myfilename,const char *var_name,double *v
 	if (status != NC_NOERR) handle_error(status);
 }
 
-#if !PARALLEL_IO
+#if !PARALLEL_IO && PARALLEL
 /********************************************************
 * Write data for single perturbation variable at a single 
 * time to the netcdf file for parallel version.
@@ -452,7 +457,7 @@ void parallel_write_pvar_to_file_2d(const char *myfilename,const char *var_name,
 	if(rank==0){ write_pvar_to_file_2d(myfilename,var_name,output_to_file_2d,tcount);}
 	
 }
-#else
+#elif PARALLEL
 /********************************************************
 * 
 *********************************************************/
@@ -654,7 +659,7 @@ void output_meteorological_fields_to_file(
 	write3d(filename,"u-wind",us, tcount);
 	write3d(filename,"v-wind",vs, tcount);
 	write3d(filename,"w-wind",ws, tcount);
-	write3d(filename,"pi",    pis,tcount); // is this done already in calling subroutine?
+	write3d(filename,"pi",    pis,tcount);
 	write3d(filename,"theta", ths,tcount);
 
 	//------------------------------------------------------

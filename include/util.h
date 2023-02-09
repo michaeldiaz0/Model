@@ -17,3 +17,4 @@ double frac_distance(int index,int low,int high);
 double stable_time_step(double delta,double vel);
 double convert_z_to_k(double zf,double z0,double lev,double dzp);
 double convert_k_to_z(double ki,double z0,double lev,double dzp);
+void print_time_estimates(int total_cputime,int total_walltime,int timer_counter);

@@ -2,6 +2,7 @@
 #include "stdafx.h"
 #include "Heating.h"
 #include "interpolate.h"
+#include "pcomm.h"
 
 //using namespace std;
 
@@ -249,7 +250,7 @@ void Heating::applyHeating_random(){
 		if(r>0.98){ THP(i,j,k) += heating[k];}
 	}}}
 }
-
+#if PARALLEL
 /*********************************************************************
 *
 *
@@ -304,7 +305,7 @@ void Heating::p_applyHeating_random(){
 	//fflush(stdout);
 	
 }
-
+#endif
 /*********************************************************************
 *
 *

@@ -6,6 +6,8 @@
 #include "ensemble.h"
 #include "data_initializer.h"
 #include "process_input.h"
+#include "driver_serial.h"
+#include "driver_parallel.h"
 
 
 /*********************************************************************
@@ -79,9 +81,7 @@ int main(int argc, char *argv[]){
 			return(0);
 		}
 		
-		initialize_serial();
-
-		run_model(number_of_time_steps);
+		run_serial_model(number_of_time_steps);
 
 	//----------------------------------------------------------------
 	// Energy budget from file

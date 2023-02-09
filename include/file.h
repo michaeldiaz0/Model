@@ -1,5 +1,7 @@
 #include "netcdf.h"
-#include "mpi.h"
+#if PARALLEL
+    #include "mpi.h"
+#endif
 
 #define NC64BIT true	// whether to support 64 bit offsets (allows bigger files ~ > 2GB for each output time )
 #define PARALLEL_IO false
