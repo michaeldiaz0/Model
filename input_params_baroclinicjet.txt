@@ -38,7 +38,7 @@ shift_prime_meridian : 0
 | often to output results to a file
 | (in number of time steps)
 ---------------------------------------
-time_steps		 : 3168
+time_steps		 : 4032
 output_frequency : 	72
 
 ----------------------------------------
@@ -112,7 +112,7 @@ run_vorticity_budget :	0
 | 1 - Kessler warm rain microphysics
 | 2 - Rutledge/Hong ice microphysics
 ----------------------------------------
-microphysics_option : 0
+microphysics_option : 2
 ----------------------------------------
 | How flow-relative rain vertical 
 | advection is handled
@@ -203,9 +203,9 @@ vorticity_budget_filename :	vort_budget1129_0.nc
 vortex_initialize : 1 (1->yes,0->no)
 vortex_latitude : 45.0
 vortex_longitude : 150.0
-vortex_radius : 1000000 (meters)
-vortex_upper_warm_anomaly : 2.5 (K)
-vortex_lower_cold_anomaly : -2.05 (K)
+vortex_radius : 3000000 (meters)
+vortex_upper_warm_anomaly : 3.5 (K)
+vortex_lower_cold_anomaly : -3.05 (K)
 vortex_height_wind_max : 3000 (meters)
 vortex_vertical_extent : 11000 (meters)
 vortex_rh_top : 11000 (meters)
