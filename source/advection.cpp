@@ -453,7 +453,7 @@ void advect_microphysics_cell(double step,int il,int ih,int jl,int jh){
 	// If Eulerian rain fall integration, calculate fall speed
 	//--------------------------------------------------------
 	if(RAIN_FALLOUT==1)
-		calculate_eulerian_fall_speed_precip(vts, qrs, il, ih, jl, jh);
+		calculate_eulerian_fall_speed_rain(vts, qrs, il, ih, jl, jh);
 
 	// Calculate the zonal flux on the eastern side of innermost column of boundary points.
 	// This will become the flux on the western side of the leftmost interior cell
@@ -496,6 +496,12 @@ void advect_microphysics_cell(double step,int il,int ih,int jl,int jh){
 * @param il,ih,jl,jh - beginning and ending indices
 **********************************************************************/
 void advect_ice_cell(double step,int il,int ih,int jl,int jh){
+
+	//--------------------------------------------------------
+	// If Eulerian snow/ice fall integration, calculate fall speed
+	//--------------------------------------------------------
+	if(RAIN_FALLOUT==1)
+		calculate_eulerian_fall_speed_snow_ice(sts, qss, its, pis, il, ih, jl, jh);
 
 	//-------------------------------------------------------------
 	// ADVECTION OF SNOW

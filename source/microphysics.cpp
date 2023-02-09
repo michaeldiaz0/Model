@@ -108,11 +108,33 @@ void precip_rate(int il,int ih,int jl,int jh,double *vel,double *hydro_field,dou
 * qr -> rain water mixing ratio (input)
 *
 *****************************************************/
-void calculate_eulerian_fall_speed_precip(double *vt, double *qr, int il,int ih,int jl,int jh){
+void calculate_eulerian_fall_speed_rain(double *vtr, double *qr, int il,int ih,int jl,int jh){
 	
 	if(MICROPHYSICS_OPTION==1){
 	
-		calculate_rain_fall_speed_kessler(vt, qr, il, ih, jl, jh);
+		calculate_rain_fall_speed_kessler( vtr, qr, il, ih, jl, jh);
+		
+	} else if(MICROPHYSICS_OPTION==2){
+		
+		calculate_rain_fall_speed_rutledge(vtr, qr, il, ih, jl, jh);
+	}
+
+}
+
+/****************************************************
+* Calculate eulerian fall speed of hydrometeors
+*
+* vt -> terminal fall speed of rain (output)
+* qr -> rain water mixing ratio (input)
+*
+*****************************************************/
+void calculate_eulerian_fall_speed_snow_ice(double *vts, double *qs, double *vti, double *qi, int il,int ih,int jl,int jh){
+	
+	if(MICROPHYSICS_OPTION==2){
+	
+		calculate_ice_fall_speed_rutledge( vti, qi, il, ih, jl, jh);
+		
+		calculate_snow_fall_speed_rutledge(vts, qs, il, ih, jl, jh);
 	}
 
 }

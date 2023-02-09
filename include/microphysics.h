@@ -79,7 +79,11 @@ double get_CAPE_base(int i,int j,int k_p);
 void hydrometeor_fallout(double *var,double *vel,int il,int ih,int jl,int jh,double *precip);
 void precip_rate(int il,int ih,int jl,int jh,double *,double *,double *);
 void calculate_rain_fall_speed_kessler(double *vt, double *qr, int il,int ih,int jl,int jh);
-void calculate_eulerian_fall_speed_precip(double *vt, double *qr, int il,int ih,int jl,int jh);
+void calculate_rain_fall_speed_rutledge(double *, double *, int il,int ih,int jl,int jh);
+void calculate_snow_fall_speed_rutledge(double *, double *, int il,int ih,int jl,int jh);
+void calculate_ice_fall_speed_rutledge(double *, double *, int il,int ih,int jl,int jh);
+void calculate_eulerian_fall_speed_rain(double *vt, double *qr, int il,int ih,int jl,int jh);
+void calculate_eulerian_fall_speed_snow_ice(double *vts, double *qs, double *vti, double *qi, int il,int ih,int jl,int jh);
 
 /********************************************************
 * Specific schemes
