@@ -541,7 +541,10 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 			memset(sts,0,NX*NY*NZ*sizeof(double));
 			memset(its,0,NX*NY*NZ*sizeof(double));
 		}
-	
+	//--------------------------------------------
+	// Eukerian rain fallout
+	// Fall speeds should have already been calculated
+	//--------------------------------------------
 	} else {
 		
 		precip_rate(il,ih,jl,jh,vts,qrps,accRain);

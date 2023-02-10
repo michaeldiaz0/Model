@@ -195,6 +195,10 @@ void run_kessler_microphysics(int il,int ih,int jl,int jh){
 			memset(vts,0,fNX*fNY*fNZ*sizeof(double));
 		else
 			memset(vts,0,NX*NY*NZ*sizeof(double));
+	//--------------------------------------------
+	// Eukerian rain fallout
+	// Fall speeds should have already been calculated
+	//--------------------------------------------
 	} else {
 		
 		precip_rate(il,ih,jl,jh,vts,qrps,accRain);
