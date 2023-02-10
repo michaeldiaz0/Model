@@ -651,7 +651,7 @@ void compute_fluxes_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *
 
 	for(int j=jl;j<jh;j++){
 
-		SCELL(j,0).top = -0.5*(fall[INDEX(i,j,1)]+fall[INDEX(i,j,0)]) * SCELL(j,1).top;
+		SCELL(j,0).top = -0.5*(fall[INDEX(i,j,1)]+fall[INDEX(i,j,0)]) * SCELL(j,0).top;
 
 		for(int k=1;k<NZ-1;k++){
 
@@ -680,7 +680,7 @@ void compute_fluxes_moisture(int i,int jl,int jh){
 
 		QVCELL(j,0).top = 0;
 		QCCELL(j,0).top = 0;
-		QRCELL(j,0).top = -0.5*(VT(i,j,1)+VT(i,j,0)) * QRCELL(j,1).top;	// allows rain to fall out through the ground
+		QRCELL(j,0).top = -0.5*(VT(i,j,1)+VT(i,j,0)) * QRCELL(j,0).top;	// allows rain to fall out through the ground
 		
 		for(int k=1;k<NZ-1;k++){
 
@@ -911,12 +911,16 @@ void interpolate_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *fal
 	// Horizontal part
 	//---------------------------------------------------
 	for(int j=jl;j<jh;j++){
-	for(k=1;k<NZ-1;k++){
+		
+		SCELL(j,0).top = 0.5*(SP(i,j,0)+SP(i,j,1));		// lower boundary values
+		
+		for(k=1;k<NZ-1;k++){
 
-		SCELL(j,k).west  = SCELL(j,k).east;
-		SCELL(j,k).east  = INTERP_EAST( SP,SIGN_B_VEL(i+1,j,k).u,i);
-		SCELL(j,k).north = INTERP_NORTH(SP,SIGN_B_VEL(i,j+1,k).v,j);
-	}}
+			SCELL(j,k).west  = SCELL(j,k).east;
+			SCELL(j,k).east  = INTERP_EAST( SP,SIGN_B_VEL(i+1,j,k).u,i);
+			SCELL(j,k).north = INTERP_NORTH(SP,SIGN_B_VEL(i,j+1,k).v,j);
+		}
+	}
 
 	//---------------------------------------------------
 	// Upper and lower boundary points
@@ -927,13 +931,9 @@ void interpolate_scalar_with_fallspeed(int i,int jl,int jh,double *s,double *fal
 		
 	for(int j=jl;j<jh;j++){
 		
-		k = 1;
+		SCELL(j,1).top   = INTERP_2ND_TOP(SP,1);
 		
-		SCELL(j,k).top   = INTERP_2ND_TOP(SP,k);
-		
-		k = NZ-2;
-		
-		SCELL(j,k).top   = INTERP_2ND_TOP(SP,k);
+		SCELL(j,NZ-2).top   = INTERP_2ND_TOP(SP,NZ-2);
 	}
 	
 	#endif
