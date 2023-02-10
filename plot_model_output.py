@@ -60,7 +60,7 @@ def plot_winds_temperature_pressure(infile,outfile,time):
 	
 	rho = get_density(tb,pib,qb)
 
-	temp = t #+ tbar + tb[height]
+	temp = t + tbar + tb[height]
 	u = u #+ ubar
 	v = v #+ vbar
 	
@@ -76,7 +76,7 @@ def plot_winds_temperature_pressure(infile,outfile,time):
 
 	# compute map projection coordinates for lat/lon grid.
 	x, y = m(*np.meshgrid(lons,lats))
-
+	#print(temp.shape)
 	#-----------------------------------
 	# make filled contour plot
 	#-----------------------------------
@@ -388,15 +388,15 @@ def main():
 		start = int(sys.argv[1])
 		end = int(sys.argv[2])
 
-		input_file = '../model_output/outfile0122_3.nc'
-		output_file0 = '../figures26/pres_wind0122_2fig'
+		input_file = 'outfile0210_6.nc'
+		output_file0 = 'plots/pres_wind0210_6fig'
 		output_file1 = '../figures26/rain_wind0122_3fig'
 
 		for i in range(start,end):
 
-			#plot_winds_temperature_pressure(input_file,output_file0+str(i)+'.png',i)
+			plot_winds_temperature_pressure(input_file,output_file0+str(i)+'.png',i)
 			
-			plot_winds_condensate(input_file,output_file1+str(i)+'.png',i)
+			#plot_winds_condensate(input_file,output_file1+str(i)+'.png',i)
 
 
 	except:

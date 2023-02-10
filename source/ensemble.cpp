@@ -4,6 +4,7 @@
 #include "string.h"
 #include "initializer.h"
 #include "pressure.h"
+#include "driver_serial.h"
 
 struct task {
 
@@ -131,7 +132,7 @@ void run_ensemble(int argc, char *argv[]){
 
 		heat.printInfo(myfile);
 		
-		run_model(2016,myfile);	
+		run_serial_model(2016,myfile);	
 
 		reinitialize();
 	}
@@ -235,7 +236,7 @@ void run_ensemble_perturbation(int argc, char *argv[]){
 				
 		reinitialize_perturbation(time,scale);
 		
-		run_model(5,myfile);
+		run_serial_model(5,myfile);
 	}
 
 

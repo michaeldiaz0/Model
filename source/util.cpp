@@ -1,4 +1,5 @@
 #include "stdafx.h"
+#include "pcomm.h"
 
 bool startOutput = false;
 
@@ -9,6 +10,7 @@ double *smoothVar,*smoothVarO;
 ************************************************************************************************/
 #if !PARALLEL
 	#define VAR(i,j,k) var[NZ*(NY*(i)+(j))+(k)]
+	//int rank = 0;
 #else
 	#define VAR(i,j,k) var[fNZ*(fNY*(i)+(j))+(k)]
 #endif
@@ -701,6 +703,40 @@ void rescale_pert2(double max,double scale){
 #endif
 
 	}}}
+}
+
+/*********************************************************************
+* 
+*
+**********************************************************************/
+void print_time_estimates(int total_cputime,int total_walltime,int timer_counter){
+
+	int cputime_secs = (int)((total_cputime  / (double)timer_counter) * (number_of_time_steps - bigcounter));
+	int walltime_secs = (int)((total_walltime / (double)timer_counter) * (number_of_time_steps - bigcounter));
+
+	int cpu_time_hours = cputime_secs / 3600;
+	int cpu_time_min = (cputime_secs % 3600) / 60;
+	int cpu_time_sec = (cputime_secs % 3600) % 60;
+	int wall_time_hours = walltime_secs / 3600;
+	int wall_time_min = (walltime_secs % 3600) / 60;
+	int wall_time_sec = (walltime_secs % 3600) % 60;
+
+	printf("Estimated time remaining: cpu time = %02d:%02d:%02d hours, wall time = %02d:%02d:%02d hours\n",
+	cpu_time_hours,cpu_time_min,cpu_time_sec,wall_time_hours,wall_time_min,wall_time_sec);
+
+	cputime_secs = (int)((total_cputime  / (double)timer_counter) * number_of_time_steps);
+	walltime_secs = (int)((total_walltime / (double)timer_counter) * number_of_time_steps);
+			
+	cpu_time_hours = cputime_secs / 3600;
+	cpu_time_min = (cputime_secs % 3600) / 60;
+	wall_time_hours = walltime_secs / 3600;
+	wall_time_min = (walltime_secs % 3600) / 60;
+	cpu_time_sec = (cputime_secs % 3600) % 60;
+	wall_time_sec = (walltime_secs % 3600) % 60;
+		
+	printf("Estimated total run time: cpu time = %02d:%02d:%02d hours, wall time = %02d:%02d:%02d hours\n",
+	cpu_time_hours,cpu_time_min,cpu_time_sec,wall_time_hours,wall_time_min,wall_time_sec);
+	
 }
 
 

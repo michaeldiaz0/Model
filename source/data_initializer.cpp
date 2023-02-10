@@ -5,6 +5,7 @@
 #include "boundaries.h"
 #include "initializer.h"
 #include "data_initializer.h"
+#include "pcomm.h"
 
 /******************************************************************************
 * Handles to details of putting data onto the model grids. Focuses on
@@ -758,7 +759,6 @@ void initialize_basic_state_idealized(){
 **********************************************************************/
 void initialize_vortex_perturbation(){
 
-
 	//----------------------------------------------------------------
 	// Actions to perform on only the root process
 	//----------------------------------------------------------------
@@ -1060,7 +1060,7 @@ void initialize_vortex(double r_end, double zm, double zt, double tmax, double t
 		v[FULL_ARRAY_INDEX(i,j,k)] = temp_array[FULL_ARRAY_INDEX(i,j,k)];
 	}}}	
 		
-	free(t_z); free(t_r); free(vr); free(phi); free(temp_array);
+	free(t_z); free(t_r); free(vr); free(phi); free(temp_array); free(rh);
 }
 
 /*********************************************************************

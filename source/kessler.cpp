@@ -1,9 +1,15 @@
 
 #include "stdafx.h"
 #include "budgets.h"
+#include "pcomm.h"
 
 const double minvar = 1.0e-12; // threshold for microphysics calculations
 
+#if HYDROSTATIC
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)
+#else
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)/(cp*tbv[k])
+#endif
 
 /****************************************************
 * Initialize moisture variables
@@ -32,11 +38,11 @@ void run_kessler_microphysics(int il,int ih,int jl,int jh){
 		/**********************************************
 		* Get full values of thermodynamic variables
 		***********************************************/
-		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		// full potential temperature is base state plus perturbation		
-		pressure = PI(i,j,k)/(cp*tbv[k]) + PBAR(i,j,k);	// full pressure is base state plus perturbation
- 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		// full vapor is base state plus perturbation
-		temperature = theta*pressure;					// actual temperature
-		pd = p0*pow(pressure,cpRd);						// dimensional pressure
+		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		    // full potential temperature is base state plus perturbation		
+		pressure = CONVERT_PRESSURE(i,j,k) + PBAR(i,j,k);	// full pressure is base state plus perturbation
+ 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		    // full vapor is base state plus perturbation
+		temperature = theta*pressure;					    // actual temperature
+		pd = p0*pow(pressure,cpRd);						    // dimensional pressure
 
 		/**********************************************
 		* Autoconversion

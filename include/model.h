@@ -11,6 +11,13 @@ extern double vert_shear1;
 **********************************************************/
 
 //--------------------------------------------------------
+// Grid sub-dimensions for parallel code
+//--------------------------------------------------------
+extern int myNX,myNY,myNZ;	// dimensions of subarrays without halo boundaries
+extern int fNX,fNY,fNZ,pNX,pNY,pNZ;	// full dimensions of subarrays
+extern int fNYfNZ;
+
+//--------------------------------------------------------
 // Array indices
 //--------------------------------------------------------
 extern int NYNZ;

@@ -7,6 +7,7 @@
 #include "initializer.h"
 #include "data_initializer.h"
 #include "pressure.h"
+#include "pcomm.h"
 
 /******************************************************************************
 * Handles higher-level initialization and focuses on initialization from model
@@ -47,9 +48,15 @@ double *vts,*sts,*its;
 //--------------------------------------
 double *accRain,*accSnow;
 //--------------------------------------
+// Accumulated diabatic processes 
+//--------------------------------------
+double *m_diabatic,*q_diabatic;
+//--------------------------------------
 // TOPOGRAPHY AND FRICTION ARRAYS
 //--------------------------------------
 double *itopo,*iistopo,*iuistopo,*ivistopo,*ifriction;
+double *frictions;
+double *istopos,*uistopos,*vistopos;
 //--------------------------------------
 // VERTICALLY VARYING BASIC STATE
 //--------------------------------------
@@ -77,7 +84,15 @@ double rhoavg = 0;
 double mtime = 0;
 int bigcounter = 0;
 
+//--------------------------------------
+// Grid dimensions
+//--------------------------------------
 int NX,NY,NZ,NYNZ;
+
+int myNX,myNY,myNZ;	// dimensions of subarrays without halo boundaries
+int fNX,fNY,fNZ;	// full dimensions of subarrays
+int pNX,pNY,pNZ;	// dimensions of arrays for pressure solver
+int fNYfNZ;
 
 double dx;
 double dy;
@@ -133,6 +148,7 @@ void initialize_from_output_serial(const char *,size_t);
 void initialize_from_output_parallel(const char *,size_t);
 void initialize_basic_state_from_output_file(const char*);
 int get_file_start_time();
+void column_average_density();
 
 /******************************************************************************
 * Takes the structure that has stored the input from the input file with grid
@@ -739,17 +755,9 @@ void initialize_basic_state_from_reanalysis(){
 	init_topography();
 
 	//----------------------------------------------------------------
-	// Column averaged density
+	// Column averaged density for hydrostatic version
 	//----------------------------------------------------------------
-	for(int i=0;i<NX;i++){
-	for(int j=0;j<NY;j++){
-	
-		RHOAVG2DFULL(i,j) = 0;
-
-		for(int k=HTOPOFULL(i,j)+1;k<NZ-1;k++){ RHOAVG2DFULL(i,j) = RHOAVG2DFULL(i,j) + rhou[k]*tbv[k];}
-
-		RHOAVG2DFULL(i,j) = RHOAVG2DFULL(i,j)/((double)(NZ-2-HTOPOFULL(i,j)));
-	}}
+	column_average_density();
 
 	//----------------------------------------------------------------
 	// Initialize arrays for SOR
@@ -990,6 +998,7 @@ void print_vertical_basic_state(){
 					k,zu[k]/1000,zw[k]/1000,pib[k],tb[k],tbv[k],rhou[k],rhow[k],qb[k]*1000);			
 		}
 	}
+    fflush(stdout);
 }
 
 
@@ -1273,6 +1282,28 @@ void init_topography_to_zero(){
 }
 
 /*********************************************************************
+* Column averaged density
+**********************************************************************/
+void column_average_density(){
+	
+	double zsum = 0;
+
+	for(int i=0;i<NX;i++){
+	for(int j=0;j<NY;j++){
+
+		RHOAVG2DFULL(i,j) = 0;
+		zsum = 0;
+
+		for(int k=HTOPOFULL(i,j)+1;k<NZ-1;k++){ 
+			RHOAVG2DFULL(i,j) = RHOAVG2DFULL(i,j) + rhou[k]*tbv[k]*DZU(k);
+			zsum += DZU(k);
+		}
+
+		RHOAVG2DFULL(i,j) = RHOAVG2DFULL(i,j) / zsum;
+	}}
+}
+
+/*********************************************************************
 * Alter basic state humidity
 **********************************************************************/
 void change_humidity(){
@@ -1381,7 +1412,7 @@ double get_QV_Sat(double temperature,double pressure){
 
 	return 0.62197 * esl / (pressure-esl);
 }
-
+#if PARALLEL
 /*********************************************************************
 * Load data from model output file for use as an initial condition for 
 * the perturbation fields. Assumes that the current model grid settings 
@@ -1470,7 +1501,7 @@ void load_from_output_2d(const char *filename,const char *varname,double *var,in
 		}
 	}
 }
-
+#endif
 /*********************************************************************
 * Compare the values of two arrays. Return true if they are the same
 * within a given tolerance level, false otherwise.
@@ -1570,7 +1601,7 @@ void interpolate_from_output(
 		}
 
 }
-
+#if PARALLEL
 /*********************************************************************
 * Load data for perturbation fields from file for use as an initial condition 
 * and interpolate it to the model grid.
@@ -1621,7 +1652,7 @@ void load_interpolate_from_output(
 		mvar[i] = var[i];
 	}
 }
-
+#endif
 /*********************************************************************
 * Get the dimensions and grid spacing from a file a tell whether or not
 * they match the model's grid spacing and dimensions
@@ -1662,7 +1693,7 @@ int get_file_dims(const char *myfilename,size_t *xdim,size_t *ydim,size_t *zdim,
 	return same;
 }
 
-
+#if PARALLEL
 /*********************************************************************
 * Initialize model perturbation fields from input file. Will determine
 * whether or not interpolation is required.
@@ -1776,8 +1807,10 @@ void initialize_from_output_parallel(const char *myfilename,size_t time){
 		if(rank==0){ free(zlevs); free(var); free(var_interpz); free(myLons); free(myLats);}
 	}
 	
-}
 
+	
+}
+#endif
 /*********************************************************************
 * Initialize model perturbation fields from input file. Will determine
 * whether or not interpolation is required.
@@ -2121,7 +2154,7 @@ void initialize_basic_state_from_output_file(const char *myfilename){
 		
 			free(topo2);
 		}
-		
+				
 		//------------------------------------------------------------------------------
 		// Deallocate memory local to this subroutine
 		//------------------------------------------------------------------------------
@@ -2134,6 +2167,12 @@ void initialize_basic_state_from_output_file(const char *myfilename){
 	if(VERBOSE){ print_vertical_basic_state();}
 	
 	if(USE_TERRAIN){ init_topography();}
+	
+	//----------------------------------------------------------------
+	// Column averaged density for hydrostatic version
+	//----------------------------------------------------------------
+	column_average_density();
+
 			
 }
 

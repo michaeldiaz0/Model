@@ -16,6 +16,13 @@
 #define SAT_VAP_ICE(t) ( 611.2 * exp(21.8745584 * (t-273.15) / (t - 7.66) ) )
 #define SAT_MIX_RATIO(e,p) ( 0.62197 * e / (p-e) )
 
+// hydrostatic uses Exner pressure
+// non-hydrostatic uses pressure / density
+#if HYDROSTATIC
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)
+#else
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)/(cp*tbv[k])
+#endif
 
 double A,C,E,cvent,vtden,qrr,pd,theta,pressure,phi,vapor,total_convert,total_convert2;
 double qvl_sat,qvi_sat; // saturation mixing ratio / vapor pressure with respect to water
@@ -165,11 +172,11 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 		/**********************************************
 		* Get full values of thermodynamic variables
 		***********************************************/
-		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		// full potential temperature is base state plus perturbation		
-		pressure = PI(i,j,k)/(cp*tbv[k]) + PBAR(i,j,k);	// full pressure is base state plus perturbation
- 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		// full vapor is base state plus perturbation
-		temperature = theta*pressure;					// actual temperature
-		pd = p0*pow(pressure,cpRd);						// dimensional pressure
+		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		    // full potential temperature is base state plus perturbation		
+		pressure = CONVERT_PRESSURE(i,j,k) + PBAR(i,j,k);	// full pressure is base state plus perturbation
+ 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		    // full vapor is base state plus perturbation
+		temperature = theta*pressure;					    // actual temperature
+		pd = p0*pow(pressure,cpRd);						    // dimensional pressure
 	
 		// calculate saturation mixing ratio
 		esl = SAT_VAP_WAT(temperature);
@@ -433,83 +440,13 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 		if(MOISTURE_BUDGET){
 			q_diabatic[INDEX(i,j,k)] -= (pcond + E + psdep + pmltev + pint_p_pdepi);	
 		}
-#if 0
-		/********************************
-		* Calculate snow fall speed
-		*********************************/
-		if(QSP(i,j,k) > minvar_snow){
-							
-				lambdaS = pow( (trigpi*rhoS*N0S) / (rhou[k]*QSP(i,j,k)),0.25);
-				
-				ST(i,j,k) = app * 1.15 * pow(lambdaS,-b) * pow(p0/pd,0.4);
-		}
-		else { 
-			ST(i,j,k) = 0;
-		}
-		
-		/********************************
-		* Calculate rain fall speed
-		*********************************/
-		if(QRP(i,j,k) > 1.0e-12){
-	
-			lambdaR = sqrt(sqrt( (trigpi*1000*N0r) / (rhou[k]*QRP(i,j,k)) ));
-		
-			VT(i,j,k) = rfall / (6.0*pow(lambdaR,0.8)) * pow( p0/pd,0.4);
-
-		} else {
-			VT(i,j,k) = 0;
-		}
-#endif
 
 	}}}
 
 	
 	saturation_adjustment(il,ih,jl,jh);
 	
-#if 0	
-	/********************************
-	* Calculate ice fall speed
-	*********************************/
-	for(int i=il;i<ih;i++){
-	for(int j=jl;j<jh;j++){
-	for(int k=1;k<NZ-1;k++){
-	
-		nc = fmin(fmax( 5.38e7 * pow(rhou[k]*QIP(i,j,k),0.75) ,1.0e3),1.0e6);
-	
-		MI = rhou[k] * fmax(QIP(i,j,k),0) / nc;	// average mass of cloud ice particles
 
-		Dl = fmax(fmin(11.9 * sqrt(MI),dimax),1.0e-25);
-		
-		IT(i,j,k) = 1.49e4 * pow(Dl,1.31);//exp(log(Dl)*1.31);
-
-	}}}
-	
-			
-	
-	//--------------------------------------------
-	// Lower boundary condition
-	//--------------------------------------------
-	for(int i=il;i<ih;i++){
-	for(int j=jl;j<jh;j++){
-
-		VT(i,j,0) = VT(i,j,1);
-		ST(i,j,0) = ST(i,j,1);
-		IT(i,j,0) = IT(i,j,1);
-
-	}}
-#endif
-#if 0
-	for(int i=il;i<ih;i++){
-	for(int j=jl;j<jh;j++){
-	for(int k=0;k<NZ;k++){
-		
-		if(QSP(i,j,k) < 0){
-			
-			printf("%f %f %d %f\n",outLons[big_i[i]],outLats[big_j[j]],k,QSP(i,j,k)*1000);
-		}
-		
-	}}}
-#endif
 	// maybe find out why there are negative values?
 	if(PARALLEL)
 		zero_moisture(il,ih,jl,jh,fNX*fNY*fNZ);
@@ -573,7 +510,7 @@ void calculate_snow_fall_speed_rutledge(double *vts, double *qs, int il,int ih,i
 		
 		if(qs[INDEX(i,j,k)] > minvar_snow){
 			
-			pressure = PI(i,j,k)/(cp*tbv[k]) + PBAR(i,j,k);
+			pressure = CONVERT_PRESSURE(i,j,k) + PBAR(i,j,k);
 			pd = p0*pow(pressure,cpRd);	// dimensional pressure
 					
 			lambdaS = pow( (trigpi*rhoS*N0S) / (rhou[k]*qs[INDEX(i,j,k)]),0.25);
@@ -612,7 +549,7 @@ void calculate_rain_fall_speed_rutledge(double *vtr, double *qr, int il,int ih,i
 			
 		if(qr[INDEX(i,j,k)] > minvar_rain){
 			
-			pressure = PI(i,j,k)/(cp*tbv[k]) + PBAR(i,j,k);
+			pressure = CONVERT_PRESSURE(i,j,k) + PBAR(i,j,k);
 			pd = p0*pow(pressure,cpRd);						// dimensional pressure
 	
 			lambdaR = sqrt(sqrt( (trigpi*1000*N0r) / (rhou[k]*qr[INDEX(i,j,k)]) ));
@@ -766,11 +703,11 @@ void saturation_adjustment(int il,int ih,int jl,int jh){
 		/**********************************************
 		* Get full values of thermodynamic variables
 		***********************************************/
-		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		// full potential temperature is base state plus perturbation		
-		pressure = PI(i,j,k)/(cp*tbv[k]) + PBAR(i,j,k);	// full pressure is base state plus perturbation
- 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		// full vapor is base state plus perturbation
-		temperature = theta*pressure;					// actual temperature
-		pd = p0*pow(pressure,cpRd);						// dimensional pressure
+		theta = THP(i,j,k) + THBAR(i,j,k) + tb[k];		    // full potential temperature is base state plus perturbation		
+		pressure = CONVERT_PRESSURE(i,j,k) + PBAR(i,j,k);	// full pressure is base state plus perturbation
+ 		vapor = QVP(i,j,k) + QBAR(i,j,k) + qb[k];		    // full vapor is base state plus perturbation
+		temperature = theta*pressure;					    // actual temperature
+		pd = p0*pow(pressure,cpRd);						    // dimensional pressure
 
 
 		get_qvsat(temperature,pd,&qvsat,&phi,&phil,&phii);

@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "advection.h"
 #include "fluxes.h"
+#include "pcomm.h"
 
 /******************************************************************************************
 *
