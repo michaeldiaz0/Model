@@ -78,15 +78,24 @@ LD := ld
 # tar
 TAR := tar
 # -Wall -Wextra
+
 # C/C++ flags
+ifeq ($(HAS_MPI),TRUE)
 CPPFLAGS := -g -O3 -I $(LOCAL_INCLUDE) -I $(NETCDF_INCLUDE) -I $(FFTW_INCLUDE) -I $(MPI_INCLUDE)
+else
+CPPFLAGS := -g -O3 -I $(LOCAL_INCLUDE) -I $(NETCDF_INCLUDE) -I $(FFTW_INCLUDE)
+endif
+
 # linker flags: libraries to link (e.g. -lfoo)
+ifeq ($(HAS_MPI),TRUE)
 LDLIBS := -L $(NETCDF_LIB) -lnetcdf -L $(FFTW_LIB) -lfftw3 -L $(MPI_LIB) -lmpi  -lm
+else
+LDLIBS := -L $(NETCDF_LIB) -lnetcdf -L $(FFTW_LIB) -lfftw3 -lm
+endif
+
 # flags required for dependency generation; passed to compilers
 DEPFLAGS = -MT $@ -MD -MP -MF $(DEPDIR)/$*.Td
 
-# compile C source files
-COMPILE.c = $(CC) $(DEPFLAGS) $(CFLAGS) $(CPPFLAGS) -c -o $@
 # compile C++ source files
 COMPILE.cc = $(CXX) $(DEPFLAGS) $(CXXFLAGS) $(CPPFLAGS) -c -o $@
 # link object files to binary
@@ -111,8 +120,6 @@ distclean: clean
 
 .PHONY: check
 check:
-	#python sample_initializations.py
-	#mpirun -np 4 ./bin/solve.exe -f input_params_rainball.txt
 
 .PHONY: help
 help:
