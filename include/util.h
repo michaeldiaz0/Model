@@ -1,3 +1,4 @@
+void derivative_weights(double z,double *x, int n, int nd, int m, double *c);
 void init_stats();
 double get_stats(FILE *infile=NULL);
 void line_array(int,int,int,int,int*);

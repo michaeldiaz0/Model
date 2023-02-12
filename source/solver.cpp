@@ -101,7 +101,7 @@ void integrate_non_hydro(double step,int il,int ih,int jl, int jh){
 	advect_uvw_velocity(step,il+3,ih-3,jl+3,jh-3);
 	
 	if(USE_TURBULENT_STRESS){ apply_velocity_diffusion(step,il+3,ih-3,jl+3,jh-3);}
-	if(EXTRA_DIFFUSION && !STRETCHED_GRID){ diffusion_2nd_all(step,3,NX-3,3,NY-3);}//diffusion_6th_all(step,3,NX-3,3,NY-3);}
+	//if(EXTRA_DIFFUSION && !STRETCHED_GRID){ diffusion_2nd_all(step,3,NX-3,3,NY-3);}//diffusion_6th_all(step,3,NX-3,3,NY-3);}
 	
 	//-----------------------------------------------------------------
 	// Zero out values at or below the terrain for velocity field

@@ -20,6 +20,8 @@ int main(int argc, char *argv[]){
 
 	initialize_globals();
 
+
+
 	//argcount = argc;
 
 	//if(argc==4){
@@ -106,5 +108,5 @@ int main(int argc, char *argv[]){
 			run_ensemble_perturbation(argc,argv);
 		}
 	}
-	
+
 }

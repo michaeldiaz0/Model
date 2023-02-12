@@ -26,34 +26,9 @@ add diffusion to snow and ice
 */
 
 // compile parallel (1) or serial (0) version
-#define PARALLEL 1
+#define PARALLEL 0
 
 #if 1
-
-//--------------------------------------------------------
-// Grid parameters
-//--------------------------------------------------------
-extern int NX;
-extern int NY;
-extern int NZ;
-
-extern double dx;
-extern double dy;
-extern double dz;
-extern double dt;
-
-extern double lonoffset;
-extern double latoffset;
-extern int number_of_time_steps;
-
-extern int raydampheight;
-extern int outfilefreq;
-
-//--------------------------------------------------------
-// Grid stretching
-//--------------------------------------------------------
-extern double height_lowest_level; // height of lowest full level in meters
-const int index_lowest_level = 1;		// what is the index of this level?
 
 //--------------------------------------
 // Version to execute
@@ -63,7 +38,7 @@ const int index_lowest_level = 1;		// what is the index of this level?
 //--------------------------------------
 // Equation set
 //--------------------------------------
-#define HYDROSTATIC 1			// hydrostatic option (should work now?)
+#define HYDROSTATIC 0			// hydrostatic option (should work now?)
 #define ISLINEAR 0				// linearize equation set
 #define USE_LINEAR_FRICTION 0	// linear friction in lowest model level(s)
 extern int USE_TURBULENT_STRESS;// use turbulence parameterization
@@ -77,11 +52,12 @@ extern int SURFACE_HEAT_FLUX;		// 0:no, 1:yes
 extern double WATER_TEMP_C;			// water temperature in Celsius (for surface heat fluxes)
 #define USE_LANDSEA_FROM_FILE 0		// 0:no, 1:yes
 extern int RAIN_FALLOUT;			// 1:Eulerian 2:Semi-Lagrangian
+const int DIFFUSION_ORDER = 6;
 //--------------------------------------
 // For linearized equation set
 //--------------------------------------
 #define OUTPUT_DIFFUSION_TEND 0		// 
-#define EXTRA_DIFFUSION 0			// only for linearized version, no grid stretching
+#define EXTRA_DIFFUSION 1			// only for linearized version, no grid stretching
 #define FOURIER_DAMPING 0			// use Fourier transform to specify wavenumber
 #define WAVE_NUMBER 3				// the specified wavenumber
 //--------------------------------------

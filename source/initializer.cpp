@@ -534,7 +534,10 @@ void setup_memory_allocation(){
 			}
 		}
 		
-		if(ENERGY){ if(OUTPUT_DIFFUSION_TEND){ init_damping(NX,NY,NZ); }}
+		//if(ENERGY){ if(OUTPUT_DIFFUSION_TEND){ 
+	
+			//}}
+		printf("rank = %d\n",rank);
 		
 	//----------------------------------------------------------------
 	// initialize data specific to serial version
@@ -545,9 +548,9 @@ void setup_memory_allocation(){
 
 		initialize_subarray(NX,NY,NZ);
 
-		init_damping(NX,NY,NZ);
 	}
-		
+	
+	 
 		
 	//----------------------------------------------------------------
 	// Initialize stuff for Fourier damping in linearized equations
@@ -557,39 +560,6 @@ void setup_memory_allocation(){
 		if(!PERIODIC_BOUNDARIES){ init_fftw(NX,NY,NZ);}
 		else { init_fftw(NX-6,NY,NZ);}
 	}
-	
-}
-
-/*********************************************************************
-* Top-level initializer for serial model
-**********************************************************************/
-void initialize_serial(){
-	
-	set_outfilename(filename);
-
-	initialize_basic_state();
-	
-	initialize_perturbation();
-	
-	if(USE_TURBULENT_STRESS){ init_kmix(NX,NY,NZ,&ZU(0));}
-	
-	if(USE_MICROPHYSICS){ init_microphysics(NX,NY);}
-	
-	initialize_landsea(landseaMaskFile);
-
-	initialize_pressure_solver();
-	
-	init_boundaries(iebuffer,iwbuffer,jnbuffer,jsbuffer,-1);
-	
-	//init_stats();
-	//heat.initialize(21.18,86.3,19.37,93.0,100000.,6.0);
-	//heat.initialize(15.18,-5,15.37,5,150000.,6.0);
-	//heat.initialize(8,270,8,276,300000.,6.0);
-	//heat.shift(1.0,-2.0);
-
-	//heat.printInfo();
-
-	if(OUTPUT_TO_FILE){ outfile_init(filename);}
 	
 }
 
@@ -946,7 +916,7 @@ void initialize_vertical_basic_state2(double *tb,double *qb){
 		one_d_rhow[k] = 1. / rhow[k];
 		one_d_rhou[k] = 1. / rhou[k];
 	}
-	
+
 }
 
 /***********************************************************************

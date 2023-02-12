@@ -21,6 +21,86 @@ void smooth_var(double *var,double *svar,int klev,int times);
 void smooth9(double *varIn,double *varOut,int il,int ih,int jl,int jh,int lNY);
 double get_min_2D(double *var,int *ival,int *jval,int il,int ih,int jl,int jh);
 
+/*********************************************************************
+* Returns minimum value
+*
+**********************************************************************/
+int min(int x,int y){
+	
+	if(x<y){ return x;}
+	
+	return y;
+}
+
+/****************************************************
+! Bengt Fornberg (1988) algorithm for finding interpolation
+! weights for derivatives
+!
+! Input Parameters
+! z       - location where approximations are to be accurate,
+! x(0:nd) - grid point locations, found in x(0:n)
+! n       - one less than total number of grid points; n must not exceed the parameter nd below,
+! nd      - dimension of x- and c-arrays in calling program x(0:nd) and c(0:nd,0:m), respectively, 
+! m       - highest derivative for which weights are sought,
+! 
+! Output Parameter
+! c(0:nd,0:m) weights at grid locations x(0:n) for derivatives c--- of order 0:m, found in c(0:n,0:m)
+****************************************************/
+void derivative_weights(double z,double *x, int n, int nd, int m,double *c){
+
+    double c1,c2,c3,c4,c5;
+    int  i, j, k, mn;
+
+#if 0
+	printf("\n");
+	printf("%f\n\n",z);
+	for(int i=0;i<=n;i++){ printf("%f\n",x[i]);}
+	printf("\n");
+#endif
+	
+    c1 = 1.0;
+    c4 = x[0] - z;
+
+    c[index2d(m+1,0,0)] = 1.0;
+
+	for(int i=1;i<=n;i++){
+		
+        mn = min(i,m);
+        c2 = 1.0;
+        c5 = c4;
+        c4 = x[i]-z;
+
+		for(int j=0;j<=i-1;j++){
+
+            c3 = x[i]-x[j];
+            c2 = c2*c3;
+
+            if (j == i-1){
+				
+				for(int k=mn;k>=1;k--){
+					
+                    c[index2d(m+1,i,k)] = c1*( k * c[index2d(m+1,i-1,k-1)] - c5 * c[index2d(m+1,i-1,k)] ) / c2;
+				}
+
+                c[index2d(m+1,i,0)] = -c1*c5*c[index2d(m+1,i-1,0)] / c2;
+
+            }
+
+            for(int k=mn;k>=1;k--){
+				
+                c[index2d(m+1,j,k)] = (c4 * c[index2d(m+1,j,k)] - k * c[index2d(m+1,j,k-1)] ) / c3;
+            }
+
+            c[index2d(m+1,j,0)]  = c4 * c[index2d(m+1,j,0)] / c3;
+        }
+
+        c1 = c2;
+
+    }
+
+}
+
+
 /****************************************************
 * 
 *****************************************************/

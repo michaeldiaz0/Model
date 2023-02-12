@@ -3,7 +3,6 @@ void initialize_globals();
 void initialize_perturbation();
 void initialize_basic_state();
 void setup_memory_allocation();
-void initialize_serial();
 void initialize_subarray(int,int,int);
 
 void reinitialize();

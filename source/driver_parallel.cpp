@@ -86,6 +86,10 @@ void initialize_parallel_model(){
 
 	initialize_budgets();
 	
+	init_damping(fNX,fNY,NZ);
+	
+	init_diffusion_weights(DIFFUSION_ORDER,&ZU(0));
+	
 }
 
 /*********************************************************************
@@ -99,11 +103,18 @@ void p_integrate_rk3(){
 	int size = fNX*fNY*fNZ;
 	
 	/*******************************************************
+	* Apply explicit diffusion. Do this first, because the
+	* final state should satisfy the anelastic continuity
+	* equation and be free of super saturation.
+	********************************************************/
+	if(EXTRA_DIFFUSION){ apply_explicit_diffusion(1.0,3,fNX-3,3,fNY-3);}
+	
+	/*******************************************************
 	* Calculate frictional and diffusional tendencies to
 	* be applied during RK3 loop
 	********************************************************/
 	if(USE_TURBULENT_STRESS){ calculate_diff_tend(3,fNX-3,3,fNY-3);}
-
+	
 	/*******************************************************
 	* Runge-Kutta Loop
 	********************************************************/
