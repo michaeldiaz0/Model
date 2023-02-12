@@ -99,7 +99,7 @@ void create_outfile(const char *myfilename, bool basestate,bool modelBaseState,b
 	add_attribute(ncid,"surface_heat_flux",SURFACE_HEAT_FLUX);	 
 	add_attribute(ncid,"water_temperature",WATER_TEMP_C);
 	add_attribute(ncid,"use_landsea_from_file",USE_LANDSEA_FROM_FILE);
-	add_attribute(ncid,"extra_diffusion",EXTRA_DIFFUSION);
+	add_attribute(ncid,"use_explicit_diffusion",USE_EXPLICIT_DIFFUSION);
 	add_attribute(ncid,"use_linear_friction",USE_LINEAR_FRICTION);
 	add_attribute(ncid,"periodic_boundaries",PERIODIC_BOUNDARIES);
 	add_attribute(ncid,"use_linear_friction",USE_LINEAR_FRICTION);

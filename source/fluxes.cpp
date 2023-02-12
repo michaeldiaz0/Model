@@ -564,7 +564,7 @@ void compute_fluxes_moisture(int i,int jl,int jh){
 
 		QVCELL(j,0).top = 0;
 		QCCELL(j,0).top = 0;
-		QRCELL(j,0).top = -0.5*(VT(i,j,1)+VT(i,j,0)) * QRCELL(j,1).top;	// allows rain to fall out through the ground
+		QRCELL(j,0).top = -0.5*(VT(i,j,1)+VT(i,j,0)) * QRCELL(j,0).top;	// allows rain to fall out through the ground
 		
 		for(int k=1;k<NZ-1;k++){
 
@@ -857,6 +857,8 @@ void interpolate_moisture(int i,int jl,int jh){
 	int k;
 
 	for(int j=jl;j<jh;j++){
+
+		QRCELL(j,0).top = 0.5*(QR(i,j,0)+QR(i,j,1));
 
 		for(k=1;k<NZ-2;k++){
 

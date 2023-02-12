@@ -129,6 +129,8 @@ int USE_MICROPHYSICS;
 int isRestartRun;
 int SURFACE_HEAT_FLUX;
 double WATER_TEMP_C;
+int DIFFUSION_ORDER;
+int USE_EXPLICIT_DIFFUSION;
 
 int VERBOSE;
 
@@ -206,6 +208,11 @@ void initialize_globals(){
 	RAIN_FALLOUT = inputs.rain_fallout;
 	
 	USE_TURBULENT_STRESS = inputs.turbulence_option;
+	
+	USE_EXPLICIT_DIFFUSION = inputs.use_explicit_diffusion;
+	DIFFUSION_ORDER = inputs.diffusion_order;
+	kdiffh = inputs.kdiffh;
+	kdiffv = inputs.kdiffv;
 	
 	PERIODIC_BOUNDARIES = inputs.periodic_ew_boundaries;
 	

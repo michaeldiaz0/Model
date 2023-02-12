@@ -96,7 +96,7 @@ void linear_integrate_rk3(){
 		
 		if(USE_TERRAIN){ set_terrain(&THP(0,0,0),&ISTOPO(0,0,0),NX*NY*NZ);}
 		
-		if(EXTRA_DIFFUSION){ apply_explicit_diffusion(steps[s],3,NX-3,3,NY-3);}
+		if(USE_EXPLICIT_DIFFUSION){ apply_explicit_diffusion(steps[s],3,NX-3,3,NY-3);}
 
 		apply_boundary_condition(0);
 		
@@ -184,7 +184,7 @@ void s_integrate_rk3(){
 	* final state should satisfy the anelastic continuity
 	* equation and be free of super saturation.
 	********************************************************/
-	if(EXTRA_DIFFUSION){ apply_explicit_diffusion(1.0,3,NX-3,3,NY-3);}
+	if(USE_EXPLICIT_DIFFUSION){ apply_explicit_diffusion(1.0,3,NX-3,3,NY-3);}
 
 	/*******************************************************
 	* Calculate frictional and diffusional tendencies to

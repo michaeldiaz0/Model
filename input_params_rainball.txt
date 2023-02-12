@@ -8,12 +8,12 @@
 | Number of grid points, grid spacing (m),
 | and time step (sec)
 ----------------------------------------
-NX	:	50
-NY  :	50
+NX	:	100
+NY  :	100
 NZ	:	43
-dx	:	5000.0
-dz	:	500.0
-dt	:	30.0
+dx	:	2500.0
+dz	:	500
+dt	:	15.0
 
 ----------------------------------------
 | Vertical grid stretching. Height (m)
@@ -38,8 +38,8 @@ shift_prime_meridian : 0
 | often to output results to a file
 | (in number of time steps)
 ---------------------------------------
-time_steps		 :	80
-output_frequency :	2
+time_steps		 :	100
+output_frequency :	5
 
 ----------------------------------------
 | Grid level to begin upper-level damping
@@ -70,7 +70,7 @@ perturbation_init_option	:	0
 | left off, recording results into the
 | same file.
 ----------------------------------------
-is_restart_run : 1
+is_restart_run : 0
 ----------------------------------------
 | Time at which to start reading
 | from perturbation input file
@@ -113,25 +113,36 @@ run_vorticity_budget :	0
 | 2 - Rutledge/Hong ice microphysics
 ----------------------------------------
 microphysics_option : 1
+
 ----------------------------------------
 | How flow-relative rain vertical 
 | advection is handled
 | 1 - Eulerian
 | 2 - Semi-Lagrangian (more computationally stable)
 ----------------------------------------
-rain_fallout : 2
+rain_fallout : 1
+
 ----------------------------------------
 | Turbulence/flux settings
-| Off -> 0
-| On  -> 1
+| Off -> 0 On  -> 1
 ----------------------------------------
-use_surface_heat_flux : 1
-turbulence_option : 1
+use_surface_heat_flux : 0
+turbulence_option : 0
+
 ----------------------------------------
 | Water temperature in Celcius
 ----------------------------------------
 water_temp : 29.0
 
+----------------------------------------
+| Explicit Diffusion
+| Off -> 0 On  -> 1
+| orders 2, 4, or 6
+----------------------------------------
+use_explicit_diffusion : 0
+diffusion_order : 4
+kdiffh : 0.005
+kdiffv : 0.005
 /
 
 ---------------------------------------------------
@@ -168,8 +179,8 @@ west : 5
 ----------------------------------------
 | File extensions. Ignored if left blank.
 ----------------------------------------
-input_file_base		:		/Users/michaeldiaz/Desktop/model_input/
-output_file_base	:		/Users/michaeldiaz/Desktop/model_output/
+input_file_base		: ./
+output_file_base	: ./
 
 ----------------------------------------
 | Input files
@@ -180,7 +191,7 @@ perturbation_input_file	:	rainball.nc
 ----------------------------------------
 | Output files
 ----------------------------------------
-output_file				  :	outfile0418_1.nc
+output_file				  :	outfile0218_10.nc
 heat_budget_filename	  :	temp_budget1130_0.nc
 moisture_budget_filename  :	moisture_budget1130_0.nc
 pe_budget_filename		  :	pe_budget1130_0.nc

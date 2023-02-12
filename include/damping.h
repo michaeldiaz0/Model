@@ -4,6 +4,9 @@ extern int raydampheight;
 extern double *u_diff_tend;
 extern double *v_diff_tend;
 
+extern double kdiffh;
+extern double kdiffv;
+
 /********************************************************
 * Damping and diffusion
 *********************************************************/
@@ -13,7 +16,7 @@ void fft_damp2(int ni,int nj,int nk,int,double *var);
 void asselin();
 
 
-void apply_explicit_diffusion(int il,int ih,int jl,int jh,double step);
+void apply_explicit_diffusion(double step,int il,int ih,int jl,int jh);
 
 void rayleigh_damping(int,int,int,int,int);
 void damp_var(double *var,int il,int ih,int jl, int jh,double coef,double max);

@@ -97,6 +97,14 @@ void derivative_weights(double z,double *x, int n, int nd, int m,double *c){
         c1 = c2;
 
     }
+	
+	for(int j=0;j<=m;j++){
+		//printf("%d\n",j);
+	
+		for(int i=0;i<=m;i++){
+			//printf("%f  \n",c[index2d(m+1,i,j)] );
+	}}
+	
 
 }
 

@@ -225,6 +225,10 @@ struct input_params read_input_file(const char* infile){
 				set_field(buff,"turbulence_option",&inputs.turbulence_option);
 				set_field(buff,"water_temp",&inputs.water_temp);
 				set_field(buff,"rain_fallout",&inputs.rain_fallout);
+				set_field(buff,"use_explicit_diffusion",&inputs.use_explicit_diffusion);
+				set_field(buff,"diffusion_order",&inputs.diffusion_order);
+				set_field(buff,"kdiffh",&inputs.kdiffh);
+				set_field(buff,"kdiffv",&inputs.kdiffv);
 			}	
 		}
 

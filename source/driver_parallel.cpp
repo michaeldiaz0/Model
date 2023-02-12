@@ -101,13 +101,13 @@ void p_integrate_rk3(){
 
 	double steps[] = {1./3.,0.5,1.0};	// fractional time steps for RK3 loop
 	int size = fNX*fNY*fNZ;
-	
+
 	/*******************************************************
 	* Apply explicit diffusion. Do this first, because the
 	* final state should satisfy the anelastic continuity
 	* equation and be free of super saturation.
 	********************************************************/
-	if(EXTRA_DIFFUSION){ apply_explicit_diffusion(1.0,3,fNX-3,3,fNY-3);}
+	if(USE_EXPLICIT_DIFFUSION){ apply_explicit_diffusion(1.0,3,fNX-3,3,fNY-3);}
 	
 	/*******************************************************
 	* Calculate frictional and diffusional tendencies to

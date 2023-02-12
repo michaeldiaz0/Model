@@ -26,7 +26,7 @@ add diffusion to snow and ice
 */
 
 // compile parallel (1) or serial (0) version
-#define PARALLEL 0
+#define PARALLEL 1
 
 #if 1
 
@@ -52,12 +52,12 @@ extern int SURFACE_HEAT_FLUX;		// 0:no, 1:yes
 extern double WATER_TEMP_C;			// water temperature in Celsius (for surface heat fluxes)
 #define USE_LANDSEA_FROM_FILE 0		// 0:no, 1:yes
 extern int RAIN_FALLOUT;			// 1:Eulerian 2:Semi-Lagrangian
-const int DIFFUSION_ORDER = 6;
+extern int DIFFUSION_ORDER;			// 2, 4, or 6
+extern int USE_EXPLICIT_DIFFUSION;	// 0:no, 1:yes
 //--------------------------------------
 // For linearized equation set
 //--------------------------------------
 #define OUTPUT_DIFFUSION_TEND 0		// 
-#define EXTRA_DIFFUSION 1			// only for linearized version, no grid stretching
 #define FOURIER_DAMPING 0			// use Fourier transform to specify wavenumber
 #define WAVE_NUMBER 3				// the specified wavenumber
 //--------------------------------------
@@ -154,6 +154,11 @@ struct input_params {
 	int use_surface_heat_flux;
 	int turbulence_option;
 	double water_temp;
+
+	int use_explicit_diffusion;
+	int diffusion_order;
+	double kdiffh;
+	double kdiffv;
 
 	int is_restart_run;
 	
