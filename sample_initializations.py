@@ -246,6 +246,9 @@ def rain_ball(outfile):
 	dx = 5000
 	dz = 500
 
+	x = np.arange(0,nx)*dx
+	y = np.arange(0,ny)*dx
+
 	ubar = np.zeros((nx,ny,nz))
 	vbar = np.zeros((nx,ny,nz))
 	tbar = np.zeros((nx,ny,nz))
@@ -273,7 +276,11 @@ def rain_ball(outfile):
 	rk_begin = 10+5
 	rk_end = 20+5
 	r_max = 10.0e-3
-		
+	
+	ri_c = 35
+	rj_c = 35
+	rk_c = 27.5
+	
 	for i in range(ri_begin,ri_end):
 		for j in range(rj_begin,rj_end):
 			for k in range(rk_begin,rk_end):
@@ -283,13 +290,79 @@ def rain_ball(outfile):
 					cos_profile(-0.5,0.5,float(j-rj_begin) / (rj_end-rj_begin), 1)*
 					cos_profile(-0.5,0.5,float(k-rk_begin) / (rk_end-rk_begin), 1)
 					)
-	
+						
 		
 	rhbar = np.zeros((nx,ny,nz))
 	rhbar[:,:,:] = 1.0
 	
 	initialize(u,v,w,t,ubar,vbar,tbar,qbar,dx,dz,lat0,lon0,outfile,qv=q,qr=qr,qc=qc,qs=qs,qi=qi)
 
+
+#------------------------------------------------------------
+# Create a thermal (warm ot cold)
+#------------------------------------------------------------
+def thermal(outfile):
+
+	lat0 = 30
+	lon0 = 45
+
+	nx = 200
+	ny = 200
+	nz = 200
+
+	dx = 200
+	dz = 100
+
+	x = np.arange(0,nx)*dx
+	y = np.arange(0,ny)*dx
+	z = np.arange(0,nz)*dz
+
+	ubar = np.zeros((nx,ny,nz))
+	vbar = np.zeros((nx,ny,nz))
+	tbar = np.zeros((nx,ny,nz))
+	qbar = np.zeros((nx,ny,nz))
+	
+	for k in range(0,nz):
+	
+		tbar[:,:,k] = 300.0 # + float(k*2)
+	
+	u = np.zeros((nx,ny,nz))
+	v = np.zeros((nx,ny,nz))
+	w = np.zeros((nx,ny,nz))
+	t = np.zeros((nx,ny,nz))
+	q = np.zeros((nx,ny,nz))	
+
+	qr = np.zeros((nx,ny,nz))
+	qc = np.zeros((nx,ny,nz))
+	qs = np.zeros((nx,ny,nz))
+	qi = np.zeros((nx,ny,nz))
+	
+	xmid = x[-1] / 2
+	ymid = y[-1] / 2
+	zmid = 3000.
+	xr = 4000.
+	yr = 4000.
+	zr = 2000.
+	amp = 5
+
+						
+	for i in range(0,nx):
+		for j in range(0,ny):
+			for k in range(0,nz):
+				
+				r = np.sqrt( 
+				((x[i]-xmid)/xr)**2 + 
+				((y[j]-ymid)/yr)**2 + 
+				((z[k]-zmid)/zr)**2 
+				) 
+				
+				if r > 1.0:
+					t[i,j,k] = 0
+				else:
+					t[i,j,k] = amp/2.0 * (1.0+np.cos(3.1416*r))
+	
+	
+	initialize(u,v,w,t,ubar,vbar,tbar,qbar,dx,dz,lat0,lon0,outfile,qv=q,qr=qr,qc=qc,qs=qs,qi=qi)
 
 
 #------------------------------------------------------------
@@ -401,6 +474,10 @@ def thunderstorm_basicstate(outfile):
 	rk_end = 55
 	r_max = 2
 	
+	ri_c = 35
+	rj_c = 35
+	rk_c = 27.5
+	
 	for i in range(ri_begin,ri_end):
 		for j in range(rj_begin,rj_end):
 			for k in range(rk_begin,rk_end):
@@ -502,8 +579,10 @@ def main():
 		#thunderstorm_basicstate("thunderstorm.nc")
 		#jordan_sounding("hurricane.nc")
 		
-		baroclinic_jet("baroclinicjet.nc")
+		#baroclinic_jet("baroclinicjet.nc")
 		#barotropic_jet("barotropicjet.nc")
+		
+		thermal("thermal.nc")
 		
 	except:
 
