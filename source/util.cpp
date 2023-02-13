@@ -797,7 +797,7 @@ void rescale_pert2(double max,double scale){
 * 
 *
 **********************************************************************/
-void print_time_estimates(int total_cputime,int total_walltime,int timer_counter){
+void print_time_estimates(double total_cputime,double total_walltime,int timer_counter){
 
 	int cputime_secs = (int)((total_cputime  / (double)timer_counter) * (number_of_time_steps - bigcounter));
 	int walltime_secs = (int)((total_walltime / (double)timer_counter) * (number_of_time_steps - bigcounter));
@@ -809,7 +809,7 @@ void print_time_estimates(int total_cputime,int total_walltime,int timer_counter
 	int wall_time_min = (walltime_secs % 3600) / 60;
 	int wall_time_sec = (walltime_secs % 3600) % 60;
 
-	printf("Estimated time remaining: cpu time = %02d:%02d:%02d hours, wall time = %02d:%02d:%02d hours\n",
+	printf("Estimated time remaining: cpu time = %02d:%02d:%02d h:m:s, wall time = %02d:%02d:%02d hours\n",
 	cpu_time_hours,cpu_time_min,cpu_time_sec,wall_time_hours,wall_time_min,wall_time_sec);
 
 	cputime_secs = (int)((total_cputime  / (double)timer_counter) * number_of_time_steps);
