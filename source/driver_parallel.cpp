@@ -77,6 +77,7 @@ void initialize_parallel_model(){
 
 	initialize_flux_cells(fNY,fNZ);
 	initialize_microphysics_cells(fNY,fNZ);
+	initialize_sign_cells(fNX,fNY,fNZ);
 
 	initialize_pressure_solver();
 	
@@ -129,6 +130,9 @@ void p_integrate_rk3(){
 		
 		calculate_budgets(s,&steps[0]);
 	
+		// sign of advection for upwind biased derivatives
+		compute_sign_cells(0,fNX,0,fNY);
+
 		/*******************************************************
 		* Solve momentum and pressure equations using either
 		* the hydrostatic or non-hydrostatic equation set
