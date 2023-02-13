@@ -255,6 +255,8 @@ void p_run_model(int count,FILE *infile){
 	int timer_counter = 0;
 	bool isFirstStep = true;
 	
+	clock_t start_time_full=clock();
+	
 	//---------------------------------------------------------------------------
 	// Step through model 'count' number of times
 	//---------------------------------------------------------------------------
@@ -330,6 +332,13 @@ void p_run_model(int count,FILE *infile){
 		bigcounter++;	// total time steps (if this function is called multiple times)
 		//counter++;		// time steps within this loop
 		isFirstStep = false;
+	}
+	
+	if(rank==0){
+		finis_time = clock();
+		elapsed = ((double) (finis_time - start_time_full)) / CLOCKS_PER_SEC;
+
+		printf("Program successfully completed. Total runtime: %f s\n",elapsed);
 	}
 }
 

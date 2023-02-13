@@ -302,6 +302,8 @@ void s_run_model(int count,FILE *infile){
 	
 	clock_t start_time = clock(),finis_time;
 
+	clock_t start_time_full = clock();
+
 	//------------------------------------------------------
 	// Step through model 'count' number of times
 	//------------------------------------------------------
@@ -368,6 +370,11 @@ void s_run_model(int count,FILE *infile){
 		isFirstStep = false;
 	}
 
+	finis_time = clock();
+	elapsed = ((double) (finis_time - start_time_full)) / CLOCKS_PER_SEC;
+
+	printf("Program successfully completed. Total runtime: %f\n",elapsed);
+
 }
 
 /*********************************************************************
@@ -378,5 +385,4 @@ void run_serial_model(int count,FILE *infile){
 	initialize_serial();
 	
 	s_run_model(count,infile);
-	
 }
