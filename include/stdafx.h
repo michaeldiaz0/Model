@@ -63,7 +63,7 @@ const int index_lowest_level = 1;		// what is the index of this level?
 //--------------------------------------
 // Equation set
 //--------------------------------------
-#define HYDROSTATIC 1			// hydrostatic option (should work now?)
+#define HYDROSTATIC 0			// hydrostatic option (should work now?)
 #define ISLINEAR 0				// linearize equation set
 #define USE_LINEAR_FRICTION 0	// linear friction in lowest model level(s)
 extern int USE_TURBULENT_STRESS;// use turbulence parameterization
