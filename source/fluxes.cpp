@@ -300,6 +300,17 @@ inline static char signof(double x){
 }
 
 /*********************************************************************
+* Return the sign of x multiplied by one
+*
+**********************************************************************/
+inline static double signof_d(double x){
+	
+	if(x>0){ return 1;}
+	
+	return -1;
+}
+
+/*********************************************************************
 * Calculate sign of advecting velocity
 **********************************************************************/
 void compute_sign_cells(int il,int ih,int jl,int jh){
@@ -1190,11 +1201,11 @@ void interpolate_velocity_vertical_3rd(int i,int j,int k){
 	// Zonal velocity control volumes
 	//---------------------------------------------------------
 #if HOR_ADVECTION_ORDER % 2 != 0
-	wsign = signof(UCELL(j,k).wa);
+	wsign = signof_d(UCELL(j,k).wa);
 #if !ISLINEAR
-	wbsign = signof(UBCELL(j,k).wa+UCELL(j,k).wa);
+	wbsign = signof_d(UBCELL(j,k).wa+UCELL(j,k).wa);
 #else
-	wbsign = signof(UBCELL(j,k).wa);
+	wbsign = signof_d(UBCELL(j,k).wa);
 #endif
 #endif
 	UCELL(j,k).top  = INTERP_3RD_TOP(U,wbsign,k);
@@ -1203,11 +1214,11 @@ void interpolate_velocity_vertical_3rd(int i,int j,int k){
 	// Meridional velocity control volumes
 	//---------------------------------------------------------
 #if HOR_ADVECTION_ORDER % 2 != 0
-	wsign = signof(VCELL(j,k).wa);
+	wsign = signof_d(VCELL(j,k).wa);
 #if !ISLINEAR
-	wbsign = signof(VBCELL(j,k).wa+VCELL(j,k).wa);
+	wbsign = signof_d(VBCELL(j,k).wa+VCELL(j,k).wa);
 #else
-	wbsign = signof(VBCELL(j,k).wa);
+	wbsign = signof_d(VBCELL(j,k).wa);
 #endif
 #endif
 	VCELL(j,k).top  = INTERP_3RD_TOP(V,wbsign,k);
@@ -1217,11 +1228,11 @@ void interpolate_velocity_vertical_3rd(int i,int j,int k){
 	//---------------------------------------------------------
 #if !HYDROSTATIC
 #if HOR_ADVECTION_ORDER % 2 != 0
-	wsign = signof(WCELL(j,k).wa);
+	wsign = signof_d(WCELL(j,k).wa);
 	#if !ISLINEAR
-	wbsign = signof(WBCELL(j,k).wa+WCELL(j,k).wa);
+	wbsign = signof_d(WBCELL(j,k).wa+WCELL(j,k).wa);
 	#else
-	wbsign = signof(WBCELL(j,k).wa);
+	wbsign = signof_d(WBCELL(j,k).wa);
 	#endif
 #endif
 	WCELL(j,k).top  = INTERP_3RD_TOP(W,wbsign,k);
@@ -1242,11 +1253,11 @@ void interpolate_velocity_vertical(int i,int j,int k){
 	// Zonal velocity control volumes
 	//---------------------------------------------------------
 #if HOR_ADVECTION_ORDER % 2 != 0
-	wsign = signof(UCELL(j,k).wa);
+	wsign = signof_d(UCELL(j,k).wa);
 #if !ISLINEAR
-	wbsign = signof(UBCELL(j,k).wa+UCELL(j,k).wa);
+	wbsign = signof_d(UBCELL(j,k).wa+UCELL(j,k).wa);
 #else
-	wbsign = signof(UBCELL(j,k).wa);
+	wbsign = signof_d(UBCELL(j,k).wa);
 #endif
 #endif
 	UCELL(j,k).top  = INTERP_TOP(U,wbsign,k);
@@ -1255,11 +1266,11 @@ void interpolate_velocity_vertical(int i,int j,int k){
 	// Meridional velocity control volumes
 	//---------------------------------------------------------
 #if HOR_ADVECTION_ORDER % 2 != 0
-	wsign = signof(VCELL(j,k).wa);
+	wsign = signof_d(VCELL(j,k).wa);
 #if !ISLINEAR
-	wbsign = signof(VBCELL(j,k).wa+VCELL(j,k).wa);
+	wbsign = signof_d(VBCELL(j,k).wa+VCELL(j,k).wa);
 #else
-	wbsign = signof(VBCELL(j,k).wa);
+	wbsign = signof_d(VBCELL(j,k).wa);
 #endif
 #endif
 	VCELL(j,k).top  = INTERP_TOP(V,wbsign,k);
@@ -1269,11 +1280,11 @@ void interpolate_velocity_vertical(int i,int j,int k){
 	//---------------------------------------------------------
 #if !HYDROSTATIC
 	#if HOR_ADVECTION_ORDER % 2 != 0
-		wsign = signof(WCELL(j,k).wa);
+		wsign = signof_d(WCELL(j,k).wa);
 		#if !ISLINEAR
-			wbsign = signof(WBCELL(j,k).wa+WCELL(j,k).wa);
+			wbsign = signof_d(WBCELL(j,k).wa+WCELL(j,k).wa);
 		#else
-			wbsign = signof(WBCELL(j,k).wa);
+			wbsign = signof_d(WBCELL(j,k).wa);
 		#endif
 	#endif
 	WCELL(j,k).top  = INTERP_TOP(W,wbsign,k);
@@ -1299,14 +1310,14 @@ void interpolate_velocity_horizontal(int i,int j,int k){
 	// Zonal velocity points
 	//---------------------------------------------------------
 #if HOR_ADVECTION_ORDER % 2 != 0
-	usign = signof(UCELL(j,k).ua);
-	vsign = signof(UCELL(j,k).va);
+	usign = signof_d(UCELL(j,k).ua);
+	vsign = signof_d(UCELL(j,k).va);
 #if !ISLINEAR
-	ubsign = signof(UBCELL(j,k).ua+UCELL(j,k).ua);
-	vbsign = signof(UBCELL(j,k).va+UCELL(j,k).va);
+	ubsign = signof_d(UBCELL(j,k).ua+UCELL(j,k).ua);
+	vbsign = signof_d(UBCELL(j,k).va+UCELL(j,k).va);
 #else
-	ubsign = signof(UBCELL(j,k).ua);
-	vbsign = signof(UBCELL(j,k).va);
+	ubsign = signof_d(UBCELL(j,k).ua);
+	vbsign = signof_d(UBCELL(j,k).va);
 #endif
 #endif	
 	UCELL(j,k).west = UCELL(j,k).east;
@@ -1320,14 +1331,14 @@ void interpolate_velocity_horizontal(int i,int j,int k){
 	// Meridional velocity points
 	//---------------------------------------------------------
 #if HOR_ADVECTION_ORDER % 2 != 0
-	usign = signof(VCELL(j,k).ua);
-	vsign = signof(VCELL(j,k).va);	
+	usign = signof_d(VCELL(j,k).ua);
+	vsign = signof_d(VCELL(j,k).va);	
 #if !ISLINEAR
-	ubsign = signof(VBCELL(j,k).ua+VCELL(j,k).ua);
-	vbsign = signof(VBCELL(j,k).va+VCELL(j,k).va);
+	ubsign = signof_d(VBCELL(j,k).ua+VCELL(j,k).ua);
+	vbsign = signof_d(VBCELL(j,k).va+VCELL(j,k).va);
 #else
-	ubsign = signof(VBCELL(j,k).ua);
-	vbsign = signof(VBCELL(j,k).va);
+	ubsign = signof_d(VBCELL(j,k).ua);
+	vbsign = signof_d(VBCELL(j,k).va);
 #endif
 #endif
 	VCELL(j,k).west = VCELL(j,k).east;
@@ -1342,14 +1353,14 @@ void interpolate_velocity_horizontal(int i,int j,int k){
 	//---------------------------------------------------------
 #if !HYDROSTATIC
 	#if HOR_ADVECTION_ORDER % 2 != 0	
-		usign = signof(WCELL(j,k).ua);
-		vsign = signof(WCELL(j,k).va);
+		usign = signof_d(WCELL(j,k).ua);
+		vsign = signof_d(WCELL(j,k).va);
 		#if !ISLINEAR
-			ubsign = signof(WBCELL(j,k).ua+WCELL(j,k).ua);
-			vbsign = signof(WBCELL(j,k).va+WCELL(j,k).va);
+			ubsign = signof_d(WBCELL(j,k).ua+WCELL(j,k).ua);
+			vbsign = signof_d(WBCELL(j,k).va+WCELL(j,k).va);
 		#else
-			ubsign = signof(WBCELL(j,k).ua);
-			vbsign = signof(WBCELL(j,k).va);
+			ubsign = signof_d(WBCELL(j,k).ua);
+			vbsign = signof_d(WBCELL(j,k).va);
 		#endif
 	#endif	
 	WCELL(j,k).west = WCELL(j,k).east;
@@ -1361,7 +1372,7 @@ void interpolate_velocity_horizontal(int i,int j,int k){
 #endif
 
 }
-
+#if 0
 /*********************************************************************
 * Interpolate velocity field to the faces of each control volume for
 * a YZ cross section. Also sets the fluxes on the eastern side of the 
@@ -1455,5 +1466,236 @@ void interpolate_velocity(int i,int jl,int jh){
 	}
 	
 	#endif
+
+}
+#endif
+/*********************************************************************
+* Interpolate velocity field to the faces of each control volume for
+* a YZ cross section. Also sets the fluxes on the eastern side of the 
+* previous (i-1) YZ cross section equal to the fluxes on the western 
+* side of the new YZ cross section.
+*
+* @param i - the x-coordinate
+* @param jl,jh - the high and low index bounds for the y-coordinate
+**********************************************************************/
+void interpolate_velocity(int i,int jl,int jh){
+
+	int k,kmin,kmax;
+
+	kmin = (VER_ADVECTION_ORDER+1) / 2;
+	kmax = NZ - (VER_ADVECTION_ORDER+1) / 2;
+
+	double usign,vsign,wsign;
+	double ubsign,vbsign,wbsign;
+
+	for(int j=jl;j<jh;j++){
+
+		//---------------------------------------------------
+		// Lower boundary points
+		// Use lower order interpolations if the stencil
+		// extends below the grounnd
+		//---------------------------------------------------
+	
+		#if VER_ADVECTION_ORDER > 2
+	
+		k = 1;
+
+		//for(int j=jl;j<jh;j++){
+
+			advecting_velocity(i,j,k);
+			interpolate_velocity_horizontal(i,j,k);
+			interpolate_velocity_vertical_2nd(i,j,k);
+			//}
+	
+		#endif
+	
+		#if VER_ADVECTION_ORDER > 4
+	
+		k = 2;
+
+		//for(int j=jl;j<jh;j++){
+
+			advecting_velocity(i,j,k);
+			interpolate_velocity_horizontal(i,j,k);
+			interpolate_velocity_vertical_3rd(i,j,k);
+			//}
+	
+		#endif
+
+		for(k=kmin;k<kmax;k++){
+
+			// advecting velocity is calculated using 2nd order interpolation
+			/***************************************************
+			* Calculate advecting velocity for all perturbation
+			* values on each cell face.
+			****************************************************/
+			// zonal wind
+			UCELL(j,k).ua = 0.5*(U(i+1,j,k)+U(i,j,k));
+			VCELL(j,k).ua = 0.5*(U(i+1,j,k)+U(i+1,j-1,k));
+		#if !HYDROSTATIC
+			WCELL(j,k).ua = 0.5*(U(i+1,j,k-1)+U(i+1,j,k));
+		#endif
+
+			VCELL(j,k).other_vel = 0.25 * (U(i,j,k)+U(i+1,j,k)+U(i,j-1,k)+U(i+1,j-1,k));
+
+			// meridional wind
+			UCELL(j,k).va = 0.5*(V(i,j+1,k)+V(i-1,j+1,k));
+			VCELL(j,k).va = 0.5*(V(i,j+1,k)+V(i,j,k));
+		#if !HYDROSTATIC
+			WCELL(j,k).va = 0.5*(V(i,j+1,k-1)+V(i,j+1,k));
+		#endif
+
+			UCELL(j,k).other_vel = 0.25 * (V(i,j,k)+V(i,j+1,k)+V(i-1,j,k)+V(i-1,j+1,k));
+
+			// vertical wind
+			UCELL(j,k).wa = 0.5*(W(i,j,k+1)+W(i-1,j,k+1));
+			VCELL(j,k).wa = 0.5*(W(i,j,k+1)+W(i,j-1,k+1));
+		#if !HYDROSTATIC
+			WCELL(j,k).wa = 0.5*(W(i,j,k+1)+W(i,j,k));
+		#endif
+	
+			/***************************************************
+			* Calculate advecting velocity for all background flow
+			* values on each cell face.
+			****************************************************/
+			// zonal wind
+			UBCELL(j,k).ua = 0.5*(UBAR(i+1,j,k)+UBAR(i,j,k));
+			VBCELL(j,k).ua = 0.5*(UBAR(i+1,j,k)+UBAR(i+1,j-1,k));
+		#if !HYDROSTATIC
+			WBCELL(j,k).ua = 0.5*(UBAR(i+1,j,k-1)+UBAR(i+1,j,k));
+		#endif
+
+			// meridional wind
+			UBCELL(j,k).va = 0.5*(VBAR(i,j+1,k)+VBAR(i-1,j+1,k));
+			VBCELL(j,k).va = 0.5*(VBAR(i,j+1,k)+VBAR(i,j,k));
+		#if !HYDROSTATIC
+			WBCELL(j,k).va = 0.5*(VBAR(i,j+1,k-1)+VBAR(i,j+1,k));
+		#endif
+
+			// vertical wind
+			UBCELL(j,k).wa = 0.5*(WBAR(i,j,k+1)+WBAR(i-1,j,k+1));
+			VBCELL(j,k).wa = 0.5*(WBAR(i,j,k+1)+WBAR(i,j-1,k+1));
+		#if !HYDROSTATIC
+			WBCELL(j,k).wa = 0.5*(WBAR(i,j,k+1)+WBAR(i,j,k));
+		#endif
+
+			/**********************************************************
+			* Interpolate the advected velocity onto each cell face
+			*
+			* The flux on the eastern side from the previous
+			* "i" interation becomes the flux on the western side.
+			* Note that this is a flux, not a velocity.
+			***********************************************************/
+
+			//---------------------------------------------------------
+			// Zonal velocity control volumes
+			//---------------------------------------------------------
+			// the sign of the advecting velocity 
+			// is needed for 5th order interpolation
+			usign = signof_d(UCELL(j,k).ua);
+			vsign = signof_d(UCELL(j,k).va);
+			wsign = signof_d(UCELL(j,k).wa);
+		#if !ISLINEAR
+			ubsign = signof_d(UBCELL(j,k).ua+UCELL(j,k).ua);
+			vbsign = signof_d(UBCELL(j,k).va+UCELL(j,k).va);
+			wbsign = signof_d(UBCELL(j,k).wa+UCELL(j,k).wa);
+		#else
+			ubsign = signof_d(UBCELL(j,k).ua);
+			vbsign = signof_d(UBCELL(j,k).va);
+			wbsign = signof_d(UBCELL(j,k).wa);
+		#endif
+			UCELL(j,k).west = UCELL(j,k).east;
+			UCELL(j,k).east  = INTERP_5TH_EAST( U,ubsign,i);
+			UCELL(j,k).north = INTERP_5TH_NORTH(U,vbsign,j);
+			UCELL(j,k).top   = INTERP_3RD_TOP(  U,wbsign,k);
+			
+			UBCELL(j,k).east  = INTERP_5TH_EAST( UBAR,usign,i);
+			UBCELL(j,k).north = INTERP_5TH_NORTH(UBAR,vsign,j);
+			UBCELL(j,k).top   = INTERP_3RD_TOP(  UBAR,wsign,k);
+		
+			//---------------------------------------------------------
+			// Meridional velocity control volumes
+			//---------------------------------------------------------
+			usign = signof_d(VCELL(j,k).ua);
+			vsign = signof_d(VCELL(j,k).va);
+			wsign = signof_d(VCELL(j,k).wa);
+		#if !ISLINEAR
+			ubsign = signof_d(VBCELL(j,k).ua+VCELL(j,k).ua);
+			vbsign = signof_d(VBCELL(j,k).va+VCELL(j,k).va);
+			wbsign = signof_d(VBCELL(j,k).wa+VCELL(j,k).wa);
+		#else
+			ubsign = signof_d(VBCELL(j,k).ua);
+			vbsign = signof_d(VBCELL(j,k).va);
+			wbsign = signof_d(VBCELL(j,k).wa);
+		#endif
+			VCELL(j,k).west  = VCELL(j,k).east;
+			VCELL(j,k).east  = INTERP_5TH_EAST( V,ubsign,i);
+			VCELL(j,k).north = INTERP_5TH_NORTH(V,vbsign,j);
+			VCELL(j,k).top   = INTERP_3RD_TOP(  V,wbsign,k);
+			
+			VBCELL(j,k).east  = INTERP_5TH_EAST( VBAR,usign,i);
+			VBCELL(j,k).north = INTERP_5TH_NORTH(VBAR,vsign,j);
+			VBCELL(j,k).top   = INTERP_3RD_TOP(  VBAR,wsign,k);
+
+			//---------------------------------------------------------
+			// Vertical velocity control volumes
+			//---------------------------------------------------------
+	#if !HYDROSTATIC
+			usign = signof_d(WCELL(j,k).ua);
+			vsign = signof_d(WCELL(j,k).va);
+			wsign = signof_d(WCELL(j,k).wa);
+		#if !ISLINEAR
+			ubsign = signof_d(WBCELL(j,k).ua+WCELL(j,k).ua);
+			vbsign = signof_d(WBCELL(j,k).va+WCELL(j,k).va);
+			wbsign = signof_d(WBCELL(j,k).wa+WCELL(j,k).wa);
+		#else
+			ubsign = signof_d(WBCELL(j,k).ua);
+			vbsign = signof_d(WBCELL(j,k).va);
+			wbsign = signof_d(WBCELL(j,k).wa);
+		#endif
+			WCELL(j,k).west  = WCELL(j,k).east;
+			WCELL(j,k).east  = INTERP_5TH_EAST( W,ubsign,i);
+			WCELL(j,k).north = INTERP_5TH_NORTH(W,vbsign,j);
+			WCELL(j,k).top   = INTERP_3RD_TOP(  W,wbsign,k);
+			
+			WBCELL(j,k).east  = INTERP_5TH_EAST( WBAR,usign,i);
+			WBCELL(j,k).north = INTERP_5TH_NORTH(WBAR,vsign,j);
+			WBCELL(j,k).top   = INTERP_3RD_TOP(  WBAR,wsign,k);
+	#endif
+		}
+
+		//---------------------------------------------------
+		// Upper boundary points
+		// Use lower order interpolations if the stencil
+		// extends above the model domain
+		//---------------------------------------------------
+
+		#if VER_ADVECTION_ORDER > 4
+	
+		k = NZ-3;
+
+		//for(int j=jl;j<jh;j++){
+
+			advecting_velocity(i,j,k);
+			interpolate_velocity_horizontal(i,j,k);
+			interpolate_velocity_vertical_3rd(i,j,k);
+			//}
+
+		#endif
+
+		#if VER_ADVECTION_ORDER > 2
+
+		k = NZ-2;
+
+		//for(int j=jl;j<jh;j++){
+
+			advecting_velocity(i,j,k);
+			interpolate_velocity_horizontal(i,j,k);
+			interpolate_velocity_vertical_2nd(i,j,k);
+			//}
+
+		#endif
+		
+	}
 
 }
