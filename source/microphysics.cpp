@@ -618,3 +618,408 @@ double get_CAPE_base(int i,int j,int k_p){
 	return cape;
 	
 }
+#if 0
+
+module piece_interpolation
+
+    implicit none
+
+    contains
+
+    !*********************************************************************
+    ! Calculate the values at the cell edges 
+    !
+    ! zin - input x values
+    ! qin - input y values
+    ! zl  - height of lower bound of integration
+    ! zh  - height of upper bound of integration
+    ! qp_edges - values on positive edge of cell
+    ! qn_edges - values on negative edge of cell
+    ! n - length of arrays
+    !*********************************************************************/
+    subroutine calculate_edge_values(zin,qin,qp_edges,qn_edges,n)
+
+        real,dimension(:),intent(in) :: zin,qin
+        real,dimension(:),intent(out) :: qp_edges,qn_edges
+        integer,intent(in) :: n
+
+        real :: edge_slope0, edge_slope1, qp_edge, qn_edge, mid_slope, t0, t1
+        real :: delta_qk, delta_qk_max, delta_qk_min
+        real,dimension(:),allocatable :: delta_qk_mono
+        integer :: k 
+
+        real :: q_min,q_max,q_mp,q_lc
+
+        allocate(delta_qk_mono(n))
+
+        !----------------------------------------------------
+        ! Monotonic difference
+        !----------------------------------------------------
+        do k = 2,n-1
+
+            delta_qk = 0.25 * (qin(k+1) - qin(k-1))
+            delta_qk_max = max(qin(k+1),qin(k),qin(k-1)) - qin(k)
+            delta_qk_min = qin(k) - min(qin(k+1),qin(k),qin(k-1))
+
+            delta_qk_mono(k) = sign(min(abs(delta_qk),delta_qk_max,delta_qk_min),delta_qk)
+
+        end do
+
+        delta_qk_mono(1) = delta_qk_mono(2)
+        delta_qk_mono(n) = delta_qk_mono(n)
+
+        !----------------------------------------------------
+        ! Calculate the value at the endpoints of the cell
+        !----------------------------------------------------
+        do k=2,n-1
+
+            qn_edges(k) = ( qin(k-1) * (zin(k+1)-zin(k)) + qin(k) * (zin(k)-zin(k-1))) / ( zin(k+1)-zin(k-1)) - (delta_qk_mono(k) - delta_qk_mono(k-1)) / 3.0
+            qp_edges(k-1) = qn_edges(k)          
+
+        end do
+
+        qp_edges(n) = qin(n) ! set boundary values
+        qp_edges(1) = qin(1)
+        qn_edges(n) = qin(n)
+        qn_edges(1) = qin(1)
+
+        !----------------------------------------------------
+        ! Ensure positive definiteness 
+        !----------------------------------------------------
+        do k = 1,n
+
+            qn_edges(k) = qin(k) - sign(min(abs(2.0*delta_qk_mono(k)),abs(qn_edges(k)-qin(k))),delta_qk_mono(k))
+            qp_edges(k) = qin(k) + sign(min(abs(2.0*delta_qk_mono(k)),abs(qp_edges(k)-qin(k))),delta_qk_mono(k))
+
+        end do 
+
+        deallocate(delta_qk_mono)
+
+    end subroutine calculate_edge_values 
+
+    !*********************************************************************
+    ! Integrate a segment assuming a parabolic approximation
+    !
+    ! zin - input x values
+    ! qin - input y values
+    ! p   - position in array
+    ! zl  - height of lower bound of integration
+    ! zh  - height of upper bound of integration
+    ! qp - values on positive side of cell edges
+    ! qn - values on negative side of cell edges
+    !*********************************************************************/
+    real function integrate_parabolic(qin,qp,qn,zin,zl,zh,p) result(value)
+
+        real,intent(in) :: zl,zh
+        real,dimension(:), intent(in) :: zin,qin,qp,qn
+        integer,intent(in) :: p
+
+        real :: high,low,t0,t1
+
+        t0 = (zl-zin(p)) / (zin(p+1)-zin(p))
+        t1 = (zh-zin(p)) / (zin(p+1)-zin(p))
+        
+        high = (qp(p)+qn(p)-2.0*qin(p))*t1*t1*t1 - (qp(p)+2.0*qn(p)-3.0*qin(p))*t1*t1 + qn(p)*t1
+        low  = (qp(p)+qn(p)-2.0*qin(p))*t0*t0*t0 - (qp(p)+2.0*qn(p)-3.0*qin(p))*t0*t0 + qn(p)*t0
+
+        value = high - low
+        
+    end function integrate_parabolic
+    
+    !*********************************************************************
+    ! Integrate a segment using a linear approximation
+    !
+    ! zin       - input full levels
+    ! qin       - input values to be interpolated at half levels
+    ! zin_half  - input half levels
+    ! p         - position in array
+    ! zl        - height of lower bound of integration
+    ! zh        - height of upper bound of integration
+    !*********************************************************************/
+    real function integrate_linear(zin,qin,p,zl,zh,zin_half) result(value)
+
+        real,intent(in) :: zl,zh
+        real,dimension(:), intent(in) :: zin,qin,zin_half
+        integer,intent(in) :: p
+
+        real :: edge_slope0,edge_slope1,qp_edge,qn_edge,mid_slope,t0,t1
+
+        ! calculate the slopes at the endpoints of the cell
+        edge_slope0 = (qin(p  )-qin(p-1)) / (zin_half(p ) - zin_half(p-1))
+        edge_slope1 = (qin(p+1)-qin(p  )) / (zin_half(p+1) - zin_half(p  ))
+       
+        !print *,zl,zh
+ 
+        
+        if( (edge_slope0 .lt. 0 .and. edge_slope1 .gt. 0) .or. (edge_slope0 .gt. 0 .and. edge_slope1 .lt. 0) ) then
+            mid_slope = 0
+        else
+            mid_slope = 0.5*(edge_slope0 + edge_slope1)
+        end if
+
+        qp_edge = 0.5 * mid_slope * (zin(p+1)-zin(p)) + qin(p)
+        qn_edge = 2.0 * qin(p) - qp_edge
+        
+        !print *,qp_edge,qn_edge
+
+        if(qp_edge .lt. 0 .or. qn_edge .lt. 0) then
+            
+            qp_edge = qin(p)
+            qn_edge = qin(p)
+            !printf("zero edge\n");
+        end if
+
+        t0 = (zl-zin(p)) / (zin(p+1)-zin(p))
+        t1 = (zh-zin(p)) / (zin(p+1)-zin(p))
+        !print *,t0,t1
+        !print *,"" 
+        !printf("integrate over %f to %f\n",t0,t1);
+
+        !if(debug){
+            !printf("midpoint = %f %f %f\n",1000*((qp_edge - qn_edge) * 0.5 + qn_edge),1000*qp_edge,1000*qn_edge);
+        !}
+
+        value = (qp_edge - qn_edge) * 0.5*t1*t1 + qn_edge * t1 - ((qp_edge - qn_edge) * 0.5*t0*t0 + qn_edge * t0)
+        
+    end function integrate_linear
+    
+    !*********************************************************************
+    ! Piecewise linear interpolation which preserves total mass
+    !
+    ! zin - input height levels
+    ! zout - output height levels
+    ! qin - input field
+    ! qout - output field
+    ! zlevs number of levels (i.e. array length for all input arrays)
+    !
+    !*********************************************************************/
+    subroutine piecewise_interp(zin,zout,zin_half,qin,qout,zlevs)
+
+        real,dimension(:),intent(in) :: zin,zout,qin,zin_half
+        real,dimension(:),intent(out) :: qout
+        integer, intent(in) :: zlevs
+
+        integer :: i,j
+
+        qout = 0
+ 
+        !-----------------------------------------------------------
+        ! Compare input and output cells to look for matches.
+        ! Watch out for j = 0, the integrate_linear function 
+        ! looks for a j - 1 valueS
+        !-----------------------------------------------------------
+        do i=2,zlevs-2
+        do j=2,zlevs-2
+        
+            !-----------------------------------------------------------
+            ! Overlap (mA4 -> m2)
+            !-----------------------------------------------------------
+            if(zout(i) .lt. zin(j) .and. zout(i+1) .lt. zin(j+1) .and. zout(i+1) .gt. zin(j)) then
+                
+                qout(i) = qout(i) + integrate_linear(zin,qin,j,zin(j),zout(i+1),zin_half) * ((zin(j+1) - zin(j)) / (zout(i+1)-zout(i)))
+                
+            end if
+            !-----------------------------------------------------------
+            ! Overlap (mA4 -> m3)
+            !-----------------------------------------------------------
+            if(zout(i) .lt. zin(j+1) .and. zout(i+1) .gt. zin(j+1) .and. zout(i) .gt. zin(j)) then
+
+                qout(i) = qout(i) + integrate_linear(zin,qin,j,zout(i),zin(j+1),zin_half) * ((zin(j+1) - zin(j)) / (zout(i+1)-zout(i)))
+                
+            end if
+            !-----------------------------------------------------------
+            ! Output cell falls completely within input cell (mA5 -> m4)
+            !-----------------------------------------------------------
+            if(zout(i) .ge. zin(j) .and. zout(i+1) .le. zin(j+1)) then
+
+                qout(i) = qout(i) + integrate_linear(zin,qin,j,zout(i),zout(i+1),zin_half) * ((zin(j+1) - zin(j)) / (zout(i+1)-zout(i)))
+                
+            end if
+            !-----------------------------------------------------------
+            ! Input cell falls completely within output cell
+            !-----------------------------------------------------------        
+            if(zout(i) .lt. zin(j) .and. zout(i+1) .gt. zin(j+1)) then
+
+                qout(i) = qout(i) + integrate_linear(zin,qin,j,zin(j),zin(j+1),zin_half) * ((zin(j+1) - zin(j)) / (zout(i+1)-zout(i)))
+                
+            end if
+            
+        end do
+        end do
+
+        
+
+    end subroutine piecewise_interp
+    
+    !*********************************************************************
+    ! Piecewise parabolic interpolation which preserves total mass
+    !
+    ! zin - input height levels
+    ! zout - output height levels
+    ! qin - input field
+    ! qout - output field
+    ! zlevs number of levels (i.e. array length for all input arrays)
+    ! qp_edges - values on positive edge of cell
+    ! qn_edges - values on negative edge of cell
+    !*********************************************************************/
+    subroutine piecewise_parabolic_interp(zin,zout,qp_edges,qn_edges,qin,qout,zlevs)
+
+        real,dimension(:),intent(in) :: zin,zout,qin,qp_edges,qn_edges
+        real,dimension(:),intent(out) :: qout
+        integer, intent(in) :: zlevs
+
+        integer :: i,j
+
+        qout = 0
+
+        !-----------------------------------------------------------
+        ! Compare input and output cells to look for matches.
+        ! Watch out for j = 0, the integrate_linear function 
+        ! looks for a j - 1 valueS
+        !-----------------------------------------------------------
+        do i=1,zlevs-2
+        do j=1,zlevs-2
+        
+            !-----------------------------------------------------------
+            ! Overlap (mA4 -> m2)
+            !-----------------------------------------------------------
+            if(zout(i) .lt. zin(j) .and. zout(i+1) .lt. zin(j+1) .and. zout(i+1) .gt. zin(j)) then
+                
+                qout(i) = qout(i) + integrate_parabolic(qin,qp_edges,qn_edges,zin,zin(j),zout(i+1),j) * ((zin(j+1) - zin(j)) / (zout(i+1)-zout(i)))
+                
+            end if
+            !-----------------------------------------------------------
+            ! Overlap (mA4 -> m3)
+            !-----------------------------------------------------------
+            if(zout(i) .lt. zin(j+1) .and. zout(i+1) .gt. zin(j+1) .and. zout(i) .gt. zin(j)) then
+
+                qout(i) = qout(i) + integrate_parabolic(qin,qp_edges,qn_edges,zin,zout(i),zin(j+1),j) * ((zin(j+1) - zin(j)) / (zout(i+1)-zout(i)))
+                
+            end if
+            !-----------------------------------------------------------
+            ! Output cell falls completely within input cell (mA5 -> m4)
+            !-----------------------------------------------------------
+            if(zout(i) .ge. zin(j) .and. zout(i+1) .le. zin(j+1)) then
+
+                qout(i) = qout(i) + integrate_parabolic(qin,qp_edges,qn_edges,zin,zout(i),zout(i+1),j) * ((zin(j+1) - zin(j)) / (zout(i+1)-zout(i)))
+                
+            end if
+            !-----------------------------------------------------------
+            ! Input cell falls completely within output cell
+            !-----------------------------------------------------------        
+            if(zout(i) .lt. zin(j) .and. zout(i+1) .gt. zin(j+1)) then
+
+                qout(i) = qout(i) + integrate_parabolic(qin,qp_edges,qn_edges,zin,zin(j),zin(j+1),j) * ((zin(j+1) - zin(j)) / (zout(i+1)-zout(i)))
+                
+            end if
+            
+        end do
+        end do
+
+    end subroutine piecewise_parabolic_interp
+
+end module
+
+program test
+
+    use piece_interpolation
+    use mod_adaptive_interp    
+
+    implicit none
+
+    integer :: a,i,n,p
+    real :: b,c,d,e,f,g,h,zl,zh
+    
+    real,dimension(:),allocatable :: z_in,z_out,q_in,q_out,rho,z_in_f,z_out_f,qp_edges,qn_edges
+
+    n = 88
+
+    allocate(z_in(n))
+    allocate(z_out(n))
+    allocate(q_in(n))
+    allocate(q_out(n))
+    allocate(rho(n))
+    allocate(z_in_f(n))
+    allocate(z_out_f(n))
+    allocate(qp_edges(n))
+    allocate(qn_edges(n))
+
+    open(unit=1,file="values.txt")
+    open(unit=2,file="height_levs.txt")
+
+    do i = 1,n
+        read(1,*) a,z_out(i),z_in(i),d,e,f,q_in(i),rho(i)
+    end do
+
+    do i =1,n
+        read(2,*) z_out_f(i),d
+    end do
+
+    close(1)
+    close(2)    
+
+    z_in_f(1) = 0
+
+    do i = 2,n
+        z_in_f(i) = 0.5*(z_in(i)+z_in(i-1))
+    end do
+
+    p = 28
+
+    do i = 1,n
+!        print *,z_in_f(i),z_out_f(i)
+    end do
+
+    !call piecewise_interp(z_in_f,z_out_f,z_in,q_in,q_out,n)
+
+    do i = 1,1!5760    
+
+        call adaptiveInterpolation1D(z_in,q_in,z_out,q_out,n,n,4,2)
+!        call adaptiveInterpolation1D(z_out,q_out,z_in,q_in,n,n,4,2)
+
+        !call piecewise_interp(z_in_f,z_out_f,z_in,q_in,q_out,n)
+        !call piecewise_interp(z_out_f,z_in_f,z_out,q_out,q_in,n)
+        
+        !call calculate_edge_values(z_in_f,q_in,qp_edges,qn_edges,n)
+        !call piecewise_parabolic_interp(z_in_f,z_out_f,qp_edges,qn_edges,q_in,q_out,n)
+
+     !   call calculate_edge_values(z_out_f,q_out,qp_edges,qn_edges,n)
+     !   call piecewise_parabolic_interp(z_out_f,z_in_f,qp_edges,qn_edges,q_out,q_in,n)
+    end do
+
+
+    do i = 1,n-1
+        print *,i,z_in(i),z_out(i),q_in(i),q_out(i)
+    end do
+
+
+    zh = 0.5*(z_in(p)+z_in(p+1))
+    zl = 0.5*(z_in(p-1)+z_in(p))
+
+    b = integrate_parabolic(q_in,qp_edges,qn_edges,z_in_f,zl,zh,p) 
+    !print *,zl,zh,b
+
+    b = integrate_linear(z_in_f,q_in,p,zl,zh,z_in)
+    !print *,zl,zh,b
+
+end program
+
+
+            !q_mp = qin(k) - 2.0*delta_qk_mono(k)
+            !q_lc = qin(k) + 1.5*(delta_qk_mono(k+2)-delta_qk_mono(k)) - delta_qk_mono(k)
+
+            !q_min = min(qin(k),q_mp,q_lc)
+            !q_max = max(qin(k),q_mp,q_lc)
+
+            !qn_edges(k) = min(max(qn_edges(k),q_min),q_max)
+
+            !-----------------------------------------------------
+
+            !q_mp = qin(k) + 2.0*delta_qk_mono(k)
+            !q_lc = qin(k) + 1.5*(delta_qk_mono(k)-delta_qk_mono(k-2)) + delta_qk_mono(k)
+
+            !q_min = min(qin(k),q_mp,q_lc)
+            !q_max = max(qin(k),q_mp,q_lc)
+
+            !qp_edges(k) = min(max(qp_edges(k),q_min),q_max)
+#endif
