@@ -14,14 +14,35 @@
     #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)/(cp*tbv[k])
 #endif
 
-double piecewise_interp(double *zin,double *zout,double *qin,double *qout,int zlevs,int,int);
+enum functions {
+	Constant,
+	Linear,
+	Parabolic
+} Rainfall_Interpolation_Method;
 
+double *qp_edges;
+double *qn_edges;
+double *delta_qk_mono;
+
+double (*piecewise_interp)(double *zin,double *zout,double *qin,double *qout,int zlevs);
+
+double piecewise_constant_interp( double *zin,double *zout,double *qin,double *qout,int zlevs);
+double piecewise_linear_interp(   double *zin,double *zout,double *qin,double *qout,int zlevs);
+double piecewise_parabolic_interp(double *zin,double *zout,double *qin,double *qout,int zlevs);
+
+double integrate_linear(   double *zin,double *qin,int p,double zl,double zh);
+double integrate_parabolic(double *zin,double *qin,int p,double zl,double zh,double *qp,double *qn);
+
+void calculate_edge_values(double *zin, double *qin, double *qp_edges, double *qn_edges,int n);
 
 /***********************************************************************************
 * 
 ************************************************************************************/
 void init_microphysics(int nx,int ny){
-
+	
+	Rainfall_Interpolation_Method = Constant;
+	//Rainfall_Interpolation_Method = Linear;
+	//Rainfall_Interpolation_Method = Parabolic;
 	//-------------------------------------------------------------------
 	// If initializing from an output file, store the precipitation total
 	//-------------------------------------------------------------------
@@ -37,8 +58,51 @@ void init_microphysics(int nx,int ny){
 		}}
 	}
 
-	//run_microphysics = &rutledge_microphysics;
+	if(Rainfall_Interpolation_Method == Constant){
+		
+		piecewise_interp = &piecewise_constant_interp;
+			
+	} else if(Rainfall_Interpolation_Method == Linear ){
+		
+		piecewise_interp = &piecewise_linear_interp;
+		
+	} else if(Rainfall_Interpolation_Method == Parabolic){
+		
+		piecewise_interp = &piecewise_parabolic_interp;
+		
+		qp_edges = (double *)calloc(NZ,sizeof(double));
+		qn_edges = (double *)calloc(NZ,sizeof(double));
+		delta_qk_mono = (double *)calloc(NZ,sizeof(double));
+	}
+}
 
+/*********************************************************************
+* Return the sign of x multiplied by one
+*
+**********************************************************************/
+inline static double signof(double x){
+	
+	if(x>0){ return 1;}
+	
+	return -1;
+}
+
+/*********************************************************************
+* Return the maximum value of three numbers
+*
+**********************************************************************/
+inline double max_of_three(double x,double y,double z){
+	
+	return fmax(x,fmax(y,z));
+}
+
+/*********************************************************************
+* Return the minimum value of three numbers
+*
+**********************************************************************/
+inline static double min_of_three(double x,double y,double z){
+	
+	return fmin(x,fmin(y,z));
 }
 
 /******************************************************
@@ -107,6 +171,44 @@ void precip_rate(int il,int ih,int jl,int jh,double *vel,double *hydro_field,dou
 			dt;
 	}}
 	
+}
+
+/****************************************************
+* Calculate eulerian fall speed of rain
+*
+* vt -> terminal fall speed of rain (output)
+* qr -> rain water mixing ratio (input)
+*
+*****************************************************/
+void calculate_eulerian_fall_speed_rain(double *vtr, double *qr, int il,int ih,int jl,int jh){
+	
+	if(MICROPHYSICS_OPTION==1){
+	
+		calculate_rain_fall_speed_kessler( vtr, qr, il, ih, jl, jh);
+		
+	} else if(MICROPHYSICS_OPTION==2){
+		
+		calculate_rain_fall_speed_rutledge(vtr, qr, il, ih, jl, jh);
+	}
+
+}
+
+/****************************************************
+* Calculate eulerian fall speed of hydrometeors
+*
+* vt -> terminal fall speed of rain (output)
+* qr -> rain water mixing ratio (input)
+*
+*****************************************************/
+void calculate_eulerian_fall_speed_snow_ice(double *vts, double *qs, double *vti, double *qi, int il,int ih,int jl,int jh){
+	
+	if(MICROPHYSICS_OPTION==2){
+	
+		calculate_ice_fall_speed_rutledge( vti, qi, il, ih, jl, jh);
+		
+		calculate_snow_fall_speed_rutledge(vts, qs, il, ih, jl, jh);
+	}
+
 }
 
 /*********************************************************************
@@ -186,14 +288,13 @@ void hydrometeor_fallout(double *var,double *vel,int il,int ih,int jl,int jh,dou
 			//-----------------------------------------------------------
 			for(int k=0;k<NZ-1;k++){ ZA_edges[k] = ZW(k) - dt * Vel_edges[k];}	
 			//-----------------------------------------------------------
-			// hydrometeor mass of advected parcel
+			// hydrometeor density of advected parcel
 			//-----------------------------------------------------------		
 			for(int k=0;k<NZ-1;k++){ QA_mass[k] = rhou[k]*var[INDEX(i,j,k)] * (ZW(k+1)-ZW(k)) / (ZA_edges[k+1]-ZA_edges[k]);}
 			//-----------------------------------------------------------
 			// Interpolation
-			//-----------------------------------------------------------
-			precip[INDEX2D(i,j)] += piecewise_interp(ZA_edges,&ZW(0),QA_mass,QD_mass,NZ,i,j);
-			
+			//-----------------------------------------------------------		
+	        precip[INDEX2D(i,j)] += piecewise_interp(ZA_edges,&ZW(0),QA_mass,QD_mass,NZ);				
 			//-----------------------------------------------------------
 			// Divide by density for final mass
 			//-----------------------------------------------------------
@@ -201,13 +302,13 @@ void hydrometeor_fallout(double *var,double *vel,int il,int ih,int jl,int jh,dou
 		
 		}
 	}}
-	
+
 }
 
 /*********************************************************************
 * Integrate linear function
 **********************************************************************/
-double integrate_linear(double *zin,double *qin,int p,double zl,double zh,bool debug){
+double integrate_linear(double *zin,double *qin,int p,double zl,double zh){
 
 	double edge_slope0 = 2.0 * (qin[p  ]-qin[p-1]) / (zin[p+1] - zin[p-1]);
 	double edge_slope1 = 2.0 * (qin[p+2]-qin[p+1]) / (zin[p+2] - zin[p  ]);
@@ -239,87 +340,49 @@ double integrate_linear(double *zin,double *qin,int p,double zl,double zh,bool d
 }
 
 /*********************************************************************
-* Piecewise linear interpolation which preserves total mass
+* Integrate a segment assuming a parabolic approximation
 *
-* zin - input height levels
-* zout - output height levels
-* qin - input field
-* qout - output field
-* zlevs number of levels (i.e. array length for all input arrays)
-*
-* @return rainfall in kg / m^2
+* zin - input x values
+* qin - input y values
+* p   - position in array
+* zl  - height of lower bound of integration
+* zh  - height of upper bound of integration
+* qp - values on positive side of cell edges
+* qn - values on negative side of cell edges
+!*********************************************************************/
+double integrate_parabolic(double *zin,double *qin,int p,double zl,double zh,double *qp,double *qn){
+
+    double high,low,t0,t1;
+
+    t0 = (zl-zin[p]) / (zin[p+1]-zin[p]);
+    t1 = (zh-zin[p]) / (zin[p+1]-zin[p]);
+    
+    high = (qp[p]+qn[p]-2.0*qin[p])*t1*t1*t1 - (qp[p]+2.0*qn[p]-3.0*qin[p])*t1*t1 + qn[p]*t1;
+    low  = (qp[p]+qn[p]-2.0*qin[p])*t0*t0*t0 - (qp[p]+2.0*qn[p]-3.0*qin[p])*t0*t0 + qn[p]*t0;
+
+	return high - low;
+}
+
+/*********************************************************************
+* 
 **********************************************************************/
-double piecewise_interp(double *zin,double *zout,double *qin,double *qout,int zlevs,int ic,int jc){
+double below_surface_rainfall(double *zin, double *qin, int zlevs, int *highest_negative_level){
 
-	double factor;
-
-	double rainfall = 0;
-
-	for(int i=0;i<zlevs;i++){ qout[i] = 0;}
-
-	int highest_negative_level = 1;
+	double rainfall;
 
 	for(int j=1;j<zlevs-2;j++){
 		
-		int i = 0;
-		
 		if(zin[j] < 0 && zin[j+1] < 0){
-			
+		
 			rainfall += qin[j] * (zin[j+1]-zin[j]);
-			
-			highest_negative_level = j+1;
-			
+		
+			*highest_negative_level = j+1;
 		}
 	}
 	
-	if(zin[highest_negative_level]<0){
-	
-		rainfall += integrate_linear(zin,qin,highest_negative_level,zin[highest_negative_level],0,false) * 
-			-zin[highest_negative_level] *  ((zin[highest_negative_level+1] - zin[highest_negative_level]) /
-				 -zin[highest_negative_level])
-				;
-	}
-	
-	//-----------------------------------------------------------
-	// Compare input and output cells to look for matches.
-	// Watch out for j = 0, the integrate_linear function 
-	// looks for a j - 1 value
-	//-----------------------------------------------------------
-	for(int i=1;i<zlevs-2;i++){
-	for(int j=highest_negative_level;j<zlevs-2;j++){
-		//-----------------------------------------------------------
-		// Overlap (mA4 -> m2)
-		//-----------------------------------------------------------
-		if(zout[i] < zin[j] && zout[i+1] < zin[j+1] && zout[i+1] > zin[j]){
-
-			qout[i] += integrate_linear(zin,qin,j,zin[j],zout[i+1],false) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));
-		}
-		//-----------------------------------------------------------
-		// Overlap (mA4 -> m3)
-		//-----------------------------------------------------------
-		if(zout[i] < zin[j+1] && zout[i+1] > zin[j+1] && zout[i] > zin[j]){
-
-			qout[i] += integrate_linear(zin,qin,j,zout[i],zin[j+1],false) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));
-		}
-		//-----------------------------------------------------------
-		// Output cell falls completely within input cell (mA5 -> m4)
-		//-----------------------------------------------------------
-		if(zout[i] >= zin[j] && zout[i+1] <= zin[j+1]){
-
-			qout[i] += integrate_linear(zin,qin,j,zout[i],zout[i+1],false) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));
-		}
-		//-----------------------------------------------------------
-		// Input cell falls completely within output cell
-		//-----------------------------------------------------------		
-		if(zout[i] < zin[j] && zout[i+1] > zin[j+1]){
-
-			qout[i] += integrate_linear(zin,qin,j,zin[j],zin[j+1],false) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));
-		}	
-	}}
-
-
 	return rainfall;
 }
+
 
 /*********************************************************************
 * Piecewise constant interpolation which preserves total mass
@@ -330,17 +393,31 @@ double piecewise_interp(double *zin,double *zout,double *qin,double *qout,int zl
 * qout - output field
 * zlevs number of levels (i.e. array length for all input arrays)
 **********************************************************************/
-double piecewise_constant_interp(double *zin,double *zout,double *qin,double *qout,int zlevs,int ic,int jc){
+double piecewise_constant_interp(double *zin,double *zout,double *qin,double *qout,int zlevs){
 
 	double factor;
 
-	int test_i = 13;
-	int test_j = 24;
+	memset(qout,0,zlevs*sizeof(double));
 
+	int highest_negative_level = 1;
 
-	double rainfall = 0;
-
-	for(int i=0;i<zlevs;i++){ qout[i] = 0;}
+	double rainfall = below_surface_rainfall(zin, qin, zlevs, &highest_negative_level);
+	//-----------------------------------------------------------
+	// Rainfall that has fallen between the surface and the 
+	// highest edge below the surface
+	//-----------------------------------------------------------	
+	if(zin[highest_negative_level]<0){
+	
+		rainfall += integrate_linear(zin,qin,highest_negative_level,zin[highest_negative_level],0) * 
+			
+			-zin[highest_negative_level] *  
+				
+				(
+				(zin[highest_negative_level+1] - zin[highest_negative_level]) /
+				 -zin[highest_negative_level]
+				)
+				;
+	}
 
 	for(int i=1;i<zlevs-2;i++){
 	for(int j=1;j<zlevs-2;j++){
@@ -367,6 +444,211 @@ double piecewise_constant_interp(double *zin,double *zout,double *qin,double *qo
 	return rainfall;
 }
 
+/*********************************************************************
+* Piecewise linear interpolation which preserves total mass
+*
+* zin - input height levels
+* zout - output height levels
+* qin - input field
+* qout - output field
+* zlevs number of levels (i.e. array length for all input arrays)
+*
+* @return rainfall in kg / m^2
+**********************************************************************/
+double piecewise_linear_interp(double *zin,double *zout,double *qin,double *qout,int zlevs){
+
+	memset(qout,0,zlevs*sizeof(double));
+
+	int highest_negative_level = 1;
+
+	double rainfall = below_surface_rainfall(zin, qin, zlevs, &highest_negative_level);
+	
+	//-----------------------------------------------------------
+	// Rainfall that has fallen between the surface and the 
+	// highest edge below the surface
+	//-----------------------------------------------------------
+	if(zin[highest_negative_level]<0){
+	
+		rainfall += integrate_linear(zin,qin,highest_negative_level,zin[highest_negative_level],0) * 
+			-zin[highest_negative_level] *  ((zin[highest_negative_level+1] - zin[highest_negative_level]) /
+				 -zin[highest_negative_level])
+				;
+	}
+	
+	//-----------------------------------------------------------
+	// Compare input and output cells to look for matches.
+	// Watch out for j = 0, the integrate_linear function 
+	// looks for a j - 1 value
+	//-----------------------------------------------------------
+	for(int i=1;i<zlevs-2;i++){
+	for(int j=highest_negative_level;j<zlevs-2;j++){
+		//-----------------------------------------------------------
+		// Overlap (mA4 -> m2)
+		//-----------------------------------------------------------
+		if(zout[i] < zin[j] && zout[i+1] < zin[j+1] && zout[i+1] > zin[j]){
+
+			qout[i] += integrate_linear(zin,qin,j,zin[j],zout[i+1]) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));
+		}
+		//-----------------------------------------------------------
+		// Overlap (mA4 -> m3)
+		//-----------------------------------------------------------
+		if(zout[i] < zin[j+1] && zout[i+1] > zin[j+1] && zout[i] > zin[j]){
+
+			qout[i] += integrate_linear(zin,qin,j,zout[i],zin[j+1]) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));
+		}
+		//-----------------------------------------------------------
+		// Output cell falls completely within input cell (mA5 -> m4)
+		//-----------------------------------------------------------
+		if(zout[i] >= zin[j] && zout[i+1] <= zin[j+1]){
+
+			qout[i] += integrate_linear(zin,qin,j,zout[i],zout[i+1]) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));
+		}
+		//-----------------------------------------------------------
+		// Input cell falls completely within output cell
+		//-----------------------------------------------------------		
+		if(zout[i] < zin[j] && zout[i+1] > zin[j+1]){
+
+			qout[i] += integrate_linear(zin,qin,j,zin[j],zin[j+1]) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));
+		}	
+	}}
+
+	return rainfall;
+}
+
+
+/*********************************************************************
+* Piecewise parabolic interpolation which preserves total mass
+*
+* zin - input height levels
+* zout - output height levels
+* qin - input field
+* qout - output field
+* zlevs number of levels (i.e. array length for all input arrays)
+* qp_edges - values on positive edge of cell
+* qn_edges - values on negative edge of cell
+**********************************************************************/
+double piecewise_parabolic_interp(double *zin,double *zout,double *qin,double *qout,int zlevs){
+
+    memset(qout,0,zlevs*sizeof(double));
+
+	int highest_negative_level = 1;
+
+	double rainfall = below_surface_rainfall(zin, qin, zlevs, &highest_negative_level);
+
+	calculate_edge_values(zin,qin,qp_edges,qn_edges,zlevs);
+	
+	if(zin[highest_negative_level]<0){
+	
+		rainfall += integrate_parabolic(
+			zin,
+			qin,
+			highest_negative_level,
+			zin[highest_negative_level],
+			0,
+			qp_edges,qn_edges
+			) * 
+			-zin[highest_negative_level] *  ((zin[highest_negative_level+1] - zin[highest_negative_level]) /
+				 -zin[highest_negative_level])
+				;
+	}
+
+    //-----------------------------------------------------------
+    // Compare input and output cells to look for matches.
+    // Watch out for j = 0, the integrate_linear function 
+    // looks for a j - 1 valueS
+    //-----------------------------------------------------------
+	for(int i=0;i<zlevs-1;i++){
+	for(int j=0;j<zlevs-1;j++){
+        //-----------------------------------------------------------
+        // Overlap (mA4 -> m2)
+        //-----------------------------------------------------------
+		if(zout[i] < zin[j] && zout[i+1] < zin[j+1] && zout[i+1] > zin[j]){
+            
+            qout[i] = qout[i] + integrate_parabolic(zin,qin,j,zin[j],zout[i+1],qp_edges,qn_edges) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));          
+        }
+        //-----------------------------------------------------------
+        // Overlap (mA4 -> m3)
+        //-----------------------------------------------------------
+        if(zout[i] < zin[j+1] && zout[i+1] > zin[j+1] && zout[i] > zin[j]){
+
+            qout[i] = qout[i] + integrate_parabolic(zin,qin,j,zout[i],zin[j+1],qp_edges,qn_edges) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));           
+        }
+        //-----------------------------------------------------------
+        // Output cell falls completely within input cell (mA5 -> m4)
+        //-----------------------------------------------------------
+        if(zout[i] >= zin[j] && zout[i+1] <= zin[j+1]){
+
+            qout[i] = qout[i] + integrate_parabolic(zin,qin,j,zout[i],zout[i+1],qp_edges,qn_edges) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));           
+        }
+        //-----------------------------------------------------------
+        // Input cell falls completely within output cell
+        //-----------------------------------------------------------        
+        if(zout[i] < zin[j] && zout[i+1] > zin[j+1]){
+
+            qout[i] = qout[i] + integrate_parabolic(zin,qin,j,zin[j],zin[j+1],qp_edges,qn_edges) * ((zin[j+1] - zin[j]) / (zout[i+1]-zout[i]));          
+        }      
+    }}
+	
+	return rainfall;
+}
+
+/*********************************************************************
+* Calculate the values at the cell edges 
+*
+* zin - input x values
+* qin - input y values
+* qp_edges - values on positive edge of cell
+* qn_edges - values on negative edge of cell
+* n - length of arrays
+!*********************************************************************/
+void calculate_edge_values(double *zin, double *qin, double *qp_edges, double *qn_edges,int n){
+
+    double edge_slope0, edge_slope1, qp_edge, qn_edge, mid_slope, t0, t1;
+    double delta_qk, delta_qk_max, delta_qk_min;
+    double q_min,q_max,q_mp,q_lc;
+
+    //----------------------------------------------------
+    // Monotonic difference
+    //----------------------------------------------------
+	for(int k=1;k<n-1;k++){
+
+        delta_qk = 0.25 * (qin[k+1] - qin[k-1]);
+        delta_qk_max = max_of_three(qin[k+1],qin[k],qin[k-1]) - qin[k];
+        delta_qk_min = qin[k] - min_of_three(qin[k+1],qin[k],qin[k-1]);
+
+        delta_qk_mono[k] = signof(delta_qk) * min_of_three(fabs(delta_qk),delta_qk_max,delta_qk_min);
+
+	}
+
+    delta_qk_mono[0] = delta_qk_mono[1];
+	delta_qk_mono[n-1] = delta_qk_mono[n-2];
+
+    //----------------------------------------------------
+    // Calculate the value at the endpoints of the cell
+    //----------------------------------------------------
+	for(int k=1;k<n-1;k++){
+
+        qn_edges[k] = ( qin[k-1] * (zin[k+1]-zin[k]) + qin[k] * (zin[k]-zin[k-1])) / 
+			( zin[k+1]-zin[k-1]) - (delta_qk_mono[k] - delta_qk_mono[k-1]) / 3.0;
+		
+        qp_edges[k-1] = qn_edges[k];
+	}
+
+	// set boundary values
+    qp_edges[n-1] = qin[n-1];
+    qp_edges[0] = qin[0];
+    qn_edges[n-1] = qin[n-1];
+    qn_edges[0] = qin[0];
+
+    //----------------------------------------------------
+    // Ensure positive definiteness 
+    //----------------------------------------------------
+	for(int k=0;k<n;k++){
+		qn_edges[k] = qin[k] - signof(delta_qk_mono[k]) * fmin(fabs(2.0*delta_qk_mono[k]),abs(qn_edges[k]-qin[k]));
+		qp_edges[k] = qin[k] + signof(delta_qk_mono[k]) * fmin(fabs(2.0*delta_qk_mono[k]),abs(qp_edges[k]-qin[k]));
+	}
+
+}
 
 /*********************************************************************
 * Substeps within RK3 loop

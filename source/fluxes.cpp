@@ -1099,7 +1099,6 @@ void interpolate_scalar(int i,int jl,int jh,double *u,double *v,double *w,double
 	}
 }
 
-
 /*********************************************************************
 * Calculate advecting velocity field for faces of control volumes for
 * a YZ cross section of the velocity field.

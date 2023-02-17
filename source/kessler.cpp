@@ -3,6 +3,7 @@
 #include "budgets.h"
 #include "pcomm.h"
 
+const double minvar = 1.0e-12; // threshold for microphysics calculations
 
 #if HYDROSTATIC
     #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)
@@ -23,9 +24,7 @@ void init_kessler_microphysics(){
 *****************************************************/
 void run_kessler_microphysics(int il,int ih,int jl,int jh){
 
-	double A,B,C,E,cvent,vtden,qrr,qvsat,pd,theta,pressure,phi,vapor,total_convert;
-
-	const double minvar = 1.0e-12; // threshold for microphysics calculations
+	double A,B,C,E,cvent,qvsat,pd,theta,pressure,phi,vapor,total_convert;
 
 	const double cpRd = cp/Rd;
 	double temperature;
@@ -183,37 +182,15 @@ void run_kessler_microphysics(int il,int ih,int jl,int jh){
 		
 	}}}
 
-	/*******************************************
-	* Calculate fall speed
-	********************************************/
-	for(int i=il;i<ih;i++){
-	for(int j=jl;j<jh;j++){
-	for(int k=1;k<NZ-1;k++){
 
-		VT(i,j,k) = 0.0;
-
-		if(QRP(i,j,k) > minvar){
-	
-			qrr = fmax(QRP(i,j,k)*0.001*rhou[k],0.0);
-			vtden = sqrt(rhou[1]/rhou[k]);
-			VT(i,j,k) = 36.34*(pow(qrr,0.1364)) * vtden;
-		}
-	}}}
-
-	//--------------------------------------------
-	// Lower boundary condition
-	//--------------------------------------------
-	for(int i=il;i<ih;i++){
-	for(int j=jl;j<jh;j++){
-
-		VT(i,j,0) = VT(i,j,1);
-		VT(i,j,HTOPO(i,j)) = VT(i,j,HTOPO(i,j)+1);
-	}}
 
 	//--------------------------------------------
 	// Semi-Lagrangian rain fallout
 	//--------------------------------------------
 	if(RAIN_FALLOUT==2){
+		
+		// need fall speed to calculate Lagrangian trajectories
+		calculate_eulerian_fall_speed_rain(vts, qrps, il, ih, jl, jh);
 		
 		hydrometeor_fallout(qrps,vts,il,ih,jl,jh,accRain);
 				
@@ -224,10 +201,53 @@ void run_kessler_microphysics(int il,int ih,int jl,int jh){
 			memset(vts,0,fNX*fNY*fNZ*sizeof(double));
 		else
 			memset(vts,0,NX*NY*NZ*sizeof(double));
+	//--------------------------------------------
+	// Eukerian rain fallout
+	// Fall speeds should have already been calculated
+	//--------------------------------------------
 	} else {
 		
 		precip_rate(il,ih,jl,jh,vts,qrps,accRain);
 	}
+
+}
+
+/****************************************************
+* Calculate fall speed of rain
+*
+* vt -> terminal fall speed of rain (output)
+* qr -> rain water mixing ratio (input)
+*
+*****************************************************/
+void calculate_rain_fall_speed_kessler(double *vt, double *qr, int il,int ih,int jl,int jh){
+	
+	double vtden,qrr;
+	
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+	for(int k=1;k<NZ-1;k++){
+
+		vt[INDEX(i,j,k)] = 0.0;
+
+		if(qr[INDEX(i,j,k)] > minvar){
+
+			qrr = fmax(qr[INDEX(i,j,k)]*0.001*rhou[k],0.0);
+			vtden = sqrt(rhou[1]/rhou[k]);
+			vt[INDEX(i,j,k)] = 36.34*(pow(qrr,0.1364)) * vtden;
+		}
+	
+	}}}
+	
+	//--------------------------------------------
+	// Lower boundary condition
+	//--------------------------------------------
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+
+		vt[INDEX(i,j,0)] = vt[INDEX(i,j,1)];
+		vt[INDEX(i,j,HTOPO(i,j))] = vt[INDEX(i,j,HTOPO(i,j)+1)];
+
+	}}
 
 }
 

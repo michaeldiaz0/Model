@@ -16,6 +16,8 @@
 #define SAT_VAP_ICE(t) ( 611.2 * exp(21.8745584 * (t-273.15) / (t - 7.66) ) )
 #define SAT_MIX_RATIO(e,p) ( 0.62197 * e / (p-e) )
 
+// hydrostatic uses Exner pressure
+// non-hydrostatic uses pressure / density
 #if HYDROSTATIC
     #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)
 #else
@@ -133,6 +135,10 @@ double pcfrz,prfrz;
 double a1,a2;
 //const double mn = 1.05e-18;
 
+const double cpRd = cp/Rd;
+
+const double rfall = 2115.0*pow(0.01,0.2) * 17.83786;	// rain fall speed parameter
+
 double get_a1(double);
 double get_a2(double);
 void saturation_adjustment(int,int,int,int);
@@ -152,15 +158,12 @@ void init_rutledge_microphysics(){
 ********************************************************************************/
 void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 
-	double cpRd = cp/Rd;
 	double temperature, qvsat = 0;
 	double diabatic;
 
 	double pint_p_pdepi;
 
 	double a0=-0.267,a1=5.15e3,a2=-1.0225e6,a3=7.55e7;	// coefficients in polynomial fallspeed for rain
-
-	double rfall = 2115.0*pow(0.01,0.2) * 17.83786;	// rain fall speed parameter
 
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
@@ -437,82 +440,13 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 		if(MOISTURE_BUDGET){
 			q_diabatic[INDEX(i,j,k)] -= (pcond + E + psdep + pmltev + pint_p_pdepi);	
 		}
-		
-		/********************************
-		* Calculate snow fall speed
-		*********************************/
-		if(QSP(i,j,k) > minvar_snow){
-							
-				lambdaS = pow( (trigpi*rhoS*N0S) / (rhou[k]*QSP(i,j,k)),0.25);
-				
-				ST(i,j,k) = app * 1.15 * pow(lambdaS,-b) * pow(p0/pd,0.4);
-		}
-		else { 
-			ST(i,j,k) = 0;
-		}
-		
-		/********************************
-		* Calculate rain fall speed
-		*********************************/
-		if(QRP(i,j,k) > 1.0e-12){
-	
-			lambdaR = sqrt(sqrt( (trigpi*1000*N0r) / (rhou[k]*QRP(i,j,k)) ));
-		
-			VT(i,j,k) = rfall / (6.0*pow(lambdaR,0.8)) * pow( p0/pd,0.4);
-
-		} else {
-			VT(i,j,k) = 0;
-		}
-
 
 	}}}
 
 	
 	saturation_adjustment(il,ih,jl,jh);
 	
-	
-	/********************************
-	* Calculate ice fall speed
-	*********************************/
-	for(int i=il;i<ih;i++){
-	for(int j=jl;j<jh;j++){
-	for(int k=1;k<NZ-1;k++){
-	
-		nc = fmin(fmax( 5.38e7 * pow(rhou[k]*QIP(i,j,k),0.75) ,1.0e3),1.0e6);
-	
-		MI = rhou[k] * fmax(QIP(i,j,k),0) / nc;	// average mass of cloud ice particles
 
-		Dl = fmax(fmin(11.9 * sqrt(MI),dimax),1.0e-25);
-		
-		IT(i,j,k) = 1.49e4 * pow(Dl,1.31);//exp(log(Dl)*1.31);
-
-	}}}
-	
-			
-	
-	//--------------------------------------------
-	// Lower boundary condition
-	//--------------------------------------------
-	for(int i=il;i<ih;i++){
-	for(int j=jl;j<jh;j++){
-
-		VT(i,j,0) = VT(i,j,1);
-		ST(i,j,0) = ST(i,j,1);
-		IT(i,j,0) = IT(i,j,1);
-
-	}}
-#if 0
-	for(int i=il;i<ih;i++){
-	for(int j=jl;j<jh;j++){
-	for(int k=0;k<NZ;k++){
-		
-		if(QSP(i,j,k) < 0){
-			
-			printf("%f %f %d %f\n",outLons[big_i[i]],outLats[big_j[j]],k,QSP(i,j,k)*1000);
-		}
-		
-	}}}
-#endif
 	// maybe find out why there are negative values?
 	if(PARALLEL)
 		zero_moisture(il,ih,jl,jh,fNX*fNY*fNZ);
@@ -522,6 +456,10 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 	// Semi-Lagrangian rain fallout
 	//--------------------------------------------
 	if(RAIN_FALLOUT==2){
+		
+		calculate_snow_fall_speed_rutledge(sts,qsps,il,ih,jl,jh);
+		calculate_ice_fall_speed_rutledge( its,qips,il,ih,jl,jh);
+		calculate_rain_fall_speed_rutledge(vts,qrps,il,ih,jl,jh);
 		
 		hydrometeor_fallout(qrps,vts,il,ih,jl,jh,accRain);
 		hydrometeor_fallout(qips,its,il,ih,jl,jh,accSnow);
@@ -540,7 +478,10 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 			memset(sts,0,NX*NY*NZ*sizeof(double));
 			memset(its,0,NX*NY*NZ*sizeof(double));
 		}
-	
+	//--------------------------------------------
+	// Eukerian rain fallout
+	// Fall speeds should have already been calculated
+	//--------------------------------------------
 	} else {
 		
 		precip_rate(il,ih,jl,jh,vts,qrps,accRain);
@@ -552,6 +493,117 @@ void run_rutledge_microphysics(int il,int ih,int jl,int jh){
 
 
 
+/****************************************************
+* Calculate fall speed of snow
+*
+* vt -> terminal fall speed of snow (output)
+* qs -> snow water mixing ratio (input)
+*
+*****************************************************/
+void calculate_snow_fall_speed_rutledge(double *vts, double *qs, int il,int ih,int jl,int jh){
+	
+	double pressure,pd;
+	
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+	for(int k=1;k<NZ-1;k++){
+		
+		if(qs[INDEX(i,j,k)] > minvar_snow){
+			
+			pressure = CONVERT_PRESSURE(i,j,k) + PBAR(i,j,k);
+			pd = p0*pow(pressure,cpRd);	// dimensional pressure
+					
+			lambdaS = pow( (trigpi*rhoS*N0S) / (rhou[k]*qs[INDEX(i,j,k)]),0.25);
+		
+			vts[INDEX(i,j,k)] = app * 1.15 * pow(lambdaS,-b) * pow(p0/pd,0.4);
+		}
+		else { 
+			vts[INDEX(i,j,k)] = 0;
+		}
+	
+	}}}
+	
+	//--------------------------------------------
+	// Lower boundary condition
+	//--------------------------------------------
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+		vts[INDEX(i,j,0)] = vts[INDEX(i,j,1)];
+	}}
+}
+
+/****************************************************
+* Calculate fall speed of snow
+*
+* vt -> terminal fall speed of snow (output)
+* qs -> snow water mixing ratio (input)
+*
+*****************************************************/
+void calculate_rain_fall_speed_rutledge(double *vtr, double *qr, int il,int ih,int jl,int jh){
+	
+	double pressure,pd;
+	
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+	for(int k=1;k<NZ-1;k++){
+			
+		if(qr[INDEX(i,j,k)] > minvar_rain){
+			
+			pressure = CONVERT_PRESSURE(i,j,k) + PBAR(i,j,k);
+			pd = p0*pow(pressure,cpRd);						// dimensional pressure
+	
+			lambdaR = sqrt(sqrt( (trigpi*1000*N0r) / (rhou[k]*qr[INDEX(i,j,k)]) ));
+		
+			vtr[INDEX(i,j,k)] = rfall / (6.0*pow(lambdaR,0.8)) * pow( p0/pd,0.4);
+
+		} else {
+			vtr[INDEX(i,j,k)] = 0;
+		}
+	}}}
+	
+	//--------------------------------------------
+	// Lower boundary condition
+	//--------------------------------------------
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+		vtr[INDEX(i,j,0)] = vtr[INDEX(i,j,1)];
+	}}
+}
+
+/****************************************************
+* Calculate fall speed of ice
+*
+* vt -> terminal fall speed of snow (output)
+* qs -> snow water mixing ratio (input)
+*
+*****************************************************/
+void calculate_ice_fall_speed_rutledge(double *vti, double *qi, int il,int ih,int jl,int jh){
+
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+	for(int k=1;k<NZ-1;k++){
+	
+		if(qi[INDEX(i,j,k)] > minvar_cice){
+	
+			nc = fmin(fmax( 5.38e7 * pow(rhou[k]*qi[INDEX(i,j,k)],0.75) ,1.0e3),1.0e6);
+	
+			MI = rhou[k] * fmax(qi[INDEX(i,j,k)],0) / nc;	// average mass of cloud ice particles
+
+			Dl = fmax(fmin(11.9 * sqrt(MI),dimax),1.0e-25);
+		
+			vti[INDEX(i,j,k)] = 1.49e4 * pow(Dl,1.31);//exp(log(Dl)*1.31);
+		}
+	}}}
+
+	//--------------------------------------------
+	// Lower boundary condition
+	//--------------------------------------------
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+		vti[INDEX(i,j,0)] = vti[INDEX(i,j,1)];
+	}}
+	
+}
 
 /*********************************************************************
 * Calculate saturation mixing ratio for water, ice, or mixed phase

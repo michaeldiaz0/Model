@@ -976,6 +976,7 @@ void print_vertical_basic_state(){
 					k,zu[k]/1000,zw[k]/1000,pib[k],tb[k],tbv[k],rhou[k],rhow[k],qb[k]*1000);			
 		}
 	}
+    fflush(stdout);
 }
 
 
