@@ -31,9 +31,16 @@ extern int col_size;	// processes per column
 extern int rank;
 const int halo_buffer = 3; // number of boundary points for each process
 
+struct val_rank { 
+    double val; 
+    int rank; 
+};
+
 /*********************************************
 * Subroutines
 *********************************************/
+void send_int_from_process_to_root(int *sdata,int *rdata,int process,int count);
+void get_max_mpi(val_rank *send,val_rank *receive,int count);
 void distributeArray_2d(double *,double *);
 void distributeArray_3d(double *,double *);
 void pres_row_alltoall(double *);

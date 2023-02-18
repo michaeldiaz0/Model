@@ -208,6 +208,7 @@ struct input_params read_input_file(const char* infile){
 				set_field(buff,"startOutfileAt",&inputs.startOutfileAt);
 				set_field(buff,"create_new_output_file",&inputs.create_new_output_file);
 				set_field(buff,"verbose",&inputs.verbose);
+				set_field(buff,"print_courant_number",&inputs.print_courant_number);
 				
 			}	
 		}

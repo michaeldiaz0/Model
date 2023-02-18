@@ -40,23 +40,9 @@ void calculate_edge_values(double *zin, double *qin, double *qp_edges, double *q
 ************************************************************************************/
 void init_microphysics(int nx,int ny){
 	
-	Rainfall_Interpolation_Method = Constant;
+	//Rainfall_Interpolation_Method = Constant;
 	//Rainfall_Interpolation_Method = Linear;
-	//Rainfall_Interpolation_Method = Parabolic;
-	//-------------------------------------------------------------------
-	// If initializing from an output file, store the precipitation total
-	//-------------------------------------------------------------------
-	if(isRestartRun || (PERTURBATION_OPTION == 0 && perturbationFileTime > 0)){
-		
-		for(int i=0;i<nx;i++){
-		for(int j=0;j<ny;j++){
-		
-			//raintotal[ny*i+j] = FRICTION(i,j,NZ-2);
-			
-			//if(i==nx/2){ printf("%f ",raintotal[ny*i+j]);}
-			
-		}}
-	}
+	Rainfall_Interpolation_Method = Parabolic;
 
 	if(Rainfall_Interpolation_Method == Constant){
 		

@@ -331,6 +331,8 @@ void s_run_model(int count,FILE *infile){
 		if(ISLINEAR){ linear_integrate_rk3();}
 		else { s_integrate_rk3();}
 
+		if(inputs.print_courant_number){ print_courant_number_serial();}
+
 		if(OUTPUT_TO_FILE && bigcounter % outfilefreq == 0 && ENSEMBLE==0){
 			
 			if(!isRestartRun || !isFirstStep)
@@ -356,8 +358,7 @@ void s_run_model(int count,FILE *infile){
 		total_cputime += elapsed;
 		timer_counter += 1;
 			
-
-		if(VERBOSE){ printf("time %0.3f hr %0.3f s\n",mtime/3600,elapsed);}
+		if(VERBOSE){ printf("Time %d | Model time %0.3f hr | CPU time %0.3f s\n",bigcounter,mtime/3600,elapsed);}
 		fflush(stdout);
 
 		start_time = clock();

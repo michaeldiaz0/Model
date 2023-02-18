@@ -32,6 +32,156 @@ int min(int x,int y){
 	return y;
 }
 
+/*********************************************************************
+* Maximum Courant number
+*
+**********************************************************************/
+double max_hor_courant_number(int il,int ih,int jl,int jh,double *up,double *vp,double *ub,double *vb,int *inds){
+	
+	memset(inds,0,3*sizeof(int));
+	
+	double c,cmax=0;
+	
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){	
+	for(int k=1; k<NZ-1;k++){
+
+		c = fabs(up[INDEX(i,j,k)] + ub[INDEX(i,j,k)]) + fabs(vp[INDEX(i,j,k)] + vb[INDEX(i,j,k)]);
+
+		if(c>cmax){
+			cmax = c;
+			inds[0] = i;
+			inds[1] = j;
+			inds[2] = k;
+		}
+
+	}}}
+	
+	if(isnan(up[INDEX((ih-il)/2,(jh-jl)/2,NZ/2)])){
+		
+		printf("Model has crashed!!!\n");
+		exit(0);
+	}
+	
+	
+	return cmax * dt / dx;
+}
+
+/*********************************************************************
+* Maximum Courant number
+*
+**********************************************************************/
+double max_ver_courant_number(int il,int ih,int jl,int jh,double *wp,double *wb,double *fall, int *inds){
+	
+	double c,cmax=0;
+	
+	memset(inds,0,3*sizeof(int));
+	
+	if(USE_MICROPHYSICS){
+	
+		for(int i=il;i<ih;i++){
+		for(int j=jl;j<jh;j++){	
+		for(int k=1; k<NZ-1;k++){
+
+			c = fabs( wp[INDEX(i,j,k)] + wb[INDEX(i,j,k)] - 0.5*(fall[INDEX(i,j,k-1)]+fall[INDEX(i,j,k)]) ) * dt / DZW(k);
+
+			if(c>cmax){
+				cmax = c;
+				inds[0] = i;
+				inds[1] = j;
+				inds[2] = k;
+			}
+		}}}
+		
+	} else {
+	
+		for(int i=il;i<ih;i++){
+		for(int j=jl;j<jh;j++){	
+		for(int k=1; k<NZ-1;k++){
+
+			c = fabs( wp[INDEX(i,j,k)] + wb[INDEX(i,j,k)]  ) * dt / DZW(k);
+
+			if(c>cmax){
+				cmax = c;
+				inds[0] = i;
+				inds[1] = j;
+				inds[2] = k;
+			}
+		}}}
+	}
+	
+	if(isnan(wp[INDEX((ih-il)/2,(jh-jl)/2,NZ/2)])){
+		
+		printf("Model has crashed!!!\n");
+		exit(0);
+	}
+	
+	return cmax;
+}
+
+#if PARALLEL
+/*********************************************************************
+*
+**********************************************************************/
+void print_courant_number_parallel(){
+
+	int inds_hor[3],inds_ver[3],inds_hor_g[3],inds_ver_g[3];
+	double courant_hor,courant_ver,courant_hor_g,courant_ver_g;
+	val_rank cour_hor,cour_ver,cour_hor_g,cour_ver_g;
+
+	cour_hor.val = max_hor_courant_number(3,fNX-3,3,fNY-3,us,vs,m_ubar,m_vbar,inds_hor);
+	cour_ver.val = max_ver_courant_number(3,fNX-3,3,fNY-3,ws,m_wbar,vts,inds_ver);
+	cour_hor.rank = rank;
+	cour_ver.rank = rank;
+
+
+	get_max_mpi(&cour_hor,&cour_hor_g,1);
+	get_max_mpi(&cour_ver,&cour_ver_g,1);
+
+	send_int_from_process_to_root(inds_hor,inds_hor_g,cour_hor_g.rank,3);
+	send_int_from_process_to_root(inds_ver,inds_ver_g,cour_ver_g.rank,3);
+
+	if(rank==0){
+
+		int ilath = inds_hor_g[1];
+		int ilonh = inds_hor_g[0];
+		int ilatv = inds_ver_g[1];
+		int ilonv = inds_ver_g[0];
+		inds_hor_g[0] += ibs[cour_hor_g.rank] - 3;
+		inds_hor_g[1] += jbs[cour_hor_g.rank] - 3;
+		inds_ver_g[0] += ibs[cour_ver_g.rank] - 3;
+		inds_ver_g[1] += jbs[cour_ver_g.rank] - 3;
+		printf("-----------------------------------------------------------\n");								
+		printf("------------------ Courant Number -------------------------\n");
+		printf("Hor. = %.2f at %3d i %3d j %3d k / %.1f Lat %.1f Lon %.1f km \nVer. = %.2f at %3d i %3d j %3d k / %.1f Lat %.1f Lon %.1f km\n",
+		cour_hor_g.val,inds_hor_g[0],inds_hor_g[1],inds_hor_g[2],LATS(ilath),LONS(ilonh),1e-3*ZU(inds_hor_g[2]),
+		cour_ver_g.val,inds_ver_g[0],inds_ver_g[1],inds_ver_g[2],LATS(ilatv),LONS(ilonv),1e-3*ZU(inds_ver_g[2]));
+		printf("-----------------------------------------------------------\n");
+
+	}
+}
+#endif
+/*********************************************************************
+*
+**********************************************************************/
+void print_courant_number_serial(){
+
+	int inds_hor[3],inds_ver[3];
+
+	double Ch = max_hor_courant_number(0,NX,0,NY,us,vs,m_ubar,m_vbar,inds_hor);
+	double Cv = max_ver_courant_number(0,NX,0,NY,ws,m_wbar,vts,inds_ver);
+
+
+	printf("-----------------------------------------------------------\n");								
+	printf("------------------ Courant Number -------------------------\n");
+	printf("Hor. = %.2f at %3d i %3d j %3d k / %.1f Lat %.1f Lon %.1f km \nVer. = %.2f at %3d i %3d j %3d k / %.1f Lat %.1f Lon %.1f km\n",
+	Ch,inds_hor[0],inds_hor[1],inds_hor[2],LATS(inds_hor[1]),LONS(inds_hor[0]),1e-3*ZU(inds_hor[2]),
+	Cv,inds_ver[0],inds_ver[1],inds_ver[2],LATS(inds_ver[1]),LONS(inds_ver[0]),1e-3*ZU(inds_ver[2]));
+	printf("-----------------------------------------------------------\n");
+
+	
+}
+
 /****************************************************
 ! Bengt Fornberg (1988) algorithm for finding interpolation
 ! weights for derivatives

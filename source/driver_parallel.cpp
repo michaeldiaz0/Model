@@ -254,6 +254,7 @@ void p_run_model(int count,FILE *infile){
 	double total_walltime = 0,total_cputime = 0;
 	int timer_counter = 0;
 	bool isFirstStep = true;
+
 	
 	clock_t start_time_full=clock();
 	
@@ -271,13 +272,17 @@ void p_run_model(int count,FILE *infile){
 				
 				file_output_status(MODEL_FILES_NOT_WRITTEN);
 				write_time_to_file(filename,file_time_counter);
+				printf("------------------------------------------------------------------\n");
+				printf("---------------------  Writing output  ---------------------------\n");
 			}
 			
 			output_meteorological_fields_to_file(parallel_write_pvar_to_file_2d,
 												 parallel_write_pvar_to_file_3d,
 												 file_time_counter);
 			
-			if(rank==0){ file_output_status(MODEL_FILES_WRITTEN);}
+			if(rank==0){
+				file_output_status(MODEL_FILES_WRITTEN);
+			}
 			
 			write_budgets_to_file();
 			
@@ -286,6 +291,9 @@ void p_run_model(int count,FILE *infile){
 
 		p_integrate_rk3();	// run model forward one time step
 
+
+		if(inputs.print_courant_number){ print_courant_number_parallel();}
+		
 		//-----------------------------------------------------------------------
 		// Output pressure field and calculate time to completion
 		//-----------------------------------------------------------------------
@@ -297,7 +305,10 @@ void p_run_model(int count,FILE *infile){
 			file_time_counter++;
 			
 			if(VERBOSE && !isFirstStep && rank==0){
+				printf("------------------------------------------------------------------\n");
+				printf("--------------------  Run Time Estimates -------------------------\n");
 				print_time_estimates(total_cputime,total_walltime,timer_counter);
+				printf("------------------------------------------------------------------\n");
 			}
 			
 			total_walltime = 0;
@@ -320,7 +331,7 @@ void p_run_model(int count,FILE *infile){
 			timer_counter += 1;
 				
 
-			if(VERBOSE){ printf("time %0.3f hr %0.3f s %0.3f s\n",mtime/3600,elapsed,elapsed_walltime);}
+			if(VERBOSE){ printf("Time %d | Model time %0.3f hr | CPU time %0.3f s | MPI Wall time %0.3f s\n",bigcounter,mtime/3600,elapsed,elapsed_walltime);}
 			fflush(stdout);
 	
 			start_time = clock();

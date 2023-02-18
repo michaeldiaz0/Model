@@ -1,3 +1,7 @@
+void print_courant_number_serial();
+void print_courant_number_parallel();
+double max_hor_courant_number(int il,int ih,int jl,int jh,double *up,double *vp,double *ub,double *vb,int *inds);
+double max_ver_courant_number(int il,int ih,int jl,int jh,double *wp,double *wb,double *fall, int *inds);
 void derivative_weights(double z,double *x, int n, int nd, int m, double *c);
 void init_stats();
 double get_stats(FILE *infile=NULL);
