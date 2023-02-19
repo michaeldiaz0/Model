@@ -129,9 +129,6 @@ void p_integrate_rk3(){
 		exchange(us); exchange(vs); exchange(ws); exchange(ths);
 		
 		calculate_budgets(s,&steps[0]);
-	
-		// sign of advection for upwind biased derivatives
-		compute_sign_cells(0,fNX,0,fNY);
 
 		/*******************************************************
 		* Solve momentum and pressure equations using either
@@ -140,6 +137,9 @@ void p_integrate_rk3(){
 		if(HYDROSTATIC){ integrate_hydro(steps[s],s,0,fNX,0,fNY);    } 
 		else { 			 integrate_non_hydro(steps[s],0,fNX,0,fNY);  }
 			
+		// sign of advection for upwind biased derivatives
+		compute_sign_cells(0,fNX,0,fNY);
+
 		/*******************************************************
 		* Solve for new potential temperature field
 		********************************************************/
@@ -287,6 +287,8 @@ void p_run_model(int count,FILE *infile){
 			write_budgets_to_file();
 			
 			if(rank==0){ file_output_status(ALL_FILES_WRITTEN);}
+
+			fflush(stdout);
 		}
 
 		p_integrate_rk3();	// run model forward one time step
@@ -309,6 +311,7 @@ void p_run_model(int count,FILE *infile){
 				printf("--------------------  Run Time Estimates -------------------------\n");
 				print_time_estimates(total_cputime,total_walltime,timer_counter);
 				printf("------------------------------------------------------------------\n");
+                fflush(stdout);
 			}
 			
 			total_walltime = 0;

@@ -2104,6 +2104,11 @@ void initialize_basic_state_from_output_file(const char *myfilename){
 		vert_interpolate_1d(zdim,NZ,myzu,zgrid,mytb,tb);
 		vert_interpolate_1d(zdim,NZ,myzu,zgrid,myqb,qb);
 		
+        // cubic interpolations can lead to negative values, so remove them from base state vapor mixing ratio
+		for(int k=0;k<NZ;k++){
+            if(qb[k] < 0){ qb[k] = 0;}
+        }
+
 		tb[0]=tb[1];
 		tb[NZ-1]=tb[NZ-2];
 
