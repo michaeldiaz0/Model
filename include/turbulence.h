@@ -1,7 +1,7 @@
 
 extern double *landsea;
 extern double *u_friction,*v_friction,*w_friction,*t_diffusion;
-extern double *qv_diffusion,*qc_diffusion,*qr_diffusion;
+extern double *qv_diffusion,*qc_diffusion,*qr_diffusion,*qs_diffusion,*qi_diffusion;
 
 void initialize_landsea(const char*);
 void init_kmix(int,int,int,double *);
