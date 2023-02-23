@@ -43,7 +43,7 @@ add diffusion to snow and ice
 #define USE_LINEAR_FRICTION 0	// linear friction in lowest model level(s)
 #define RESTING_BASIC_STATE 0	// set all basic state terms to zero (doesn't work with some options)
 #define HOR_ADVECTION_ORDER 5	// order of horizontal advection terms (2 through 6)
-#define VER_ADVECTION_ORDER 5	// order of vertical advection terms (2 through 3)
+#define VER_ADVECTION_ORDER 3	// order of vertical advection terms (2 through 3)
 extern int USE_TURBULENT_STRESS;// use turbulence parameterization
 //--------------------------------------
 // Physics options

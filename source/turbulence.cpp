@@ -6,25 +6,25 @@
 
 #if PARALLEL
 
-	#define KMIX(i,j,k)   Kmix[(i)*fNYfNZ+(j)*fNZ+(k)]
-	#define KSMIX(i,j,k)  one_d_Pr*Kmix[(i)*fNYfNZ+(j)*fNZ+(k)]
-	#define KHMIX(i,j,k)  KHmix[(i)*fNYfNZ+(j)*fNZ+(k)]
-	#define KHSMIX(i,j,k) one_d_Pr*KHmix[(i)*fNYfNZ+(j)*fNZ+(k)]
+	#define KVMIX(i,j,k)           KVmix[INDEX(i,j,k)]
+	#define KHMIX(i,j,k)           KHmix[INDEX(i,j,k)]
+	#define KVSMIX(i,j,k) one_d_Pr*KVmix[INDEX(i,j,k)]
+	#define KHSMIX(i,j,k) one_d_Pr*KHmix[INDEX(i,j,k)]
 
-	#define KMIX_BASIC(i,j,k)              Kmix_basic[(i)*fNYfNZ+(j)*fNZ+(k)]
-	#define KSMIX_BASIC(i,j,k) one_d_Pr *  Kmix_basic[(i)*fNYfNZ+(j)*fNZ+(k)]
-	#define KHMIX_BASIC(i,j,k)            KHmix_basic[(i)*fNYfNZ+(j)*fNZ+(k)]
-	#define KHSMIX_BASIC(i,j,k) one_d_Pr* KHmix_basic[(i)*fNYfNZ+(j)*fNZ+(k)]
+	#define KVMIX_BASIC(i,j,k)           KVmix_basic[INDEX(i,j,k)]
+	#define KHMIX_BASIC(i,j,k)           KHmix_basic[INDEX(i,j,k)]
+	#define KVSMIX_BASIC(i,j,k) one_d_Pr*KVmix_basic[INDEX(i,j,k)]
+	#define KHSMIX_BASIC(i,j,k) one_d_Pr*KHmix_basic[INDEX(i,j,k)]
 #else
-	#define KMIX(i,j,k)   Kmix[(i)*NY*NZ+(j)*NZ+(k)]
-	#define KSMIX(i,j,k)  one_d_Pr*Kmix[(i)*NY*NZ+(j)*NZ+(k)]
-	#define KHMIX(i,j,k)  KHmix[(i)*NY*NZ+(j)*NZ+(k)]
-	#define KHSMIX(i,j,k) one_d_Pr*KHmix[(i)*NY*NZ+(j)*NZ+(k)]
+	#define KVMIX(i,j,k)           KVmix[INDEX(i,j,k)]
+	#define KHMIX(i,j,k)           KHmix[INDEX(i,j,k)]
+	#define KVSMIX(i,j,k) one_d_Pr*KVmix[INDEX(i,j,k)]
+	#define KHSMIX(i,j,k) one_d_Pr*KHmix[INDEX(i,j,k)]
 
-	#define KMIX_BASIC(i,j,k)              Kmix_basic[(i)*NY*NZ+(j)*NZ+(k)]
-	#define KSMIX_BASIC(i,j,k) one_d_Pr *  Kmix_basic[(i)*NY*NZ+(j)*NZ+(k)]
-	#define KHMIX_BASIC(i,j,k)            KHmix_basic[(i)*NY*NZ+(j)*NZ+(k)]
-	#define KHSMIX_BASIC(i,j,k) one_d_Pr* KHmix_basic[(i)*NY*NZ+(j)*NZ+(k)]
+	#define KVMIX_BASIC(i,j,k)           KVmix_basic[INDEX(i,j,k)]
+	#define KHMIX_BASIC(i,j,k)           KHmix_basic[INDEX(i,j,k)]
+ 	#define KVSMIX_BASIC(i,j,k) one_d_Pr*KVmix_basic[INDEX(i,j,k)]
+	#define KHSMIX_BASIC(i,j,k) one_d_Pr*KHmix_basic[INDEX(i,j,k)]
 #endif
 
 #define STRESS(j,k) stress[(j)*NZ+(k)]
@@ -51,7 +51,7 @@ double *landsea;
 
 double *u_friction,*v_friction,*w_friction,*t_diffusion;
 double *qv_diffusion,*qc_diffusion,*qr_diffusion,*qs_diffusion,*qi_diffusion;
-double *Kmix,*KHmix,*Kmix_basic,*KHmix_basic;
+double *KVmix,*KHmix,*KVmix_basic,*KHmix_basic;
 double *integrated_friction_ke,*latent_heat_flux;
 
 bool *isSaturated;
@@ -113,10 +113,10 @@ void init_kmix(int nx,int ny,int nz,double *zlevs){
 	kmixv_max = cmixv_max*dz*dz/dt;
 	lH = dx/4.0;
 
-	Kmix  = (double*)calloc(size,sizeof(double));
+	KVmix  = (double*)calloc(size,sizeof(double));
 	KHmix = (double*)calloc(size,sizeof(double));
 
-	Kmix_basic  = (double*)calloc(size,sizeof(double));
+	KVmix_basic  = (double*)calloc(size,sizeof(double));
 	KHmix_basic = (double*)calloc(size,sizeof(double));
 
 	thetaE = (double*) calloc(NZ,sizeof(double));
@@ -427,28 +427,35 @@ void initialize_landsea(const char *myfilename){
 
 }
 
-/*********************************************************************
-* Rate of deformation tensor
-**********************************************************************/
-void get_deformation_tensor(int i,int j,int k,double *u,double *v,double *w,double *D11,double *D22,double *D33,double *D12,double *D13,double *D23){
-
-    //-------------------------------------------------------------------------------------
-    *D11 = 0.50 * (u[INDEX(i+1,j,k)] +   u[INDEX(i+1,j,k-1)] -   u[INDEX(i-1,j,k)] -   u[INDEX(i-1,j,k-1)] ) * one_d_dx;
-    //-------------------------------------------------------------------------------------
-    *D22 = 0.50 * (v[INDEX(i,j+1,k)] +   v[INDEX(i,j+1,k-1)] -   v[INDEX(i,j-1,k)] -   v[INDEX(i,j-1,k-1)]) * one_d_dy;
-    //-------------------------------------------------------------------------------------
-    *D33 = 1.0  * (w[INDEX(i,j,k+1)] - w[INDEX(i,j,k-1)] ) * ONE_D_DZW(k);
-    //-------------------------------------------------------------------------------------
-    *D12 = 0.5*( ( u[INDEX(i,j+1,k)] +   u[INDEX(i,j+1,k-1)] -   u[INDEX(i,j-1,k)] -   u[INDEX(i,j-1,k-1)]  ) * one_d_dy +
-                 ( v[INDEX(i+1,j,k)] +   v[INDEX(i+1,j,k-1)] -   v[INDEX(i-1,j,k)] -   v[INDEX(i-1,j,k-1)]  ) * one_d_dx);
-    //-------------------------------------------------------------------------------------
-    *D13 = 0.5*( ( u[INDEX(i,j,k)] +   u[INDEX(i+1,j,k)] -   u[INDEX(i,j,k-1)] -   u[INDEX(i+1,j,k-1)] ) * ONE_D_DZW(k) + 
-                ( w[INDEX(i+1,j,k)] - w[INDEX(i-1,j,k)] ) * one_d_dx);
-    //-------------------------------------------------------------------------------------
-    *D23 = 0.5*( ( v[INDEX(i,j,k)] +   v[INDEX(i,j+1,k)] -   v[INDEX(i,j,k-1)] -   v[INDEX(i,j+1,k-1)]  ) * ONE_D_DZW(k)
-                     + ( w[INDEX(i,j+1,k)] - w[INDEX(i,j-1,k)] ) * one_d_dy);
+/**************************************************************************************
+*  Rate of deformation tensor at w-points
+*
+*
+****************************************************************************************/
+void set_strain_rate_components(int i, int j, int k, double *u, double *v, double *w,struct stress_tensor *stress){
+    //-----------------------------------------------------------------
+    // Compression
+    //-----------------------------------------------------------------
+    stress->tau_11 = 1.0 * (u[INDEX(i+1,j,k)] + u[INDEX(i+1,j,k-1)] - u[INDEX(i,j,k)] - u[INDEX(i,j,k-1)] ) * one_d_dx;	
+    stress->tau_22 = 1.0 * (v[INDEX(i,j+1,k)] + v[INDEX(i,j+1,k-1)] - v[INDEX(i,j,k)] - v[INDEX(i,j,k-1)]) * one_d_dy;	
+    stress->tau_33 = 1.0 * (w[INDEX(i,j,k+1)] - w[INDEX(i,j,k-1)] ) * ONE_D_DZW(k);
+    //-----------------------------------------------------------------
+    // Shear
+    //-----------------------------------------------------------------
+	stress->tau_12 = 0.125*(
+		( u[INDEX(i+1,j+1,k)] + u[INDEX(i+1,j+1,k-1)] + u[INDEX(i  ,j+1,k)] + u[INDEX(i  ,j+1,k-1)]
+		- u[INDEX(i+1,j-1,k)] - u[INDEX(i+1,j-1,k-1)] - u[INDEX(i  ,j-1,k)] - u[INDEX(i  ,j-1,k-1)]) * one_d_dy +
+	    ( v[INDEX(i+1,j  ,k)] + v[INDEX(i+1,j  ,k-1)] + v[INDEX(i+1,j+1,k)] + v[INDEX(i+1,j+1,k-1)] 
+		- v[INDEX(i-1,j  ,k)] - v[INDEX(i-1,j  ,k-1)] - v[INDEX(i-1,j+1,k)] - v[INDEX(i-1,j+1,k-1)]) * one_d_dx);
+	
+    stress->tau_13 = 0.5 * ( (w[INDEX(i+1,j,k)] - w[INDEX(i-1,j,k)]) * one_d_dx 	
+		+ (u[INDEX(i,j,k)] + u[INDEX(i+1,j,k)] - u[INDEX(i,j,k-1)] - u[INDEX(i+1,j,k-1)]) * ONE_D_DZW(k+1));
+	
+    stress->tau_23 = 0.5 * ((w[INDEX(i,j+1,k)] - w[INDEX(i,j-1,k)]) * one_d_dy	
+		+ (v[INDEX(i,j,k)] + v[INDEX(i,j+1,k)] - v[INDEX(i,j,k-1)] - v[INDEX(i,j+1,k-1)]) * ONE_D_DZW(k+1));
 
 }
+
 
 /*********************************************************************
 * Calculate the mixing coefficient K
@@ -497,13 +504,13 @@ void get_Kmix_vertical(int il,int ih,int jl,int jh){
 				
 				c = l*l*cs*cs;
 				
-				KMIX(i,j,k)  = c*sqrt(S2-one_d_Pr*bruntv);
+				KVMIX(i,j,k)  = c*sqrt(S2-one_d_Pr*bruntv);
 				
-				if(KMIX(i,j,k) > vert_mix_Kmax[k]){ KMIX(i,j,k) = vert_mix_Kmax[k]; }
+				if(KVMIX(i,j,k) > vert_mix_Kmax[k]){ KVMIX(i,j,k) = vert_mix_Kmax[k]; }
 				
 			} else {
 				
-				KMIX(i,j,k) = 0;
+				KVMIX(i,j,k) = 0;
 			}
 		}
 	}}
@@ -573,8 +580,8 @@ void turbulent_stress_vertical(int il,int ih,int jl,int jh){
 		*********************************************************/
 		for(int k=HTOPO(i,j)+1;k<NZ-1;k++){
 			
-			tau_u_h = 0.5*(KMIX(i,j,k+1)+KMIX(i-1,j,k+1)) * (UM(i,j,k+1)-UM(i,j,k)) * ONE_D_DZW(k+1);
-			tau_v_h = 0.5*(KMIX(i,j,k+1)+KMIX(i,j-1,k+1)) * (VM(i,j,k+1)-VM(i,j,k)) * ONE_D_DZW(k+1);
+			tau_u_h = 0.5*(KVMIX(i,j,k+1)+KVMIX(i-1,j,k+1)) * (UM(i,j,k+1)-UM(i,j,k)) * ONE_D_DZW(k+1);
+			tau_v_h = 0.5*(KVMIX(i,j,k+1)+KVMIX(i,j-1,k+1)) * (VM(i,j,k+1)-VM(i,j,k)) * ONE_D_DZW(k+1);
 
 			ufric = (tau_u_h-tau_u_l) * ONE_D_DZ(k);
 			vfric = (tau_v_h-tau_v_l) * ONE_D_DZ(k);
@@ -600,11 +607,11 @@ void turbulent_stress_vertical(int il,int ih,int jl,int jh){
 			
 			if(USE_MICROPHYSICS){
 				
-				tau_q_h = -KSMIX(i,j,k+1)*(QV(i,j,k+1) - QV(i,j,k))*ONE_D_DZW(k+1);		// vapor
+				tau_q_h = -KVSMIX(i,j,k+1)*(QV(i,j,k+1) - QV(i,j,k))*ONE_D_DZW(k+1);		// vapor
 			
-				tau_c_h = -KSMIX(i,j,k+1)*(QC(i,j,k+1) - QC(i,j,k))*ONE_D_DZW(k+1);		// cloud
+				tau_c_h = -KVSMIX(i,j,k+1)*(QC(i,j,k+1) - QC(i,j,k))*ONE_D_DZW(k+1);		// cloud
 
-				tau_r_h = -KSMIX(i,j,k+1)*(QR(i,j,k+1) - QR(i,j,k))*ONE_D_DZW(k+1);		// rain
+				tau_r_h = -KVSMIX(i,j,k+1)*(QR(i,j,k+1) - QR(i,j,k))*ONE_D_DZW(k+1);		// rain
 
 				QVP(i,j,k) -= dt * (tau_q_h-tau_q_l)*ONE_D_DZ(k);
 
@@ -618,7 +625,7 @@ void turbulent_stress_vertical(int il,int ih,int jl,int jh){
 			}
 			//THP(i,j,k) -= dt * (tau_t_h-tau_t_l)*ONE_D_DZ(k);
 
-			tau_t_h = -KSMIX(i,j,k+1)*(TH(i,j,k+1) - TH(i,j,k))*ONE_D_DZW(k+1);		// temperature
+			tau_t_h = -KVSMIX(i,j,k+1)*(TH(i,j,k+1) - TH(i,j,k))*ONE_D_DZW(k+1);		// temperature
 
 			t_diffusion[INDEX(i,j,k)] = -(tau_t_h-tau_t_l)*ONE_D_DZ(k);
 
@@ -626,8 +633,6 @@ void turbulent_stress_vertical(int il,int ih,int jl,int jh){
 		}
 	}}
 }
-
-
 
 /**********************************************************************************
 * Calculate the mixing coefficient K. Vertical mixing stored on w-levels and 
@@ -646,6 +651,9 @@ void get_Kmix(int il,int ih,int jl,int jh){
 		
 	double cpRd = cp/Rd;
 	
+	stress_tensor stress_pert;
+	stress_tensor stress_basic;
+	
 	/**************************************************************************
 	*
 	* 			CALCULATE MIXING COEFFICIENTS
@@ -654,43 +662,22 @@ void get_Kmix(int il,int ih,int jl,int jh){
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
 			
-		KMIX(i,j,HTOPO(i,j)+1) = 0;	// zero at ground
-		KMIX(i,j,NZ-1) = 0;
-		#if 0
-		if(PARALLEL &&  j+jbs[rank] == yp && i+ibs[rank] == xp ){
-			qsat_test[1] = 0;
-			thetaE[1] = 0;
-		}
-		#endif
+		KVMIX(i,j,HTOPO(i,j)+1) = 0;	// zero at ground
+		KVMIX(i,j,NZ-1) = 0;
 		
 		for(k=HTOPO(i,j)+2;k<NZ-1;k++){
-			/********************************************************	
-			* Rate of deformation tensor
-			*********************************************************/	
-			//-------------------------------------------------------------------------------------
-			D11 = 0.50 * (UM(i+1,j,k) +   UM(i+1,j,k-1) -   UM(i-1,j,k) -   UM(i-1,j,k-1) + 
-						UBAR(i+1,j,k) + UBAR(i+1,j,k-1) - UBAR(i-1,j,k) - UBAR(i-1,j,k-1)) * one_d_dx;
-			//-------------------------------------------------------------------------------------
-			D22 = 0.50 * (VM(i,j+1,k) +   VM(i,j+1,k-1) -   VM(i,j-1,k) -   VM(i,j-1,k-1) + 
-						VBAR(i,j+1,k) + VBAR(i,j+1,k-1) - VBAR(i,j-1,k) - VBAR(i,j-1,k-1)) * one_d_dy;
-			//-------------------------------------------------------------------------------------
-			D33 = 1.0  * (WM(i,j,k+1) - WM(i,j,k-1) + WBAR(i,j,k+1) - WBAR(i,j,k-1)) * ONE_D_DZW(k);
-			//-------------------------------------------------------------------------------------
-			D12 = 0.5*( ( UM(i,j+1,k) +   UM(i,j+1,k-1) -   UM(i,j-1,k) -   UM(i,j-1,k-1) + 
-						UBAR(i,j+1,k) + UBAR(i,j+1,k-1) - UBAR(i,j-1,k) - UBAR(i,j-1,k-1) ) * one_d_dy +
-		                ( VM(i+1,j,k) +   VM(i+1,j,k-1) -   VM(i-1,j,k) -   VM(i-1,j,k-1) + 
-						VBAR(i+1,j,k) + VBAR(i+1,j,k-1) - VBAR(i-1,j,k) - VBAR(i-1,j,k-1) ) * one_d_dx);
-			//-------------------------------------------------------------------------------------
-			D13 = 0.5*( ( UM(i,j,k) +   UM(i+1,j,k) -   UM(i,j,k-1) -   UM(i+1,j,k-1) + 
-						UBAR(i,j,k) + UBAR(i+1,j,k) - UBAR(i,j,k-1) - UBAR(i+1,j,k-1) ) * ONE_D_DZW(k) + 
-		           	    ( WM(i+1,j,k) - WM(i-1,j,k)  + WBAR(i+1,j,k) - WBAR(i-1,j,k)  ) * one_d_dx);
-			//-------------------------------------------------------------------------------------
-			D23 = 0.5*( ( VM(i,j,k) +   VM(i,j+1,k) -   VM(i,j,k-1) -   VM(i,j+1,k-1) + 
-						VBAR(i,j,k) + VBAR(i,j+1,k) - VBAR(i,j,k-1) - VBAR(i,j+1,k-1) ) * ONE_D_DZW(k) +
-	      	             ( WM(i,j+1,k) - WM(i,j-1,k) + WBAR(i,j+1,k) - WBAR(i,j-1,k) ) * one_d_dy);
-			//-------------------------------------------------------------------------------------
-			S2 = D11*D11 + D22*D22 + D33*D33 + D12*D12 + D13*D13 + D23*D23;
 
+			set_strain_rate_components(i, j, k, ums, vms, wms, &stress_pert);
+			set_strain_rate_components(i, j, k, m_ubar, m_vbar, m_wbar, &stress_basic);
+
+			//-------------------------------------------------------------------------------------
+			S2 = (stress_pert.tau_11+stress_basic.tau_11)*(stress_pert.tau_11+stress_basic.tau_11) +
+				 (stress_pert.tau_22+stress_basic.tau_22)*(stress_pert.tau_22+stress_basic.tau_22) +
+				 (stress_pert.tau_33+stress_basic.tau_33)*(stress_pert.tau_33+stress_basic.tau_33) +
+				 (stress_pert.tau_12+stress_basic.tau_12)*(stress_pert.tau_12+stress_basic.tau_12) +
+				 (stress_pert.tau_23+stress_basic.tau_23)*(stress_pert.tau_23+stress_basic.tau_23) +
+				 (stress_pert.tau_13+stress_basic.tau_13)*(stress_pert.tau_13+stress_basic.tau_13);
+				
 			/********************************************************	
 			* Brunt-Vaisala Frequency (unsaturated)
 			*********************************************************/
@@ -707,13 +694,7 @@ void get_Kmix(int il,int ih,int jl,int jh){
 				// Brunt-Vaisala Frequency
 				//-----------------------------------------------------------------
 				bruntv = 2.0 * grav / ( tbv[k]+tbv[k-1]) * dTheta * ONE_D_DZW(k);
-				#if 0
-				if(PARALLEL &&  j+jbs[rank] == yp && i+ibs[rank] == xp ){
-					//printf("%d %f %f %f\n",k,thetaVH,thetaVL,TH(i,j,k) + THBAR(i,j,k) + tb[k]);
-					qsat_test[k] = 0;
-					thetaE[k] = 0;
-				}
-				#endif
+
 			/********************************************************	
 			* Brunt-Vaisala Frequency (saturated)
 			*********************************************************/	
@@ -753,26 +734,13 @@ void get_Kmix(int il,int ih,int jl,int jh){
 				thetaVL = thetaVL * (1+Lv*qvsatL / (cp*tempL));
 
 				dTheta = thetaVH - thetaVL;		
-				//-----------------------------------------------------------------
-				// Output for testing purposes
-				//-----------------------------------------------------------------
-				#if 0
-				if(PARALLEL &&  j+jbs[rank] == yp && i+ibs[rank] == xp ){
-					
-					qsat_test[k-1] = qvsatL;
-					qsat_test[k] = qvsatH;
-					thetaE[k-1] = thetaVL;
-					thetaE[k] = thetaVH;
-				}
-				#endif
+
 				//-----------------------------------------------------------------
 				// Brunt-Vaisala Frequency
 				//-----------------------------------------------------------------
 				A = (grav / tbw[k]) * ( 1.0 + Lv*qv / (Rd*temp)) / (1.0+0.622*Lv*Lv*qv/(cp * Rd * temp*temp));
 			
 				bruntv = (A * dTheta - grav*dQL) * ONE_D_DZW(k);
-
-
 			}
 
 			/********************************************************	
@@ -784,23 +752,23 @@ void get_Kmix(int il,int ih,int jl,int jh){
 				
 				c = vert_mixing_length_squared[k]*cs*cs;
 				
-				KMIX(i,j,k)  = c*sqrt(S2-one_d_Pr*bruntv);
+				KVMIX(i,j,k)  = c*sqrt(S2-one_d_Pr*bruntv);
 			
-				KHMIX( i,j,k-1) = 0.5*( KMIX(i,j,k-1) / vert_mixing_length_squared[k-1] + KMIX(i,j,k)/vert_mixing_length_squared[k] ) * lH*lH;
+				KHMIX( i,j,k-1) = 0.5*( KVMIX(i,j,k-1) / vert_mixing_length_squared[k-1] + KVMIX(i,j,k)/vert_mixing_length_squared[k] ) * lH*lH;
 				
-				if(KMIX(i,j,k) >vert_mix_Kmax[k]){ KMIX(i,j,k) = vert_mix_Kmax[k]; }
+				if(KVMIX(i,j,k) >vert_mix_Kmax[k]){ KVMIX(i,j,k) = vert_mix_Kmax[k]; }
 				if(KHMIX(i,j,k-1) > kmixh_max){ KHMIX(i,j,k-1) = kmixh_max; }			
 							
 			} else {
 				
-				KMIX(i,j,k) = 0;
-				KHMIX(i,j,k-1) = 0 + 0.5 * KMIX(i,j,k-1) / vert_mixing_length_squared[k-1] * lH*lH;
+				KVMIX(i,j,k) = 0;
+				KHMIX(i,j,k-1) = 0 + 0.5 * KVMIX(i,j,k-1) / vert_mixing_length_squared[k-1] * lH*lH;
 			}
 		}
 	}}
 	
 	if(PARALLEL){
-		exchangeOnePoint(Kmix);
+		exchangeOnePoint(KVmix);
 		exchangeOnePoint(KHmix);
 	}
 
@@ -819,7 +787,9 @@ void get_Kmix_dry(int il,int ih,int jl,int jh){
 	double c;
 	
 	int k;
-	double D11,D22,D33,D12,D13,D23;
+	
+	stress_tensor stress_pert;
+	stress_tensor stress_basic;
 	
 	/**************************************************************************
 	*
@@ -829,36 +799,23 @@ void get_Kmix_dry(int il,int ih,int jl,int jh){
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
 			
-		KMIX(i,j,HTOPO(i,j)+1) = 0;	// zero at ground
-		KMIX(i,j,NZ-1) = 0;
+		KVMIX(i,j,HTOPO(i,j)+1) = 0;	// zero at ground
+		KVMIX(i,j,NZ-1) = 0;
 		
 		for(k=HTOPO(i,j)+2;k<NZ-1;k++){
 			/********************************************************	
 			* Rate of deformation tensor
 			*********************************************************/	
+			set_strain_rate_components(i, j, k, ums, vms, wms, &stress_pert);
+			set_strain_rate_components(i, j, k, m_ubar, m_vbar, m_wbar, &stress_basic);
+
 			//-------------------------------------------------------------------------------------
-			D11 = 0.50 * (UM(i+1,j,k) +   UM(i+1,j,k-1) -   UM(i-1,j,k) -   UM(i-1,j,k-1) + 
-						UBAR(i+1,j,k) + UBAR(i+1,j,k-1) - UBAR(i-1,j,k) - UBAR(i-1,j,k-1)) * one_d_dx;
-			//-------------------------------------------------------------------------------------
-			D22 = 0.50 * (VM(i,j+1,k) +   VM(i,j+1,k-1) -   VM(i,j-1,k) -   VM(i,j-1,k-1) + 
-						VBAR(i,j+1,k) + VBAR(i,j+1,k-1) - VBAR(i,j-1,k) - VBAR(i,j-1,k-1)) * one_d_dy;
-			//-------------------------------------------------------------------------------------
-			D33 = 1.0  * (WM(i,j,k+1) - WM(i,j,k-1) + WBAR(i,j,k+1) - WBAR(i,j,k-1)) * ONE_D_DZW(k);
-			//-------------------------------------------------------------------------------------
-			D12 = 0.5*( ( UM(i,j+1,k) +   UM(i,j+1,k-1) -   UM(i,j-1,k) -   UM(i,j-1,k-1) + 
-						UBAR(i,j+1,k) + UBAR(i,j+1,k-1) - UBAR(i,j-1,k) - UBAR(i,j-1,k-1) ) * one_d_dy +
-		                ( VM(i+1,j,k) +   VM(i+1,j,k-1) -   VM(i-1,j,k) -   VM(i-1,j,k-1) + 
-						VBAR(i+1,j,k) + VBAR(i+1,j,k-1) - VBAR(i-1,j,k) - VBAR(i-1,j,k-1) ) * one_d_dx);
-			//-------------------------------------------------------------------------------------
-			D13 = 0.5*( ( UM(i,j,k) +   UM(i+1,j,k) -   UM(i,j,k-1) -   UM(i+1,j,k-1) + 
-						UBAR(i,j,k) + UBAR(i+1,j,k) - UBAR(i,j,k-1) - UBAR(i+1,j,k-1) ) * ONE_D_DZW(k) + 
-		           	    ( WM(i+1,j,k) - WM(i-1,j,k)  + WBAR(i+1,j,k) - WBAR(i-1,j,k)  ) * one_d_dx);
-			//-------------------------------------------------------------------------------------
-			D23 = 0.5*( ( VM(i,j,k) +   VM(i,j+1,k) -   VM(i,j,k-1) -   VM(i,j+1,k-1) + 
-						VBAR(i,j,k) + VBAR(i,j+1,k) - VBAR(i,j,k-1) - VBAR(i,j+1,k-1) ) * ONE_D_DZW(k) +
-	      	             ( WM(i,j+1,k) - WM(i,j-1,k) + WBAR(i,j+1,k) - WBAR(i,j-1,k) ) * one_d_dy);
-			//-------------------------------------------------------------------------------------
-			S2 = D11*D11 + D22*D22 + D33*D33 + D12*D12 + D13*D13 + D23*D23;
+			S2 = (stress_pert.tau_11+stress_basic.tau_11)*(stress_pert.tau_11+stress_basic.tau_11) +
+				 (stress_pert.tau_22+stress_basic.tau_22)*(stress_pert.tau_22+stress_basic.tau_22) +
+				 (stress_pert.tau_33+stress_basic.tau_33)*(stress_pert.tau_33+stress_basic.tau_33) +
+				 (stress_pert.tau_12+stress_basic.tau_12)*(stress_pert.tau_12+stress_basic.tau_12) +
+				 (stress_pert.tau_23+stress_basic.tau_23)*(stress_pert.tau_23+stress_basic.tau_23) +
+				 (stress_pert.tau_13+stress_basic.tau_13)*(stress_pert.tau_13+stress_basic.tau_13);
 
 			/********************************************************	
 			* Brunt-Vaisala Frequency (unsaturated)
@@ -885,23 +842,23 @@ void get_Kmix_dry(int il,int ih,int jl,int jh){
 				
 				c = vert_mixing_length_squared[k]*cs*cs;
 				
-				KMIX(i,j,k)  = c*sqrt(S2-one_d_Pr*bruntv);
+				KVMIX(i,j,k)  = c*sqrt(S2-one_d_Pr*bruntv);
 			
-				KHMIX( i,j,k-1) = 0.5*( KMIX(i,j,k-1) / vert_mixing_length_squared[k-1] + KMIX(i,j,k)/vert_mixing_length_squared[k] ) * lH*lH;
+				KHMIX( i,j,k-1) = 0.5*( KVMIX(i,j,k-1) / vert_mixing_length_squared[k-1] + KVMIX(i,j,k)/vert_mixing_length_squared[k] ) * lH*lH;
 				
-				if(KMIX(i,j,k) >vert_mix_Kmax[k]){ KMIX(i,j,k) = vert_mix_Kmax[k]; }
+				if(KVMIX(i,j,k) >vert_mix_Kmax[k]){ KVMIX(i,j,k) = vert_mix_Kmax[k]; }
 				if(KHMIX(i,j,k-1) > kmixh_max){ KHMIX(i,j,k-1) = kmixh_max; }			
 							
 			} else {
 				
-				KMIX(i,j,k) = 0;
-				KHMIX(i,j,k-1) = 0 + 0.5 * KMIX(i,j,k-1) / vert_mixing_length_squared[k-1] * lH*lH;
+				KVMIX(i,j,k) = 0;
+				KHMIX(i,j,k-1) = 0 + 0.5 * KVMIX(i,j,k-1) / vert_mixing_length_squared[k-1] * lH*lH;
 			}
 		}
 	}}
 	
 	if(PARALLEL){
-		exchangeOnePoint(Kmix);
+		exchangeOnePoint(KVmix);
 		exchangeOnePoint(KHmix);
 	}
 }
@@ -919,7 +876,8 @@ void get_Kmix_basic_state(int il,int ih,int jl,int jh){
 	double c;
 	
 	int k;
-	double D11,D22,D33,D12,D13,D23;
+	
+	stress_tensor stress_basic;
 		
 	double cpRd = cp/Rd;
 	
@@ -931,22 +889,22 @@ void get_Kmix_basic_state(int il,int ih,int jl,int jh){
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
 			
-		KMIX_BASIC(i,j,HTOPO(i,j)+1) = 0;	// zero at ground
-		KMIX_BASIC(i,j,NZ-1) = 0;
-		#if 0
-		if(PARALLEL &&  j+jbs[rank] == yp && i+ibs[rank] == xp ){
-			qsat_test[1] = 0;
-			thetaE[1] = 0;
-		}
-		#endif
+		KVMIX_BASIC(i,j,HTOPO(i,j)+1) = 0;	// zero at ground
+		KVMIX_BASIC(i,j,NZ-1) = 0;
 		
 		for(k=HTOPO(i,j)+2;k<NZ-1;k++){
 			/********************************************************	
 			* Rate of deformation tensor
-			*********************************************************/	
-            get_deformation_tensor(i,j,k,m_ubar,m_vbar,m_wbar,&D11,&D22,&D33,&D12,&D13,&D23);
+			*********************************************************/
+			set_strain_rate_components(i, j, k, m_ubar, m_vbar, m_wbar, &stress_basic);
 
-			S2 = D11*D11 + D22*D22 + D33*D33 + D12*D12 + D13*D13 + D23*D23;
+			//-------------------------------------------------------------------------------------
+			S2 = (stress_basic.tau_11*stress_basic.tau_11) +
+				 (stress_basic.tau_22*stress_basic.tau_22) +
+				 (stress_basic.tau_33*stress_basic.tau_33) +
+				 (stress_basic.tau_12*stress_basic.tau_12) +
+				 (stress_basic.tau_23*stress_basic.tau_23) +
+				 (stress_basic.tau_13*stress_basic.tau_13);
 
 			/********************************************************	
 			* Brunt-Vaisala Frequency (unsaturated)
@@ -964,13 +922,7 @@ void get_Kmix_basic_state(int il,int ih,int jl,int jh){
 				// Brunt-Vaisala Frequency
 				//-----------------------------------------------------------------
 				bruntv = 2.0 * grav / ( tbv[k]+tbv[k-1]) * dTheta * ONE_D_DZW(k);
-				#if 0
-				if(PARALLEL &&  j+jbs[rank] == yp && i+ibs[rank] == xp ){
-					//printf("%d %f %f %f\n",k,thetaVH,thetaVL,TH(i,j,k) + THBAR(i,j,k) + tb[k]);
-					qsat_test[k] = 0;
-					thetaE[k] = 0;
-				}
-				#endif
+
 			/********************************************************	
 			* Brunt-Vaisala Frequency (saturated)
 			*********************************************************/	
@@ -1010,18 +962,7 @@ void get_Kmix_basic_state(int il,int ih,int jl,int jh){
 				thetaVL = thetaVL * (1+Lv*qvsatL / (cp*tempL));
 
 				dTheta = thetaVH - thetaVL;		
-				//-----------------------------------------------------------------
-				// Output for testing purposes
-				//-----------------------------------------------------------------
-				#if 0
-				if(PARALLEL &&  j+jbs[rank] == yp && i+ibs[rank] == xp ){
-					
-					qsat_test[k-1] = qvsatL;
-					qsat_test[k] = qvsatH;
-					thetaE[k-1] = thetaVL;
-					thetaE[k] = thetaVH;
-				}
-				#endif
+
 				//-----------------------------------------------------------------
 				// Brunt-Vaisala Frequency
 				//-----------------------------------------------------------------
@@ -1039,24 +980,24 @@ void get_Kmix_basic_state(int il,int ih,int jl,int jh){
 				
 				c = vert_mixing_length_squared[k]*cs*cs;
 				
-				KMIX_BASIC(i,j,k)  = c*sqrt(S2-one_d_Pr*bruntv);
+				KVMIX_BASIC(i,j,k)  = c*sqrt(S2-one_d_Pr*bruntv);
 			
-				KHMIX_BASIC( i,j,k-1) = 0.5*( KMIX_BASIC(i,j,k-1) / vert_mixing_length_squared[k-1] +
-                     KMIX_BASIC(i,j,k)/vert_mixing_length_squared[k] ) * lH*lH;
+				KHMIX_BASIC( i,j,k-1) = 0.5*( KVMIX_BASIC(i,j,k-1) / vert_mixing_length_squared[k-1] +
+                     KVMIX_BASIC(i,j,k)/vert_mixing_length_squared[k] ) * lH*lH;
 				
-				if(KMIX_BASIC(i,j,k) >    vert_mix_Kmax[k]){ KMIX_BASIC(i,j,k   ) = vert_mix_Kmax[k]; }
+				if(KVMIX_BASIC(i,j,k) >    vert_mix_Kmax[k]){ KVMIX_BASIC(i,j,k   ) = vert_mix_Kmax[k]; }
 				if(KHMIX_BASIC(i,j,k-1) > kmixh_max){        KHMIX_BASIC(i,j,k-1) = kmixh_max; }			
 							
 			} else {
 				
-				KMIX_BASIC(i,j,k) = 0;
-				KHMIX_BASIC(i,j,k-1) = 0 + 0.5 * KMIX_BASIC(i,j,k-1) / vert_mixing_length_squared[k-1] * lH*lH;
+				KVMIX_BASIC(i,j,k) = 0;
+				KHMIX_BASIC(i,j,k-1) = 0 + 0.5 * KVMIX_BASIC(i,j,k-1) / vert_mixing_length_squared[k-1] * lH*lH;
 			}
 		}
 	}}
 	
 	if(PARALLEL){
-		exchangeOnePoint(Kmix_basic);
+		exchangeOnePoint(KVmix_basic);
 		exchangeOnePoint(KHmix_basic);
 	}
 }
@@ -1271,8 +1212,8 @@ void turbulent_diffusion_velocity(int il,int ih,int jl,int jh){
 				
 				for(int k=HTOPO(i,j)+1;k<NZ-1;k++){
 
-                    interpolate_K_to_velocity_points(i,j,k,KHmix,Kmix,&K_vel_full);
-                    interpolate_K_to_velocity_points(i,j,k,KHmix_basic,Kmix_basic,&K_vel_basic);
+                    interpolate_K_to_velocity_points(i,j,k,KHmix,KVmix,&K_vel_full);
+                    interpolate_K_to_velocity_points(i,j,k,KHmix_basic,KVmix_basic,&K_vel_basic);
 
 					//-----------------------------------------------------------------
 					// TURBULENT DIFFUSION
@@ -1444,23 +1385,21 @@ void turbulent_diffusion_scalars(int il,int ih,int jl,int jh){
 				tau_t_l = drag_coef * ( ( wind_speed - wind_speed_base) * (water_temp - tmp_surface_base) - wind_speed * tmp_surface_pert );
 			}
 
-
-
 			latent_heat_flux[INDEX2D(i,j)] = tau_q_l * Lv * rhou[k];	// store surface latent heat flux
 		}
 
         #if 0
-
-            if(LONS(i)>-60.1 && LONS(i)<-60.0 && LATS(j)<21.45 && LATS(j)>21.4){
-            //if(i==10 && j==10 && rank==20){
-
+			if(LONS(i)>150.8 && LONS(i)<152.0 && LATS(j)<48.0 && LATS(j)>47.0){
+			//if(LONS(i)>-60.1 && LONS(i)<-60.0 && LATS(j)<21.45 && LATS(j)>21.4){
+			//if(i==10 && j==10 && rank==2){
+#if 0
                 printf("%d %d %.1f %.1f %.1f %f %f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n",i,j,LATS(j),LONS(i),pressure,wind_speed,tau_q_l * Lv * rhou[k],
-                qvs_surface*1000.0,QVM(i,j,k)*1000.0,QVM(i,j,k+1)*1000.0,1000.0*(QBAR(i,j,k) + qb[k]),KSMIX(i,j,k),KSMIX(i,j,k+1),THM(i,j,k),THM(i,j,k+1));
-
+                qvs_surface*1000.0,QVM(i,j,k)*1000.0,QVM(i,j,k+1)*1000.0,1000.0*(QBAR(i,j,k) + qb[k]),KVSMIX(i,j,k),KVSMIX(i,j,k+1),THM(i,j,k),THM(i,j,k+1));
+#endif
                 for(int a=0;a<10;a++){
-                    printf("%.2f ",THM(i,j,a)+tbv[a]);
+                    printf("%.2f ",THM(i,j,a)+tbv[a]+THBAR(i,j,a));
                 }
-
+#if 1
                 printf("\n");
                 for(int a=0;a<10;a++){
                     printf("%.4f ",sqrt( UM(i,j,a)*UM(i,j,a)+VM(i,j,a)*VM(i,j,a)));
@@ -1476,16 +1415,17 @@ void turbulent_diffusion_scalars(int il,int ih,int jl,int jh){
                 printf("\n"); for(int a=0;a<10;a++){
                     printf("%.4f ",UM(i,j,a)+UBAR(i,j,a));
                 }
+
                 printf("\n");               
                 for(int a=0;a<10;a++){
-                    printf("%.2f ",KSMIX(i,j,a));
+                    printf("%.2f ",KVSMIX(i,j,a));
                 }
                 printf("\n");
                 for(int a=0;a<10;a++){
-                    printf("%.2f ",KSMIX_BASIC(i,j,a));
+                    printf("%.2f ",KVSMIX_BASIC(i,j,a));
                 }
                 printf("\n");
-
+#endif
                 fflush(stdout);
             }
         #endif
@@ -1499,14 +1439,14 @@ void turbulent_diffusion_scalars(int il,int ih,int jl,int jh){
 			//-----------------------------------------------------------------
 			// 					VERTICAL
 			//-----------------------------------------------------------------
-			tau_q_h = -KSMIX(i,j,k+1)*(QVM(i,j,k+1) - QVM(i,j,k))*ONE_D_DZW(k+1);	// vapor flux top
-			tau_c_h = -KSMIX(i,j,k+1)*(QCM(i,j,k+1) - QCM(i,j,k))*ONE_D_DZW(k+1);	// cloud flux top
-			tau_r_h = -KSMIX(i,j,k+1)*(QRM(i,j,k+1) - QRM(i,j,k))*ONE_D_DZW(k+1);	// rain flux top
-			tau_t_h = -KSMIX(i,j,k+1)*(THM(i,j,k+1) - THM(i,j,k))*ONE_D_DZW(k+1);	// heat flux top
+			tau_q_h = -KVSMIX(i,j,k+1)*(QVM(i,j,k+1) - QVM(i,j,k))*ONE_D_DZW(k+1);	// vapor flux top
+			tau_c_h = -KVSMIX(i,j,k+1)*(QCM(i,j,k+1) - QCM(i,j,k))*ONE_D_DZW(k+1);	// cloud flux top
+			tau_r_h = -KVSMIX(i,j,k+1)*(QRM(i,j,k+1) - QRM(i,j,k))*ONE_D_DZW(k+1);	// rain flux top
+			tau_t_h = -KVSMIX(i,j,k+1)*(THM(i,j,k+1) - THM(i,j,k))*ONE_D_DZW(k+1);	// heat flux top
 
             // basic state contribution
-			tau_q_h += -(KSMIX(i,j,k+1)-KSMIX_BASIC(i,j,k+1))*( QBAR(i,j,k+1)+qb[k+1] -  QBAR(i,j,k)-qb[k] ) * ONE_D_DZW(k+1);	// vapor flux top
-			tau_t_h += -(KSMIX(i,j,k+1)-KSMIX_BASIC(i,j,k+1))*(THBAR(i,j,k+1)+tb[k+1] - THBAR(i,j,k)-tb[k] ) * ONE_D_DZW(k+1);	// heat flux top
+			tau_q_h += -(KVSMIX(i,j,k+1)-KVSMIX_BASIC(i,j,k+1))*( QBAR(i,j,k+1)+qb[k+1] -  QBAR(i,j,k)-qb[k] ) * ONE_D_DZW(k+1);	// vapor flux top
+			tau_t_h += -(KVSMIX(i,j,k+1)-KVSMIX_BASIC(i,j,k+1))*(THBAR(i,j,k+1)+tb[k+1] - THBAR(i,j,k)-tb[k] ) * ONE_D_DZW(k+1);	// heat flux top
 
 			//-----------------------------------------------------------------
 			// 					MERIDIONAL
@@ -1602,8 +1542,8 @@ void turbulent_diffusion_scalars(int il,int ih,int jl,int jh){
                 //-----------------------------------------------------------------
                 // 					VERTICAL
                 //-----------------------------------------------------------------
-                tau_s_h = -KSMIX(i,j,k+1)*(QSM(i,j,k+1) - QSM(i,j,k))*ONE_D_DZW(k+1);	// snow flux top
-                tau_i_h = -KSMIX(i,j,k+1)*(QIM(i,j,k+1) - QIM(i,j,k))*ONE_D_DZW(k+1);	// ice flux top
+                tau_s_h = -KVSMIX(i,j,k+1)*(QSM(i,j,k+1) - QSM(i,j,k))*ONE_D_DZW(k+1);	// snow flux top
+                tau_i_h = -KVSMIX(i,j,k+1)*(QIM(i,j,k+1) - QIM(i,j,k))*ONE_D_DZW(k+1);	// ice flux top
 
                 //-----------------------------------------------------------------
                 // 					MERIDIONAL
@@ -1699,7 +1639,7 @@ void turbulent_diffusion_theta(int il,int ih,int jl,int jh){
 			//-----------------------------------------------------------------
 			// 					VERTICAL
 			//-----------------------------------------------------------------
-			tau_t_h = -KSMIX(i,j,k+1)*(THM(i,j,k+1) - THM(i,j,k))*ONE_D_DZW(k+1);	// heat flux top
+			tau_t_h = -KVSMIX(i,j,k+1)*(THM(i,j,k+1) - THM(i,j,k))*ONE_D_DZW(k+1);	// heat flux top
 
 			//-----------------------------------------------------------------
 			// 					MERIDIONAL
@@ -1752,7 +1692,7 @@ void test(){
 		
 				printf("%2d K = %f %f %f %+f %f %f %f %f %f %f\n",k,
 				zsu[k]/1000.0,
-				KMIX(i,j,k),
+				KVMIX(i,j,k),
 				KHMIX(i,j,k),
 				rhou[k]*PI(i,j,k)*0.01,
 				sqrt(UM(i,j,k)*UM(i,j,k)+VM(i,j,k)*VM(i,j,k)), 
