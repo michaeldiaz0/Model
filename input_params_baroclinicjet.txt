@@ -8,12 +8,12 @@
 | Number of grid points, grid spacing (m),
 | and time step (sec)
 ----------------------------------------
-NX	:	500
-NY  :	225
+NX	:	100 500
+NY  :	45 225
 NZ	:	40
-dx	:	25000.0
+dx	:	125000.0 25000.0
 dz	:	500.0
-dt	:	150.0
+dt	:	600 150.0
 
 ----------------------------------------
 | Vertical grid stretching. Height (m)
@@ -131,7 +131,15 @@ turbulence_option : 1
 | Water temperature in Celcius
 ----------------------------------------
 water_temp : 5.0
-
+----------------------------------------
+| Explicit Diffusion
+| Off -> 0 On  -> 1
+| orders 2, 4, or 6
+----------------------------------------
+use_explicit_diffusion : 0
+diffusion_order : 4
+kdiffh : 0.005
+kdiffv : 0.005
 /
 
 ---------------------------------------------------
@@ -180,7 +188,7 @@ perturbation_input_file	: baroclinicjet.nc
 ----------------------------------------
 | Output files
 ----------------------------------------
-output_file				  :	outfile0211_0.nc
+output_file				  :	outfile0311_0.nc
 heat_budget_filename	  :	temp_budget1130_0.nc
 moisture_budget_filename  :	moisture_budget1130_0.nc
 pe_budget_filename		  :	pe_budget1130_0.nc

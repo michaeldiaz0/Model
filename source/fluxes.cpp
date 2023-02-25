@@ -1371,103 +1371,7 @@ void interpolate_velocity_horizontal(int i,int j,int k){
 #endif
 
 }
-#if 0
-/*********************************************************************
-* Interpolate velocity field to the faces of each control volume for
-* a YZ cross section. Also sets the fluxes on the eastern side of the 
-* previous (i-1) YZ cross section equal to the fluxes on the western 
-* side of the new YZ cross section.
-*
-* @param i - the x-coordinate
-* @param jl,jh - the high and low index bounds for the y-coordinate
-**********************************************************************/
-void interpolate_velocity(int i,int jl,int jh){
 
-	int k,kmin,kmax;
-
-	kmin = (VER_ADVECTION_ORDER+1) / 2;
-	kmax = NZ - (VER_ADVECTION_ORDER+1) / 2;
-
-	//---------------------------------------------------
-	// Lower boundary points
-	// Use lower order interpolations if the stencil
-	// extends below the grounnd
-	//---------------------------------------------------
-	
-	#if VER_ADVECTION_ORDER > 2
-	
-	k = 1;
-
-	for(int j=jl;j<jh;j++){
-
-		advecting_velocity(i,j,k);
-		interpolate_velocity_horizontal(i,j,k);
-		interpolate_velocity_vertical_2nd(i,j,k);
-	}
-	
-	#endif
-	
-	#if VER_ADVECTION_ORDER > 4
-	
-	k = 2;
-
-	for(int j=jl;j<jh;j++){
-
-		advecting_velocity(i,j,k);
-		interpolate_velocity_horizontal(i,j,k);
-		interpolate_velocity_vertical_3rd(i,j,k);
-	}
-	
-	#endif
-
-	//---------------------------------------------------
-	// Interior points
-	// Use requested interpolation order if the stencil
-	// lies completely within the model domain
-	//---------------------------------------------------
-	for(int j=jl;j<jh;j++){
-	for(k=kmin;k<kmax;k++){
-
-		advecting_velocity(i,j,k);
-		interpolate_velocity_horizontal(i,j,k);
-		interpolate_velocity_vertical(i,j,k);
-
-	}}
-
-	//---------------------------------------------------
-	// Upper boundary points
-	// Use lower order interpolations if the stencil
-	// extends above the model domain
-	//---------------------------------------------------
-	
-	#if VER_ADVECTION_ORDER > 4
-		
-	k = NZ-3;
-
-	for(int j=jl;j<jh;j++){
-
-		advecting_velocity(i,j,k);
-		interpolate_velocity_horizontal(i,j,k);
-		interpolate_velocity_vertical_3rd(i,j,k);
-	}
-	
-	#endif
-	
-	#if VER_ADVECTION_ORDER > 2
-	
-	k = NZ-2;
-
-	for(int j=jl;j<jh;j++){
-
-		advecting_velocity(i,j,k);
-		interpolate_velocity_horizontal(i,j,k);
-		interpolate_velocity_vertical_2nd(i,j,k);
-	}
-	
-	#endif
-
-}
-#endif
 /*********************************************************************
 * Interpolate velocity field to the faces of each control volume for
 * a YZ cross section. Also sets the fluxes on the eastern side of the 
@@ -1499,26 +1403,20 @@ void interpolate_velocity(int i,int jl,int jh){
 	
 		k = 1;
 
-		//for(int j=jl;j<jh;j++){
-
 			advecting_velocity(i,j,k);
 			interpolate_velocity_horizontal(i,j,k);
 			interpolate_velocity_vertical_2nd(i,j,k);
-			//}
-	
+
 		#endif
 	
 		#if VER_ADVECTION_ORDER > 4
 	
 		k = 2;
 
-		//for(int j=jl;j<jh;j++){
-
 			advecting_velocity(i,j,k);
 			interpolate_velocity_horizontal(i,j,k);
 			interpolate_velocity_vertical_3rd(i,j,k);
-			//}
-	
+
 		#endif
 
 		for(k=kmin;k<kmax;k++){
@@ -1673,12 +1571,9 @@ void interpolate_velocity(int i,int jl,int jh){
 	
 		k = NZ-3;
 
-		//for(int j=jl;j<jh;j++){
-
 			advecting_velocity(i,j,k);
 			interpolate_velocity_horizontal(i,j,k);
 			interpolate_velocity_vertical_3rd(i,j,k);
-			//}
 
 		#endif
 
@@ -1686,13 +1581,10 @@ void interpolate_velocity(int i,int jl,int jh){
 
 		k = NZ-2;
 
-		//for(int j=jl;j<jh;j++){
-
 			advecting_velocity(i,j,k);
 			interpolate_velocity_horizontal(i,j,k);
 			interpolate_velocity_vertical_2nd(i,j,k);
-			//}
-
+	
 		#endif
 		
 	}

@@ -132,7 +132,15 @@ turbulence_option : 1
 | Water temperature in Celcius
 ----------------------------------------
 water_temp : 29.0
-
+----------------------------------------
+| Explicit Diffusion
+| Off -> 0 On  -> 1
+| orders 2, 4, or 6
+----------------------------------------
+use_explicit_diffusion : 0
+diffusion_order : 4
+kdiffh : 0.005
+kdiffv : 0.005
 /
 
 ---------------------------------------------------
