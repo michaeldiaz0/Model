@@ -20,6 +20,9 @@ extern double *qcps,*qcs,*qcms;		// cloud water (kg/kg)
 extern double *qrps,*qrs,*qrms;		// rain (kg/kg)
 extern double *qsps,*qss,*qsms;
 extern double *qips,*qis,*qims;
+extern double *qgps,*qgs,*qgms;
+extern double *nips,*nis,*nims;
+extern double *nrps,*nrs,*nrms;
 extern double *vts,*sts,*its;		// fall speed (m/s)
 extern double *accRain,*accSnow;
 extern bool *isSaturated;
@@ -89,6 +92,13 @@ void calculate_eulerian_fall_speed_snow_ice(double *vts, double *qs, double *vti
 * Specific schemes
 *
 *********************************************************/
+void init_thompson_microphysics(int mpirank);
 void run_rutledge_microphysics(int il,int ih,int jl,int jh);
 void run_kessler_microphysics(int il,int ih,int jl,int jh);
+void run_thompson_microphysics(int il,int ih, int jl, int jh, int kl, int kh,
+    int nx, int ny, int nz,
+    double *qv,double *qc,double *qi,double *qr,double *qs,double *qg,
+    double *ni,double *nr,
+    double *t3d,double *p3d,double *w3d,
+    double *pptrain,double *pptsnow);
 

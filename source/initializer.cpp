@@ -38,6 +38,9 @@ double *qcps,*qcs,*qcms;
 double *qrps,*qrs,*qrms;
 double *qips,*qis,*qims;
 double *qsps,*qss,*qsms;
+double *qgps,*qgs,*qgms;
+double *nips,*nis,*nims;
+double *nrps,*nrs,*nrms;
 double *rate;
 //--------------------------------------
 // FALL SPEEDS
@@ -221,7 +224,7 @@ void initialize_globals(){
 	iebuffer = inputs.boundary_width_east;	
 	iwbuffer = inputs.boundary_width_west;
 	
-	if(MICROPHYSICS_OPTION==2){	USE_ICE = 1;} else { USE_ICE = 0;}
+	if(MICROPHYSICS_OPTION==2 || MICROPHYSICS_OPTION==3){	USE_ICE = 1;} else { USE_ICE = 0;}
 	if(MICROPHYSICS_OPTION > 0){ USE_MICROPHYSICS = 1;} else {USE_MICROPHYSICS = 0;}
 	
 	if(USE_MICROPHYSICS == 0 && MOISTURE_BUDGET == 1){ 
@@ -463,6 +466,12 @@ void initialize_subarray(int nx,int ny,int nz){
 			ALLOC(sts,size); ALLOC(its,size);
 			
 			accSnow = (double *)calloc(nx*ny,sizeof(double));
+
+			if(MICROPHYSICS_OPTION==3){
+				ALLOC(qgps,size); ALLOC(nips,size); ALLOC(nrps,size);
+				ALLOC(qgs,size);  ALLOC(nis ,size); ALLOC(nrs,size);
+				ALLOC(qgms,size); ALLOC(nims,size); ALLOC(nrms,size);
+			}
 		}
 	}
 

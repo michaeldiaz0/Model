@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "pcomm.h"
 
+
 /*******************************************************************************
 * 
 ********************************************************************************/
@@ -40,6 +41,7 @@ void calculate_edge_values(double *zin, double *qin, double *qp_edges, double *q
 ************************************************************************************/
 void init_microphysics(int nx,int ny){
 	
+	init_thompson_microphysics(rank);
 	//Rainfall_Interpolation_Method = Constant;
 	//Rainfall_Interpolation_Method = Linear;
 	Rainfall_Interpolation_Method = Parabolic;
@@ -118,6 +120,16 @@ void run_microphysics(int il,int ih,int jl,int jh){
 		case 2:
 		
 			run_rutledge_microphysics(il,ih,jl,jh);
+				
+			break;
+		//-------------------------------------------------
+		// Based on Rutledge and Hobbs (1983), Hong et al. (200x)
+		//-------------------------------------------------			
+		case 3:
+
+			run_thompson_microphysics(
+				il,ih,jl,jh,2,NZ-1,fNX,fNY,fNZ,qvps,qcps,qips,qrps,qsps,qgps,nips,nrps,thps,pis,wps,accRain,accSnow
+				);
 				
 			break;
 		//-------------------------------------------------

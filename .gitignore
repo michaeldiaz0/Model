@@ -13,3 +13,5 @@ plot_*.py
 .vscode
 *.dat
 old/
+*.mod
+*.o
