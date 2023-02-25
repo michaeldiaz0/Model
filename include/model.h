@@ -11,6 +11,27 @@ extern double vert_shear1;
 **********************************************************/
 
 //--------------------------------------------------------
+// Grid parameters
+//--------------------------------------------------------
+extern int NX;
+extern int NY;
+extern int NZ;
+
+extern double dx;
+extern double dy;
+extern double dz;
+extern double dt;
+
+extern int number_of_time_steps;
+extern int outfilefreq;
+
+//--------------------------------------------------------
+// Grid stretching
+//--------------------------------------------------------
+extern double height_lowest_level; // height of lowest full level in meters
+const int index_lowest_level = 1;		// what is the index of this level?
+
+//--------------------------------------------------------
 // Grid sub-dimensions for parallel code
 //--------------------------------------------------------
 extern int myNX,myNY,myNZ;	// dimensions of subarrays without halo boundaries
@@ -32,6 +53,9 @@ extern int NYNZ;
 
 #define FULL_ARRAY_INDEX(i,j,k) ((i)*NYNZ+(j)*NZ+(k))	// index for full domain arrays
 #define FULL_INDEX(i,j,k) ((i)*NYNZ+(j)*NZ+(k))
+
+#define index2d(ny,i,j) ((ny)*(i)+(j)) 					// generic 2d array index
+#define index3d(ny,nz,i,j,k) ((i)*ny*nz + (j)*nz + (k)) // generic 3d array index
 
 //--------------------------------------------------------
 // Perturbation values forecast by model
@@ -113,6 +137,9 @@ extern double *outLats;				// latitudes
 extern double *outLons;				// longitudes
 extern double *f;					// coriolis parameter
 extern double *dfdy;				// gradient of coriolis parameter
+
+extern double lonoffset;
+extern double latoffset;
 
 extern double *output_to_file_3d;
 extern double *output_to_file_2d;

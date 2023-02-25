@@ -186,6 +186,35 @@ void distributeArray(double *svar){
 #endif
 
 /*********************************************************************
+* 
+**********************************************************************/
+void send_int_from_process_to_root(int *sdata,int *rdata,int process,int count){
+
+	if(rank == process){
+		MPI_Send(sdata,count,MPI_INT,0,123,MPI_COMM_WORLD);
+	}
+	
+	if(rank == 0){
+		MPI_Recv(rdata,count,MPI_INT,process,123,MPI_COMM_WORLD,&status);
+	}	
+}
+
+
+/*********************************************************************
+* Get maximum value
+*
+* 
+**********************************************************************/
+void get_max_mpi(val_rank *send,val_rank *receive,int count){
+
+	MPI_Allreduce(send,receive,count,
+	    MPI_DOUBLE_INT,
+	    MPI_MAXLOC,
+	    MPI_COMM_WORLD);
+
+}
+
+/*********************************************************************
 * Broadcast data
 *
 * @param size - number of elements

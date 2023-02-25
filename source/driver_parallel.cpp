@@ -77,6 +77,7 @@ void initialize_parallel_model(){
 
 	initialize_flux_cells(fNY,fNZ);
 	initialize_microphysics_cells(fNY,fNZ);
+	initialize_sign_cells(fNX,fNY,fNZ);
 
 	initialize_pressure_solver();
 	
@@ -85,6 +86,10 @@ void initialize_parallel_model(){
 	init_boundaries(iebuffer,iwbuffer,jnbuffer,jsbuffer,3);
 
 	initialize_budgets();
+	
+	init_damping(fNX,fNY,NZ);
+	
+	init_diffusion_weights(DIFFUSION_ORDER,&ZU(0));
 	
 }
 
@@ -97,13 +102,20 @@ void p_integrate_rk3(){
 
 	double steps[] = {1./3.,0.5,1.0};	// fractional time steps for RK3 loop
 	int size = fNX*fNY*fNZ;
+
+	/*******************************************************
+	* Apply explicit diffusion. Do this first, because the
+	* final state should satisfy the anelastic continuity
+	* equation and be free of super saturation.
+	********************************************************/
+	if(USE_EXPLICIT_DIFFUSION){ apply_explicit_diffusion(1.0,3,fNX-3,3,fNY-3);}
 	
 	/*******************************************************
 	* Calculate frictional and diffusional tendencies to
 	* be applied during RK3 loop
 	********************************************************/
 	if(USE_TURBULENT_STRESS){ calculate_diff_tend(3,fNX-3,3,fNY-3);}
-
+	
 	/*******************************************************
 	* Runge-Kutta Loop
 	********************************************************/
@@ -117,7 +129,7 @@ void p_integrate_rk3(){
 		exchange(us); exchange(vs); exchange(ws); exchange(ths);
 		
 		calculate_budgets(s,&steps[0]);
-	
+
 		/*******************************************************
 		* Solve momentum and pressure equations using either
 		* the hydrostatic or non-hydrostatic equation set
@@ -125,6 +137,9 @@ void p_integrate_rk3(){
 		if(HYDROSTATIC){ integrate_hydro(steps[s],s,0,fNX,0,fNY);    } 
 		else { 			 integrate_non_hydro(steps[s],0,fNX,0,fNY);  }
 			
+		// sign of advection for upwind biased derivatives
+		compute_sign_cells(0,fNX,0,fNY);
+
 		/*******************************************************
 		* Solve for new potential temperature field
 		********************************************************/
@@ -239,6 +254,9 @@ void p_run_model(int count,FILE *infile){
 	double total_walltime = 0,total_cputime = 0;
 	int timer_counter = 0;
 	bool isFirstStep = true;
+
+	
+	clock_t start_time_full=clock();
 	
 	//---------------------------------------------------------------------------
 	// Step through model 'count' number of times
@@ -254,21 +272,30 @@ void p_run_model(int count,FILE *infile){
 				
 				file_output_status(MODEL_FILES_NOT_WRITTEN);
 				write_time_to_file(filename,file_time_counter);
+				printf("------------------------------------------------------------------\n");
+				printf("---------------------  Writing output  ---------------------------\n");
 			}
 			
 			output_meteorological_fields_to_file(parallel_write_pvar_to_file_2d,
 												 parallel_write_pvar_to_file_3d,
 												 file_time_counter);
 			
-			if(rank==0){ file_output_status(MODEL_FILES_WRITTEN);}
+			if(rank==0){
+				file_output_status(MODEL_FILES_WRITTEN);
+			}
 			
 			write_budgets_to_file();
 			
 			if(rank==0){ file_output_status(ALL_FILES_WRITTEN);}
+
+			fflush(stdout);
 		}
 
 		p_integrate_rk3();	// run model forward one time step
 
+
+		if(inputs.print_courant_number){ print_courant_number_parallel();}
+		
 		//-----------------------------------------------------------------------
 		// Output pressure field and calculate time to completion
 		//-----------------------------------------------------------------------
@@ -280,7 +307,11 @@ void p_run_model(int count,FILE *infile){
 			file_time_counter++;
 			
 			if(VERBOSE && !isFirstStep && rank==0){
+				printf("------------------------------------------------------------------\n");
+				printf("--------------------  Run Time Estimates -------------------------\n");
 				print_time_estimates(total_cputime,total_walltime,timer_counter);
+				printf("------------------------------------------------------------------\n");
+                fflush(stdout);
 			}
 			
 			total_walltime = 0;
@@ -303,7 +334,7 @@ void p_run_model(int count,FILE *infile){
 			timer_counter += 1;
 				
 
-			if(VERBOSE){ printf("time %0.3f hr %0.3f s %0.3f s\n",mtime/3600,elapsed,elapsed_walltime);}
+			if(VERBOSE){ printf("Time %d | Model time %0.3f hr | CPU time %0.3f s | MPI Wall time %0.3f s\n",bigcounter,mtime/3600,elapsed,elapsed_walltime);}
 			fflush(stdout);
 	
 			start_time = clock();
@@ -315,6 +346,13 @@ void p_run_model(int count,FILE *infile){
 		bigcounter++;	// total time steps (if this function is called multiple times)
 		//counter++;		// time steps within this loop
 		isFirstStep = false;
+	}
+	
+	if(rank==0){
+		finis_time = clock();
+		elapsed = ((double) (finis_time - start_time_full)) / CLOCKS_PER_SEC;
+
+		printf("Program successfully completed. Total runtime: %f s\n",elapsed);
 	}
 }
 

@@ -30,31 +30,6 @@ add diffusion to snow and ice
 
 #if 1
 
-//--------------------------------------------------------
-// Grid parameters
-//--------------------------------------------------------
-extern int NX;
-extern int NY;
-extern int NZ;
-
-extern double dx;
-extern double dy;
-extern double dz;
-extern double dt;
-
-extern double lonoffset;
-extern double latoffset;
-extern int number_of_time_steps;
-
-extern int raydampheight;
-extern int outfilefreq;
-
-//--------------------------------------------------------
-// Grid stretching
-//--------------------------------------------------------
-extern double height_lowest_level; // height of lowest full level in meters
-const int index_lowest_level = 1;		// what is the index of this level?
-
 //--------------------------------------
 // Version to execute
 //--------------------------------------
@@ -66,22 +41,25 @@ const int index_lowest_level = 1;		// what is the index of this level?
 #define HYDROSTATIC 0			// hydrostatic option (should work now?)
 #define ISLINEAR 0				// linearize equation set
 #define USE_LINEAR_FRICTION 0	// linear friction in lowest model level(s)
-extern int USE_TURBULENT_STRESS;// use turbulence parameterization
 #define RESTING_BASIC_STATE 0	// set all basic state terms to zero (doesn't work with some options)
+#define HOR_ADVECTION_ORDER 5	// order of horizontal advection terms (2 through 6)
+#define VER_ADVECTION_ORDER 5	// order of vertical advection terms (2 through 3)
+extern int USE_TURBULENT_STRESS;// use turbulence parameterization
 //--------------------------------------
 // Physics options
 //--------------------------------------
 extern int MICROPHYSICS_OPTION;		// 0:None 1:Kessler 2:Rutludge
-#define USE_TERRAIN 0				// 0:no, 1:yes
 extern int SURFACE_HEAT_FLUX;		// 0:no, 1:yes
 extern double WATER_TEMP_C;			// water temperature in Celsius (for surface heat fluxes)
-#define USE_LANDSEA_FROM_FILE 0		// 0:no, 1:yes
 extern int RAIN_FALLOUT;			// 1:Eulerian 2:Semi-Lagrangian
+extern int DIFFUSION_ORDER;			// 2, 4, or 6
+extern int USE_EXPLICIT_DIFFUSION;	// 0:no, 1:yes
+#define USE_TERRAIN 0				// 0:no, 1:yes
+#define USE_LANDSEA_FROM_FILE 0		// 0:no, 1:yes
 //--------------------------------------
 // For linearized equation set
 //--------------------------------------
 #define OUTPUT_DIFFUSION_TEND 0		// 
-#define EXTRA_DIFFUSION 0			// only for linearized version, no grid stretching
 #define FOURIER_DAMPING 0			// use Fourier transform to specify wavenumber
 #define WAVE_NUMBER 3				// the specified wavenumber
 //--------------------------------------
@@ -157,6 +135,8 @@ struct input_params {
 	int rayleigh_damping_z;
 	double height_lowest_level;
 	
+	int print_courant_number;
+	
 	int microphysics_option;
 	int rain_fallout;
 	
@@ -178,6 +158,11 @@ struct input_params {
 	int use_surface_heat_flux;
 	int turbulence_option;
 	double water_temp;
+
+	int use_explicit_diffusion;
+	int diffusion_order;
+	double kdiffh;
+	double kdiffv;
 
 	int is_restart_run;
 	

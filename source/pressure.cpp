@@ -456,20 +456,40 @@ void hydrostatic_pressure(int il,int ih,int jl,int jh){
 
 	if(USE_MICROPHYSICS){
 
-		for(int i=il;i<ih;i++){
-		for(int j=jl;j<jh;j++){
+        if(USE_ICE){
+            for(int i=il;i<ih;i++){
+            for(int j=jl;j<jh;j++){
 
-			PI(i,j,NZ-1) = 0;
-			PI(i,j,NZ-2) = -0.5*(grav/cp)*((TH(i,j,NZ-2)*(1.+0.61*QV(i,j,NZ-2)-QC(i,j,NZ-2)-QR(i,j,NZ-2)))/(tbv[NZ-2]*tbv[NZ-2]))*DZW(NZ-1);
+                PI(i,j,NZ-1) = 0;
+                PI(i,j,NZ-2) = -0.5*(grav/cp)*((TH(i,j,NZ-2)*
+                (1.+0.61*QV(i,j,NZ-2)-QC(i,j,NZ-2)-QR(i,j,NZ-2)-QS(i,j,NZ-2)-QI(i,j,NZ-2)))/(tbv[NZ-2]*tbv[NZ-2]))*DZW(NZ-1);
 
-			for(int k=NZ-3;k>0;k--){
-			
-				tup = (TH(i,j,k+1)*(1.+0.61*QV(i,j,k+1)-QC(i,j,k+1)-QR(i,j,k+1)))/(tbv[k+1]*tbv[k+1]);
-				tdn = (TH(i,j,k)*(1.+0.61*QV(i,j,k)-QC(i,j,k)-QR(i,j,k)))/(tbv[k]*tbv[k]);
-				PI(i,j,k) = PI(i,j,k+1)-0.5*(grav/cp)*(tup+tdn)*DZW(k+1);
-			}
-		
-		}}
+                for(int k=NZ-3;k>0;k--){
+                
+                    tup = (TH(i,j,k+1)*(1.+0.61*QV(i,j,k+1)-QC(i,j,k+1)-QR(i,j,k+1)-QS(i,j,k+1)-QI(i,j,k+1)))/(tbv[k+1]*tbv[k+1]);
+                    tdn = (TH(i,j,k  )*(1.+0.61*QV(i,j,k  )-QC(i,j,k  )-QR(i,j,k  )-QS(i,j,k  )-QI(i,j,k  )))/(tbv[k  ]*tbv[k  ]);
+                    PI(i,j,k) = PI(i,j,k+1)-0.5*(grav/cp)*(tup+tdn)*DZW(k+1);
+                }
+            }}
+
+        } else {
+
+            for(int i=il;i<ih;i++){
+            for(int j=jl;j<jh;j++){
+
+                PI(i,j,NZ-1) = 0;
+                PI(i,j,NZ-2) = -0.5*(grav/cp)*((TH(i,j,NZ-2)*(1.+0.61*QV(i,j,NZ-2)-QC(i,j,NZ-2)-QR(i,j,NZ-2)))/(tbv[NZ-2]*tbv[NZ-2]))*DZW(NZ-1);
+
+                for(int k=NZ-3;k>0;k--){
+                
+                    tup = (TH(i,j,k+1)*(1.+0.61*QV(i,j,k+1)-QC(i,j,k+1)-QR(i,j,k+1)))/(tbv[k+1]*tbv[k+1]);
+                    tdn = (TH(i,j,k)*(1.+0.61*QV(i,j,k)-QC(i,j,k)-QR(i,j,k)))/(tbv[k]*tbv[k]);
+                    PI(i,j,k) = PI(i,j,k+1)-0.5*(grav/cp)*(tup+tdn)*DZW(k+1);
+                }
+            
+            }}
+        }
+
 
 	} else {
 

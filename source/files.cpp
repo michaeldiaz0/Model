@@ -62,7 +62,11 @@ void create_outfile(const char *myfilename, bool basestate,bool modelBaseState,b
 	* Create file
 	**************************************************/
 	if(NC64BIT){
-		status = nc_create(myfilename,NC_CLOBBER|NC_64BIT_OFFSET, &ncid);
+		#if PARALLEL_IO
+            status = nc_create_par(myfilename,NC_NETCDF4 | NC_CLOBBER | NC_MPIIO , MPI_COMM_WORLD,MPI_INFO_NULL,&ncid);
+        #else
+            status = nc_create(myfilename,NC_CLOBBER|NC_64BIT_OFFSET, &ncid);
+        #endif
 	} else {
 		#if !PARALLEL_IO
 			status = nc_create(myfilename,NC_CLOBBER, &ncid);
@@ -99,7 +103,7 @@ void create_outfile(const char *myfilename, bool basestate,bool modelBaseState,b
 	add_attribute(ncid,"surface_heat_flux",SURFACE_HEAT_FLUX);	 
 	add_attribute(ncid,"water_temperature",WATER_TEMP_C);
 	add_attribute(ncid,"use_landsea_from_file",USE_LANDSEA_FROM_FILE);
-	add_attribute(ncid,"extra_diffusion",EXTRA_DIFFUSION);
+	add_attribute(ncid,"use_explicit_diffusion",USE_EXPLICIT_DIFFUSION);
 	add_attribute(ncid,"use_linear_friction",USE_LINEAR_FRICTION);
 	add_attribute(ncid,"periodic_boundaries",PERIODIC_BOUNDARIES);
 	add_attribute(ncid,"use_linear_friction",USE_LINEAR_FRICTION);
@@ -461,8 +465,10 @@ void parallel_write_pvar_to_file_2d(const char *myfilename,const char *var_name,
 /********************************************************
 * 
 *********************************************************/
-void parallel_write_pvar_to_file(const char *myfilename,const char *var_name,double *var,size_t tcount){
+void parallel_write_pvar_to_file_3d(const char *myfilename,const char *var_name,double *var,size_t tcount){
 
+    //printf("parallel output %s\n",var_name);
+    //fflush(stdout);
 	for(int i=3;i<fNX-3;i++){
 	for(int j=3;j<fNY-3;j++){
 	for(int k=0;k<fNZ;k++){
@@ -473,8 +479,8 @@ void parallel_write_pvar_to_file(const char *myfilename,const char *var_name,dou
 	int status,res;
 	int var_id,ncid;
 
-	size_t start[] = {tcount,ibs[rank],jbs[rank],0};
-	size_t count[] = {1,myNX,myNY,myNZ};
+	size_t start[] = {tcount,(size_t)ibs[rank],(size_t)jbs[rank],0};
+	size_t count[] = {1,(size_t)myNX,(size_t)myNY,(size_t)myNZ};
 	ptrdiff_t stride[] = {myNY*myNZ,myNZ,1};
 	
 	status = nc_open_par(myfilename, NC_WRITE|NC_MPIIO, MPI_COMM_WORLD,MPI_INFO_NULL,&ncid);
@@ -497,6 +503,22 @@ void parallel_write_pvar_to_file(const char *myfilename,const char *var_name,dou
 	status = nc_close(ncid);
 	if (status != NC_NOERR) handle_error(status);
 
+}
+/********************************************************
+* Write data for single perturbation variable at a single 
+* time to the netcdf file for parallel version.
+* 
+* myfilename 		- name of file
+* var_name 			- variable name
+* var				- variable data
+* tcount			- file time variable
+*********************************************************/
+void parallel_write_pvar_to_file_2d(const char *myfilename,const char *var_name,double *var,size_t tcount){
+	
+	gatherArrays_2d(var,output_to_file_2d);
+	
+	if(rank==0){ write_pvar_to_file_2d(myfilename,var_name,output_to_file_2d,tcount);}
+	
 }
 #endif
 /********************************************************

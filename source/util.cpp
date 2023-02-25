@@ -21,6 +21,244 @@ void smooth_var(double *var,double *svar,int klev,int times);
 void smooth9(double *varIn,double *varOut,int il,int ih,int jl,int jh,int lNY);
 double get_min_2D(double *var,int *ival,int *jval,int il,int ih,int jl,int jh);
 
+/*********************************************************************
+* Returns minimum value
+*
+**********************************************************************/
+int min(int x,int y){
+	
+	if(x<y){ return x;}
+	
+	return y;
+}
+
+/*********************************************************************
+* Maximum Courant number
+*
+**********************************************************************/
+double max_hor_courant_number(int il,int ih,int jl,int jh,double *up,double *vp,double *ub,double *vb,int *inds){
+	
+	memset(inds,0,3*sizeof(int));
+	
+	double c,cmax=0;
+	
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){	
+	for(int k=1; k<NZ-1;k++){
+
+		c = fabs(up[INDEX(i,j,k)] + ub[INDEX(i,j,k)]) + fabs(vp[INDEX(i,j,k)] + vb[INDEX(i,j,k)]);
+
+		if(c>cmax){
+			cmax = c;
+			inds[0] = i;
+			inds[1] = j;
+			inds[2] = k;
+		}
+
+	}}}
+	
+	if(isnan(up[INDEX((ih-il)/2,(jh-jl)/2,NZ/2)])){
+		
+		printf("Model has crashed!!!\n");
+		exit(0);
+	}
+	
+	
+	return cmax * dt / dx;
+}
+
+/*********************************************************************
+* Maximum Courant number
+*
+**********************************************************************/
+double max_ver_courant_number(int il,int ih,int jl,int jh,double *wp,double *wb,double *fall, int *inds){
+	
+	double c,cmax=0;
+	
+	memset(inds,0,3*sizeof(int));
+	
+	if(USE_MICROPHYSICS){
+	
+		for(int i=il;i<ih;i++){
+		for(int j=jl;j<jh;j++){	
+		for(int k=1; k<NZ-1;k++){
+
+			c = fabs( wp[INDEX(i,j,k)] + wb[INDEX(i,j,k)] - 0.5*(fall[INDEX(i,j,k-1)]+fall[INDEX(i,j,k)]) ) * dt / DZW(k);
+
+			if(c>cmax){
+				cmax = c;
+				inds[0] = i;
+				inds[1] = j;
+				inds[2] = k;
+			}
+		}}}
+		
+	} else {
+	
+		for(int i=il;i<ih;i++){
+		for(int j=jl;j<jh;j++){	
+		for(int k=1; k<NZ-1;k++){
+
+			c = fabs( wp[INDEX(i,j,k)] + wb[INDEX(i,j,k)]  ) * dt / DZW(k);
+
+			if(c>cmax){
+				cmax = c;
+				inds[0] = i;
+				inds[1] = j;
+				inds[2] = k;
+			}
+		}}}
+	}
+	
+	if(isnan(wp[INDEX((ih-il)/2,(jh-jl)/2,NZ/2)])){
+		
+		printf("Model has crashed!!!\n");
+		exit(0);
+	}
+	
+	return cmax;
+}
+
+#if PARALLEL
+/*********************************************************************
+*
+**********************************************************************/
+void print_courant_number_parallel(){
+
+	int inds_hor[3],inds_ver[3],inds_hor_g[3],inds_ver_g[3];
+	double courant_hor,courant_ver,courant_hor_g,courant_ver_g;
+	val_rank cour_hor,cour_ver,cour_hor_g,cour_ver_g;
+
+	cour_hor.val = max_hor_courant_number(3,fNX-3,3,fNY-3,us,vs,m_ubar,m_vbar,inds_hor);
+	cour_ver.val = max_ver_courant_number(3,fNX-3,3,fNY-3,ws,m_wbar,vts,inds_ver);
+	cour_hor.rank = rank;
+	cour_ver.rank = rank;
+
+
+	get_max_mpi(&cour_hor,&cour_hor_g,1);
+	get_max_mpi(&cour_ver,&cour_ver_g,1);
+
+	send_int_from_process_to_root(inds_hor,inds_hor_g,cour_hor_g.rank,3);
+	send_int_from_process_to_root(inds_ver,inds_ver_g,cour_ver_g.rank,3);
+
+	if(rank==0){
+
+		int ilath = inds_hor_g[1];
+		int ilonh = inds_hor_g[0];
+		int ilatv = inds_ver_g[1];
+		int ilonv = inds_ver_g[0];
+		inds_hor_g[0] += ibs[cour_hor_g.rank] - 3;
+		inds_hor_g[1] += jbs[cour_hor_g.rank] - 3;
+		inds_ver_g[0] += ibs[cour_ver_g.rank] - 3;
+		inds_ver_g[1] += jbs[cour_ver_g.rank] - 3;
+		printf("-----------------------------------------------------------\n");								
+		printf("------------------ Courant Number -------------------------\n");
+		printf("Hor. = %.2f at %3d i %3d j %3d k / %.1f Lat %.1f Lon %.1f km \nVer. = %.2f at %3d i %3d j %3d k / %.1f Lat %.1f Lon %.1f km\n",
+		cour_hor_g.val,inds_hor_g[0],inds_hor_g[1],inds_hor_g[2],LATS(ilath),LONS(ilonh),1e-3*ZU(inds_hor_g[2]),
+		cour_ver_g.val,inds_ver_g[0],inds_ver_g[1],inds_ver_g[2],LATS(ilatv),LONS(ilonv),1e-3*ZU(inds_ver_g[2]));
+		printf("-----------------------------------------------------------\n");
+
+	}
+}
+#endif
+/*********************************************************************
+*
+**********************************************************************/
+void print_courant_number_serial(){
+
+	int inds_hor[3],inds_ver[3];
+
+	double Ch = max_hor_courant_number(0,NX,0,NY,us,vs,m_ubar,m_vbar,inds_hor);
+	double Cv = max_ver_courant_number(0,NX,0,NY,ws,m_wbar,vts,inds_ver);
+
+
+	printf("-----------------------------------------------------------\n");								
+	printf("------------------ Courant Number -------------------------\n");
+	printf("Hor. = %.2f at %3d i %3d j %3d k / %.1f Lat %.1f Lon %.1f km \nVer. = %.2f at %3d i %3d j %3d k / %.1f Lat %.1f Lon %.1f km\n",
+	Ch,inds_hor[0],inds_hor[1],inds_hor[2],LATS(inds_hor[1]),LONS(inds_hor[0]),1e-3*ZU(inds_hor[2]),
+	Cv,inds_ver[0],inds_ver[1],inds_ver[2],LATS(inds_ver[1]),LONS(inds_ver[0]),1e-3*ZU(inds_ver[2]));
+	printf("-----------------------------------------------------------\n");
+
+	
+}
+
+/****************************************************
+! Bengt Fornberg (1988) algorithm for finding interpolation
+! weights for derivatives
+!
+! Input Parameters
+! z       - location where approximations are to be accurate,
+! x(0:nd) - grid point locations, found in x(0:n)
+! n       - one less than total number of grid points; n must not exceed the parameter nd below,
+! nd      - dimension of x- and c-arrays in calling program x(0:nd) and c(0:nd,0:m), respectively, 
+! m       - highest derivative for which weights are sought,
+! 
+! Output Parameter
+! c(0:nd,0:m) weights at grid locations x(0:n) for derivatives c--- of order 0:m, found in c(0:n,0:m)
+****************************************************/
+void derivative_weights(double z,double *x, int n, int nd, int m,double *c){
+
+    double c1,c2,c3,c4,c5;
+    int  i, j, k, mn;
+
+#if 0
+	printf("\n");
+	printf("%f\n\n",z);
+	for(int i=0;i<=n;i++){ printf("%f\n",x[i]);}
+	printf("\n");
+#endif
+	
+    c1 = 1.0;
+    c4 = x[0] - z;
+
+    c[index2d(m+1,0,0)] = 1.0;
+
+	for(int i=1;i<=n;i++){
+		
+        mn = min(i,m);
+        c2 = 1.0;
+        c5 = c4;
+        c4 = x[i]-z;
+
+		for(int j=0;j<=i-1;j++){
+
+            c3 = x[i]-x[j];
+            c2 = c2*c3;
+
+            if (j == i-1){
+				
+				for(int k=mn;k>=1;k--){
+					
+                    c[index2d(m+1,i,k)] = c1*( k * c[index2d(m+1,i-1,k-1)] - c5 * c[index2d(m+1,i-1,k)] ) / c2;
+				}
+
+                c[index2d(m+1,i,0)] = -c1*c5*c[index2d(m+1,i-1,0)] / c2;
+
+            }
+
+            for(int k=mn;k>=1;k--){
+				
+                c[index2d(m+1,j,k)] = (c4 * c[index2d(m+1,j,k)] - k * c[index2d(m+1,j,k-1)] ) / c3;
+            }
+
+            c[index2d(m+1,j,0)]  = c4 * c[index2d(m+1,j,0)] / c3;
+        }
+
+        c1 = c2;
+
+    }
+	
+	for(int j=0;j<=m;j++){
+		//printf("%d\n",j);
+	
+		for(int i=0;i<=m;i++){
+			//printf("%f  \n",c[index2d(m+1,i,j)] );
+	}}
+	
+
+}
+
+
 /****************************************************
 * 
 *****************************************************/
@@ -709,7 +947,7 @@ void rescale_pert2(double max,double scale){
 * 
 *
 **********************************************************************/
-void print_time_estimates(int total_cputime,int total_walltime,int timer_counter){
+void print_time_estimates(double total_cputime,double total_walltime,int timer_counter){
 
 	int cputime_secs = (int)((total_cputime  / (double)timer_counter) * (number_of_time_steps - bigcounter));
 	int walltime_secs = (int)((total_walltime / (double)timer_counter) * (number_of_time_steps - bigcounter));
@@ -721,7 +959,7 @@ void print_time_estimates(int total_cputime,int total_walltime,int timer_counter
 	int wall_time_min = (walltime_secs % 3600) / 60;
 	int wall_time_sec = (walltime_secs % 3600) % 60;
 
-	printf("Estimated time remaining: cpu time = %02d:%02d:%02d hours, wall time = %02d:%02d:%02d hours\n",
+	printf("Estimated time remaining: cpu time = %02d:%02d:%02d h:m:s, wall time = %02d:%02d:%02d hours\n",
 	cpu_time_hours,cpu_time_min,cpu_time_sec,wall_time_hours,wall_time_min,wall_time_sec);
 
 	cputime_secs = (int)((total_cputime  / (double)timer_counter) * number_of_time_steps);

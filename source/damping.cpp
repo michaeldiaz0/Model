@@ -20,22 +20,24 @@
 			)		
 #endif
 
-const double cmixhx = 0.05;
-const double cmixhy = 0.05;
-const double cmixv = 0.1;
+double *weights;
+double *temp_var;
 
 double kmixhx;
 double kmixhy;
 double kmixv;
 
-const double diffh_coef_2nd = 0.005;//0.005;
-const double diffv_coef_2nd = 0.0005;//0.0005;
+const double diffh_coef_2nd = 0.01;//0.005;
+const double diffv_coef_2nd = 0.01;//0.0005;
 const double diffh_coef_4th = 0.01;
-const double diffv_coef_4th = 0.001;
-const double diffh_coef_6th = 0.012*0.5; //0.012;
-const double diffv_coef_6th = 0.0012*0.5; //0.0012;
+const double diffv_coef_4th = 0.01;
+const double diffh_coef_6th = 0.01; //0.012;
+const double diffv_coef_6th = 0.01; //0.0012;
 const double diffh_coef_8th = 0.012;
 const double diffv_coef_8th = 0.0012;
+
+double kdiffh = 0.005;
+double kdiffv = 0.005;
 
 double kmixh2nd;
 double kmixv2nd;
@@ -68,11 +70,6 @@ const double fivehalves = 5.0/2.0;
 fftw_complex *u_fft_in,*u_fft_out;
 fftw_plan u_fft_plan_forward,u_fft_plan_reverse;
 
-//double R[NZ];
-//const double R0 = 0.01;
-//const double Z_Tropopause = 15000;
-
-
 /*********************************************************************
 * FUNCTION PROTYPES
 **********************************************************************/
@@ -89,19 +86,21 @@ double diffuse_j_8th(double *var,int i,int j,int k);
 double diffuse_k_8th(double *var,int i,int j,int k);
 
 void diffusion_8th_var(double *pvar,double *mvar,double step,int il,int ih,int jl,int jh,double *output=NULL);
-//void diffusion_6th_var(double *pvar,double *mvar,double step,int il,int ih,int jl,int jh,double *output=NULL);
+void diffusion_6th_var(double *pvar,double *mvar,double step,int il,int ih,int jl,int jh,double *output=NULL);
 void diffusion_4th_var(double *pvar,double *mvar,double step,int il,int ih,int jl,int jh,double *output=NULL);
-void diffusion_2nd_var(double *pvar,double *mvar,double step,int il,int ih,int jl,int jh);
+void diffusion_2nd_var(double *pvar,double *mvar,double step,int il,int ih,int jl,int jh,double *output=NULL);
+
+void diffusion_8th_all(double step,int il,int ih,int jl,int jh);
+void diffusion_6th_all(double step,int il,int ih,int jl,int jh);
+void diffusion_4th_all(double step,int il,int ih,int jl,int jh);
+void diffusion_2nd_all(double step,int il,int ih,int jl,int jh);
 
 /*********************************************************************
 * INITIALIZER
 **********************************************************************/
 void init_damping(int ni,int nj,int nk){
 	
-	kmixhx = cmixhx*dx*dx/dt;
-	kmixhy = cmixhy*dy*dy/dt;
-	kmixv = cmixv*dz*dz/dt;
-
+#if 0
 	kmixh2nd = diffh_coef_2nd*dx*dx/dt;
 	kmixv2nd = diffv_coef_2nd*dz*dz/dt;
 	kmixh4th = diffh_coef_4th*dx*dx*dx*dx/dt;
@@ -110,7 +109,27 @@ void init_damping(int ni,int nj,int nk){
 	kmixv6th = diffv_coef_6th*dz*dz*dz*dz*dz*dz/dt;
 	kmixh8th = diffh_coef_8th*dx*dx*dx*dx*dx*dx*dx*dx/dt;
 	kmixv8th = diffv_coef_8th*dz*dz*dz*dz*dz*dz*dz*dz/dt;
-
+#elif 0
+	kmixh2nd = diffh_coef_2nd;//*dx*dx/dt;
+	kmixv2nd = diffv_coef_2nd;//*dz*dz/dt;
+	kmixh4th = diffh_coef_4th;//*dx*dx*dx*dx/dt;
+	kmixv4th = diffv_coef_4th;//*dz*dz*dz*dz/dt;
+	kmixh6th = diffh_coef_6th;//*dx*dx*dx*dx*dx*dx/dt;
+	kmixv6th = diffv_coef_6th;//*dz*dz*dz*dz*dz*dz/dt;
+	kmixh8th = diffh_coef_8th;//*dx*dx*dx*dx*dx*dx*dx*dx/dt;
+	kmixv8th = diffv_coef_8th;//*dz*dz*dz*dz*dz*dz*dz*dz/dt;
+#else
+	kmixh2nd = kdiffh;//*dx*dx/dt;
+	kmixv2nd = kdiffv;//*dz*dz/dt;
+	kmixh4th = kdiffh;//*dx*dx*dx*dx/dt;
+	kmixv4th = kdiffv;//*dz*dz*dz*dz/dt;
+	kmixh6th = kdiffh;//*dx*dx*dx*dx*dx*dx/dt;
+	kmixv6th = kdiffv;//*dz*dz*dz*dz*dz*dz/dt;
+	kmixh8th = kdiffh;//*dx*dx*dx*dx*dx*dx*dx*dx/dt;
+	kmixv8th = kdiffv;//*dz*dz*dz*dz*dz*dz*dz*dz/dt;
+#endif
+	
+	//printf("%e %e\n",kmixh6th,kmixv6th);
 	dx2 = dx*dx;   dy2 = dy*dy;   dz2 = dz*dz;
 	dx4 = dx2*dx2; dy4 = dy2*dy2; dz4 = dz2*dz2;
 	dx6 = dx2*dx4; dy6 = dy2*dy4; dz6 = dz2*dz4;
@@ -126,6 +145,152 @@ void init_damping(int ni,int nj,int nk){
 		u_diff_tend = (double*)calloc(ni*nj*nk,sizeof(double));
 		v_diff_tend = (double*)calloc(ni*nj*nk,sizeof(double));
 	}
+	
+	if(USE_EXPLICIT_DIFFUSION){
+		//printf("%d %d %d\n",ni,nj,nk);
+		 temp_var = (double*)calloc(ni*nj*nk,sizeof(double));
+	}
+	
+}
+
+/*********************************************************************
+* INITIALIZER
+**********************************************************************/
+void init_diffusion_weights(int deriv_order,double *heights){
+	
+	int lower_order,k;
+	
+	weights = (double*)calloc((deriv_order+1)*NZ,sizeof(double));
+	
+	double *weights_point = (double*)calloc((deriv_order+1)*(deriv_order+1),sizeof(double));
+	
+	double *heights_scaled = (double*)calloc(NZ,sizeof(double));
+	
+	//derivative_weights(zsu[9+3],zsu+9, deriv_order, deriv_order, deriv_order,weights_point);
+
+	for(k=0;k<NZ;k++){
+	//	heights_scaled[k] = heights[k] / dz;
+		//printf("%d %f\n",k,heights_scaled[k]);
+	}
+
+	for(k=deriv_order/2;k<NZ-deriv_order/2;k++){
+		//printf("%d %f\n",k,zsu[k]);
+		
+		for(int n=0;n<NZ;n++){
+			heights_scaled[n] = (heights[n]-heights[k]) / (heights[k+1]-heights[k]);
+			//printf("%d %f\n",k,heights_scaled[k]);
+		}
+		//heights_scaled[NZ-1] = (heights[NZ-1] + (heights[NZ-1]-heights[NZ-2])-heights[k]) / (heights[k+1]-heights[k]);
+		
+		memset(weights_point,0,(deriv_order+1)*(deriv_order+1)*sizeof(double));
+		
+		derivative_weights(heights_scaled[k], heights_scaled-deriv_order/2+k, deriv_order, deriv_order, deriv_order, weights_point);
+		
+		for(int j=0;j<=deriv_order;j++){
+		
+			weights[index2d(deriv_order+1,k,j)] = weights_point[index2d(deriv_order+1,j,deriv_order)];
+		}
+	}
+	
+	if(deriv_order > 4){
+		
+		lower_order = 4;
+		
+		k = 2;
+		//printf("%d %f\n",k,zsu[k]);
+		for(int n=0;n<NZ-1;n++){
+			heights_scaled[n] = (heights[n]-heights[k]) / (heights[k+1]-heights[k]);
+			//printf("%d %f\n",k,heights_scaled[k]);
+		}
+		memset(weights_point,0,(deriv_order+1)*(deriv_order+1)*sizeof(double));
+		
+		derivative_weights(heights_scaled[k], heights_scaled-2+k, lower_order, lower_order, lower_order, weights_point);
+		
+		for(int j=0;j<=lower_order;j++){
+		
+			weights[index2d(deriv_order+1,k,j)] = weights_point[index2d(lower_order+1,j,lower_order)];
+			
+		}
+		
+		k = NZ-3;
+		//printf("%d %f\n",k,zsu[k]);
+		for(int n=0;n<NZ;n++){
+			heights_scaled[n] = (heights[n]-heights[k]) / (heights[k+1]-heights[k]);
+			//printf("%d %f\n",k,heights_scaled[k]);
+		}
+
+		//heights_scaled[NZ-1] = heights[NZ-1] / (heights[NZ-1]-heights[NZ-2]);
+		
+		memset(weights_point,0,(deriv_order+1)*(deriv_order+1)*sizeof(double));
+		
+		derivative_weights(heights_scaled[k], heights_scaled-2+k, lower_order, lower_order, lower_order, weights_point);
+		
+		for(int j=0;j<=lower_order;j++){
+		
+			weights[index2d(deriv_order+1,k,j)] = weights_point[index2d(lower_order+1,j,lower_order)];
+			
+		}
+		
+	}
+	
+	if(deriv_order > 2){
+		
+		lower_order = 2;
+		
+		k = 1;
+		//printf("%d %f\n",k,zsu[k]);
+		for(int n=0;n<NZ;n++){
+			heights_scaled[n] = (heights[n]-heights[k]) / (heights[k+1]-heights[k]);
+			//printf("%d %f\n",k,heights_scaled[k]);
+		}
+		memset(weights_point,0,(deriv_order+1)*(deriv_order+1)*sizeof(double));
+		
+		derivative_weights(heights_scaled[k], heights_scaled-1+k, lower_order, lower_order, lower_order, weights_point);
+		
+		for(int j=0;j<=lower_order;j++){
+		
+			weights[index2d(deriv_order+1,k,j)] = weights_point[index2d(lower_order+1,j,lower_order)];
+			
+		}
+		
+		k = NZ-2;
+		//printf("%d %f\n",k,zsu[k]);
+		for(int n=0;n<NZ;n++){
+			heights_scaled[n] = (heights[n]-heights[k]) / (heights[k+1]-heights[k]);
+			//printf("%d %f\n",k,heights_scaled[k]);
+		}
+		//heights_scaled[NZ-1] = heights[NZ-1] / (heights[NZ-1]-heights[NZ-2]);
+		
+		memset(weights_point,0,(deriv_order+1)*(deriv_order+1)*sizeof(double));
+		
+		derivative_weights(heights_scaled[k], heights_scaled-1+k, lower_order, lower_order, lower_order, weights_point);
+		
+		for(int j=0;j<=lower_order;j++){
+		
+			weights[index2d(deriv_order+1,k,j)] = weights_point[index2d(lower_order+1,j,lower_order)];
+			
+		}
+		
+	}
+	
+#if 0
+	for(int j=0;j<=deriv_order;j++){
+		//printf("%d\n",j);
+	
+		for(int i=0;i<=deriv_order;i++){
+		//printf("%f  \n",weights_point[index2d(deriv_order+1,i,j)] );
+	}}
+	
+	for(int k=1;k<NZ-1;k++){
+		printf("%d\n",k);
+	
+		for(int i=0;i<=deriv_order;i++){
+		printf("%f  \n",weights[index2d(deriv_order+1,k,i)] );
+	}}
+#endif	
+	free(weights_point);
+	free(heights_scaled);
+	//exit(0);
 }
 
 /*********************************************************************
@@ -388,6 +553,17 @@ double diffuse_k_2nd(double *var,int i,int j,int k){
 *
 *
 **********************************************************************/
+double diffuse_k_2nd(double *var,double *weights,int i,int j,int k){
+	
+	return	weights[0] * var[INDEX(i,j,k-1)] +
+		 	weights[1] * var[INDEX(i,j,k  )] +
+			weights[2] * var[INDEX(i,j,k+1)];
+}
+
+/*********************************************************************
+*
+*
+**********************************************************************/
 double diffuse_i_2nd_fourthorder(double *var,int i,int j,int k){
 	
 	return -onetwelfth*var[INDEX(i-2,j,k)] +
@@ -462,6 +638,18 @@ double diffuse_k_4th(double *var,int i,int j,int k){
 				var[INDEX(i,j,k+2)];
 }
 
+/*********************************************************************
+*
+*
+**********************************************************************/
+double diffuse_k_4th(double *var,double *weights,int i,int j,int k){
+	
+	return	weights[0] * var[INDEX(i,j,k-2)] +
+		 	weights[1] * var[INDEX(i,j,k-1)] +
+			weights[2] * var[INDEX(i,j,k  )] +
+			weights[3] * var[INDEX(i,j,k+1)] +
+			weights[4] * var[INDEX(i,j,k+2)];
+}
 
 /*********************************************************************
 *
@@ -506,6 +694,21 @@ double diffuse_k_6th(double *var,int i,int j,int k){
 			15.0*var[INDEX(i,j,k+1)] -
 			 6.0*var[INDEX(i,j,k+2)] +
 				 var[INDEX(i,j,k+3)];
+}
+
+/*********************************************************************
+*
+*
+**********************************************************************/
+double diffuse_k_6th(double *var,double *weights,int i,int j,int k){
+	
+	return	weights[0] * var[INDEX(i,j,k-3)] +
+		 	weights[1] * var[INDEX(i,j,k-2)] +
+			weights[2] * var[INDEX(i,j,k-1)] +
+			weights[3] * var[INDEX(i,j,k  )] +
+			weights[4] * var[INDEX(i,j,k+1)] +
+			weights[5] * var[INDEX(i,j,k+2)] +
+			weights[6] * var[INDEX(i,j,k+3)];
 }
 
 /*********************************************************************
@@ -559,14 +762,50 @@ double diffuse_k_8th(double *var,int i,int j,int k){
 				 var[INDEX(i,j,k+4)];
 }
 
+/*********************************************************************
+* 
+*
+**********************************************************************/
+void diffusion_2nd_var(double *pvar,double *mvar,double step,int il,int ih,int jl,int jh,double *output){
+
+	int ind = DIFFUSION_ORDER + 1; // should always be three, right?
+
+	//-----------------------------------------------------
+	// Middle levels
+	//-----------------------------------------------------	
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+	for(int k=1;k<NZ-1;k++){
+		
+		temp_var[INDEX(i,j,k)] = step * (	
+			+ kmixh2nd * diffuse_i_2nd(mvar,i,j,k)
+			+ kmixh2nd * diffuse_j_2nd(mvar,i,j,k)
+		#if !STRETCHED_GRID	
+			+ kmixv2nd * diffuse_k_2nd(mvar,i,j,k)
+		#else
+			+ kmixv2nd * diffuse_k_2nd(mvar,weights+index2d(ind,k,0),i,j,k)
+		#endif
+			);
+	}}}
+	
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+	for(int k=1;k<NZ-1;k++){
+
+		pvar[INDEX(i,j,k)] += temp_var[INDEX(i,j,k)];
+		
+	}}}
+}
 
 /*********************************************************************
-* NOT YET COMPATIBLE WITH STRETCHED GRID!!!!!!!!!
+*
 *
 **********************************************************************/
 void diffusion_4th_var(double *pvar,double *mvar,double step,int il,int ih,int jl,int jh,double *output){
 	
 	double diff_tend_var;
+	
+	int ind = DIFFUSION_ORDER + 1; // should always be five, right?
 	
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
@@ -574,12 +813,16 @@ void diffusion_4th_var(double *pvar,double *mvar,double step,int il,int ih,int j
 		// Use 2nd order vertical for lowest level
 		//-----------------------------------------------------
 		diff_tend_var = (	
-			- kmixh4th * diffuse_i_4th(mvar,i,j,1) * one_d_dx4
-			- kmixh4th * diffuse_j_4th(mvar,i,j,1) * one_d_dy4 	
-			+ kmixv2nd * diffuse_k_2nd(mvar,i,j,1) * one_d_dz2
+			- kmixh4th * diffuse_i_4th(mvar,i,j,1)
+			- kmixh4th * diffuse_j_4th(mvar,i,j,1)
+		#if !STRETCHED_GRID	
+			+ kmixv2nd * diffuse_k_2nd(mvar,i,j,1)
+		#else
+			+ kmixv2nd * diffuse_k_2nd(mvar,weights+index2d(ind,NZ-2,0),i,j,1)
+		#endif
 		);
 		
-		pvar[INDEX(i,j,1)] += step*dt*diff_tend_var;
+		temp_var[INDEX(i,j,1)] = step*diff_tend_var;
 		
 		#if OUTPUT_DIFFUSION_TEND
 		if(output != NULL)
@@ -591,12 +834,16 @@ void diffusion_4th_var(double *pvar,double *mvar,double step,int il,int ih,int j
 		for(int k=2;k<NZ-2;k++){
 		
 			diff_tend_var = (	
-				- kmixh4th * diffuse_i_4th(mvar,i,j,k) * one_d_dx4
-				- kmixh4th * diffuse_j_4th(mvar,i,j,k) * one_d_dy4 	
-				- kmixv4th * diffuse_k_4th(mvar,i,j,k) * one_d_dz4
+				- kmixh4th * diffuse_i_4th(mvar,i,j,k)
+				- kmixh4th * diffuse_j_4th(mvar,i,j,k)
+			#if !STRETCHED_GRID
+				- kmixv4th * diffuse_k_4th(mvar,i,j,k)
+			#else
+				- kmixv4th * diffuse_k_4th(mvar,weights+index2d(ind,k,0),i,j,k)
+			#endif
 			);
 			
-			pvar[INDEX(i,j,k)] += step*dt*diff_tend_var;
+			temp_var[INDEX(i,j,k)] = step*diff_tend_var;
 		
 			#if OUTPUT_DIFFUSION_TEND
 			if(output != NULL)
@@ -604,32 +851,45 @@ void diffusion_4th_var(double *pvar,double *mvar,double step,int il,int ih,int j
 			#endif
 		}
 		//-----------------------------------------------------
-		// Use 2nd order vertical for lhighest level
+		// Use 2nd order vertical for highest level
 		//-----------------------------------------------------
 		diff_tend_var = (	
-			- kmixh4th * diffuse_i_4th(mvar,i,j,NZ-2) * one_d_dx4
-			- kmixh4th * diffuse_j_4th(mvar,i,j,NZ-2) * one_d_dy4 	
-			+ kmixv2nd * diffuse_k_2nd(mvar,i,j,NZ-2) * one_d_dz2
+			- kmixh4th * diffuse_i_4th(mvar,i,j,NZ-2)
+			- kmixh4th * diffuse_j_4th(mvar,i,j,NZ-2) 	
+		#if !STRETCHED_GRID	
+			+ kmixv2nd * diffuse_k_2nd(mvar,i,j,NZ-2)
+		#else
+			+ kmixv2nd * diffuse_k_2nd(mvar,weights+index2d(ind,NZ-2,0),i,j,NZ-2)
+		#endif
 		);
 		
-		pvar[INDEX(i,j,NZ-2)] += step*dt*diff_tend_var;
+		temp_var[INDEX(i,j,NZ-2)] = step*diff_tend_var;
 	
 		#if OUTPUT_DIFFUSION_TEND
 		if(output != NULL)
 			output[INDEX(i,j,NZ-2)] = diff_tend_var;
 		#endif
 	}}
+	
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+	for(int k=1;k<NZ-1;k++){
+
+		pvar[INDEX(i,j,k)] += temp_var[INDEX(i,j,k)];
+		
+	}}}
 }
 
 /*********************************************************************
-* NOT YET COMPATIBLE WITH STRETCHED GRID!!!!!!!!!
+* 
 *
 **********************************************************************/
 void diffusion_6th_var(double *pvar,double *mvar,double step,int il,int ih,int jl,int jh,double *output){
 	
 	double diff_tend_var;
 	double xdiff,ydiff,zdiff;
-	
+	int ind = DIFFUSION_ORDER + 1; // should always be seven, right?
+
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
 	for(int k=1;k<NZ-1;k++){
@@ -638,25 +898,40 @@ void diffusion_6th_var(double *pvar,double *mvar,double step,int il,int ih,int j
 		// Use lower order vertical diffusion for uppermost
 		// and lowermost heights
 		//-----------------------------------------------------
-		if(		k==1 || k==NZ-2){ zdiff = +kmixv2nd * diffuse_k_2nd(mvar,i,j,k) * one_d_dz2;} 
-		else if(k==2 || k==NZ-3){ zdiff = -kmixv4th * diffuse_k_4th(mvar,i,j,k) * one_d_dz4;}
-		else 					{ zdiff = +kmixv6th * diffuse_k_6th(mvar,i,j,k) * one_d_dz6;}
+#if STRETCHED_GRID
+		if(		k==1 || k==NZ-2){ zdiff = +kmixv2nd * diffuse_k_2nd(mvar,weights+index2d(ind,k,0),i,j,k);} 
+		else if(k==2 || k==NZ-3){ zdiff = -kmixv4th * diffuse_k_4th(mvar,weights+index2d(ind,k,0),i,j,k);}
+		else {                    zdiff = +kmixv6th * diffuse_k_6th(mvar,weights+index2d(ind,k,0),i,j,k);}
+#else
+		if(		k==1 || k==NZ-2){ zdiff = +kmixv2nd * diffuse_k_2nd(mvar,i,j,k);}
+		else if(k==2 || k==NZ-3){ zdiff = -kmixv4th * diffuse_k_4th(mvar,i,j,k);}
+		else 					{ zdiff = +kmixv6th * diffuse_k_6th(mvar,i,j,k);}
+#endif		
 		
 #if MERIDIONAL_CROSS_SECTION
-		xdiff = 0;//kmixh6th * diffuse_i_6th(mvar,i,j,k) * one_d_dx6;
+		xdiff = 0;
 #else
-		xdiff = kmixh6th * diffuse_i_6th(mvar,i,j,k) * one_d_dx6;
+		xdiff = kmixh6th * diffuse_i_6th(mvar,i,j,k);
 #endif
-		ydiff = kmixh6th * diffuse_j_6th(mvar,i,j,k) * one_d_dy6;
+		ydiff = kmixh6th * diffuse_j_6th(mvar,i,j,k);
 
 		diff_tend_var = xdiff + ydiff + zdiff;
 		
-		pvar[INDEX(i,j,k)] += step*dt*diff_tend_var;
-	
+		//temp_var[INDEX(i,j,k)] = step*dt*diff_tend_var;
+		temp_var[INDEX(i,j,k)] = step*diff_tend_var;
+		
 		#if OUTPUT_DIFFUSION_TEND
 		if(output != NULL)
 			output[INDEX(i,j,k)] = diff_tend_var;
 		#endif
+	}}}
+	
+	for(int i=il;i<ih;i++){
+	for(int j=jl;j<jh;j++){
+	for(int k=1;k<NZ-1;k++){
+
+		pvar[INDEX(i,j,k)] += temp_var[INDEX(i,j,k)];
+		
 	}}}
 }
 
@@ -700,27 +975,6 @@ void diffusion_8th_var(double *pvar,double *mvar,double step,int il,int ih,int j
 * NOT YET COMPATIBLE WITH STRETCHED GRID!!!!!!!!!
 *
 **********************************************************************/
-void diffusion_2nd_var(double *pvar,double *mvar,double step,int il,int ih,int jl,int jh){
-
-	//-----------------------------------------------------
-	// Middle levels
-	//-----------------------------------------------------	
-	for(int i=il;i<ih;i++){
-	for(int j=jl;j<jh;j++){
-	for(int k=1;k<NZ-1;k++){
-		
-		pvar[INDEX(i,j,k)] += step*dt* (	
-			+ kmixh2nd * diffuse_i_2nd(mvar,i,j,k) * one_d_dx2
-			+ kmixh2nd * diffuse_j_2nd(mvar,i,j,k) * one_d_dy2 	
-			+ kmixv2nd * diffuse_k_2nd(mvar,i,j,k) * one_d_dz2
-			);
-	}}}
-}
-
-/*********************************************************************
-* NOT YET COMPATIBLE WITH STRETCHED GRID!!!!!!!!!
-*
-**********************************************************************/
 void diffusion_8th_all(double step,int il,int ih,int jl,int jh){
 	
 	if(OUTPUT_DIFFUSION_TEND){
@@ -736,21 +990,36 @@ void diffusion_8th_all(double step,int il,int ih,int jl,int jh){
 }
 
 /*********************************************************************
-* NOT YET COMPATIBLE WITH STRETCHED GRID!!!!!!!!!
+*
 *
 **********************************************************************/
 void diffusion_6th_all(double step,int il,int ih,int jl,int jh){
-	
+
 	if(OUTPUT_DIFFUSION_TEND){
-		diffusion_6th_var(&UP(0,0,0),&UM(0,0,0),step,il,ih,jl,jh,u_diff_tend);
-		diffusion_6th_var(&VP(0,0,0),&VM(0,0,0),step,il,ih,jl,jh,v_diff_tend);
+		diffusion_6th_var(&UM(0,0,0),&UM(0,0,0),step,il,ih,jl,jh,u_diff_tend);
+		diffusion_6th_var(&VM(0,0,0),&VM(0,0,0),step,il,ih,jl,jh,v_diff_tend);
 	} else {
-		diffusion_6th_var(&UP(0,0,0),&UM(0,0,0),step,il,ih,jl,jh);
-		diffusion_6th_var(&VP(0,0,0),&VM(0,0,0),step,il,ih,jl,jh);
+		diffusion_6th_var(&UM(0,0,0),&UM(0,0,0),step,il,ih,jl,jh);
+		diffusion_6th_var(&VM(0,0,0),&VM(0,0,0),step,il,ih,jl,jh);
 	}
 	
-	diffusion_6th_var(&WP(0,0,0),&WM(0,0,0),step,il,ih,jl,jh);
-	diffusion_6th_var(&THP(0,0,0),&THM(0,0,0),step,il,ih,jl,jh);
+	if(!HYDROSTATIC){
+		diffusion_6th_var(&WM(0,0,0),&WM(0,0,0),step,il,ih,jl,jh);
+	}
+	
+	diffusion_6th_var(&THM(0,0,0),&THM(0,0,0),step,il,ih,jl,jh);
+	
+	if(USE_MICROPHYSICS){
+		
+		diffusion_6th_var(&QVM(0,0,0),&QVM(0,0,0),step,il,ih,jl,jh);
+		diffusion_6th_var(&QCM(0,0,0),&QCM(0,0,0),step,il,ih,jl,jh);
+		diffusion_6th_var(&QRM(0,0,0),&QRM(0,0,0),step,il,ih,jl,jh);
+		
+		if(USE_ICE){
+			diffusion_6th_var(&QIM(0,0,0),&QIM(0,0,0),step,il,ih,jl,jh);
+			diffusion_6th_var(&QSM(0,0,0),&QSM(0,0,0),step,il,ih,jl,jh);
+		}
+	}
 }
 
 /*********************************************************************
@@ -773,27 +1042,63 @@ void diffusion_6th_all2(double step,int il,int ih,int jl,int jh){
 void diffusion_4th_all(double step,int il,int ih,int jl,int jh){
 	
 	if(OUTPUT_DIFFUSION_TEND){
-		diffusion_4th_var(&UP(0,0,0),&UM(0,0,0),step,il,ih,jl,jh,u_diff_tend);
-		diffusion_4th_var(&VP(0,0,0),&VM(0,0,0),step,il,ih,jl,jh,v_diff_tend);
+		diffusion_4th_var(&UM(0,0,0),&UM(0,0,0),step,il,ih,jl,jh,u_diff_tend);
+		diffusion_4th_var(&VM(0,0,0),&VM(0,0,0),step,il,ih,jl,jh,v_diff_tend);
 	} else {
-		diffusion_4th_var(&UP(0,0,0),&UM(0,0,0),step,il,ih,jl,jh);
-		diffusion_4th_var(&VP(0,0,0),&VM(0,0,0),step,il,ih,jl,jh);
+		diffusion_4th_var(&UM(0,0,0),&UM(0,0,0),step,il,ih,jl,jh);
+		diffusion_4th_var(&VM(0,0,0),&VM(0,0,0),step,il,ih,jl,jh);
 	}
 	
-	diffusion_4th_var(&WP(0,0,0),&WM(0,0,0),step,il,ih,jl,jh);
-	diffusion_4th_var(&THP(0,0,0),&THM(0,0,0),step,il,ih,jl,jh);
+	if(!HYDROSTATIC){
+		diffusion_4th_var(&WM(0,0,0),&WM(0,0,0),step,il,ih,jl,jh);
+	}
+	
+	diffusion_4th_var(&THM(0,0,0),&THM(0,0,0),step,il,ih,jl,jh);
+	
+	if(USE_MICROPHYSICS){
+		
+		diffusion_4th_var(&QVM(0,0,0),&QVM(0,0,0),step,il,ih,jl,jh);
+		diffusion_4th_var(&QCM(0,0,0),&QCM(0,0,0),step,il,ih,jl,jh);
+		diffusion_4th_var(&QRM(0,0,0),&QRM(0,0,0),step,il,ih,jl,jh);
+		
+		if(USE_ICE){
+			diffusion_4th_var(&QIM(0,0,0),&QIM(0,0,0),step,il,ih,jl,jh);
+			diffusion_4th_var(&QSM(0,0,0),&QSM(0,0,0),step,il,ih,jl,jh);
+		}
+	}
 }
 
 /*********************************************************************
-* NOT YET COMPATIBLE WITH STRETCHED GRID!!!!!!!!!
+* 
 *
 **********************************************************************/
 void diffusion_2nd_all(double step,int il,int ih,int jl,int jh){
 	
-	diffusion_2nd_var(&UP(0,0,0),&UM(0,0,0),step,il,ih,jl,jh);
-	diffusion_2nd_var(&VP(0,0,0),&VM(0,0,0),step,il,ih,jl,jh);
-	diffusion_2nd_var(&WP(0,0,0),&WM(0,0,0),step,il,ih,jl,jh);
-	diffusion_2nd_var(&THP(0,0,0),&THM(0,0,0),step,il,ih,jl,jh);
+	if(OUTPUT_DIFFUSION_TEND){
+		diffusion_2nd_var(&UM(0,0,0),&UM(0,0,0),step,il,ih,jl,jh,u_diff_tend);
+		diffusion_2nd_var(&VM(0,0,0),&VM(0,0,0),step,il,ih,jl,jh,v_diff_tend);
+	} else {
+		diffusion_2nd_var(&UM(0,0,0),&UM(0,0,0),step,il,ih,jl,jh);
+		diffusion_2nd_var(&VM(0,0,0),&VM(0,0,0),step,il,ih,jl,jh);
+	}
+	
+	if(!HYDROSTATIC){
+		diffusion_2nd_var(&WM(0,0,0),&WM(0,0,0),step,il,ih,jl,jh);
+	}
+	
+	diffusion_2nd_var(&THM(0,0,0),&THM(0,0,0),step,il,ih,jl,jh);
+	
+	if(USE_MICROPHYSICS){
+		
+		diffusion_2nd_var(&QVM(0,0,0),&QVM(0,0,0),step,il,ih,jl,jh);
+		diffusion_2nd_var(&QCM(0,0,0),&QCM(0,0,0),step,il,ih,jl,jh);
+		diffusion_2nd_var(&QRM(0,0,0),&QRM(0,0,0),step,il,ih,jl,jh);
+		
+		if(USE_ICE){
+			diffusion_2nd_var(&QIM(0,0,0),&QIM(0,0,0),step,il,ih,jl,jh);
+			diffusion_2nd_var(&QSM(0,0,0),&QSM(0,0,0),step,il,ih,jl,jh);
+		}
+	}
 }
 
 /*********************************************************************
@@ -811,6 +1116,29 @@ void microphysics_diffusion(int il,int ih,int jl,int jh,double step){
 		DIFFUSE_VARIABLE(QRP,QRM);
 		
 	}}}
+}
+
+/*********************************************************************
+* Diffuse variables
+*
+**********************************************************************/
+void apply_explicit_diffusion(double step,int il,int ih,int jl,int jh){
+	
+	if(DIFFUSION_ORDER==6){
+	
+		diffusion_6th_all(step,il,ih,jl,jh);
+	}
+	
+	if(DIFFUSION_ORDER==4){
+	
+		diffusion_4th_all(step,il,ih,jl,jh);
+	}
+	
+	if(DIFFUSION_ORDER==2){
+	
+		diffusion_2nd_all(step,il,ih,jl,jh);
+	}
+	
 }
 
 /*********************************************************************

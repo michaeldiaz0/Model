@@ -1,19 +1,22 @@
+#define PARALLEL_IO false
+
 #include "netcdf.h"
+
+#if PARALLEL_IO
+	#include "netcdf_par.h"
+#endif
+
 #if PARALLEL
     #include "mpi.h"
 #endif
 
 #define NC64BIT true	// whether to support 64 bit offsets (allows bigger files ~ > 2GB for each output time )
-#define PARALLEL_IO false
 
 #define MODEL_FILES_NOT_WRITTEN 0
 #define MODEL_FILES_WRITTEN 1
 #define ALL_FILES_WRITTEN 2
 #define CAN_RESTART_FROM_FILE_END ALL_FILES_WRITTEN
 
-#if PARALLEL_IO
-	#include "netcdf_par.h"
-#endif
 
 const int len = 150;
 

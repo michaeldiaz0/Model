@@ -182,8 +182,10 @@ void setup_grid(){
 
 	get_sub_dims(dims[0],dims[1],s_nx,s_ny,ibs,jbs);
 
-	if(VERBOSE){ printf("Process %d \t has starting i index \t %d, \t starting j index \t %d, \t and grid dimensions \t %d x %d\n",rank,ibs[rank],jbs[rank],myNX,myNY);}
-
+	if(VERBOSE){
+         printf("Process %d \t has starting i index \t %d, \t starting j index \t %d, \t and grid dimensions \t %d x %d\n",rank,ibs[rank],jbs[rank],myNX,myNY);
+         fflush(stdout);
+     }
 	/**************************************
 	* Calculate index within big domain
 	***************************************/	

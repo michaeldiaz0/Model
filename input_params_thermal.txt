@@ -8,12 +8,12 @@
 | Number of grid points, grid spacing (m),
 | and time step (sec)
 ----------------------------------------
-NX	:	100
-NY  :	100
-NZ	:	43
-dx	:	2500.0
-dz	:	500
-dt	:	15.0
+NX	:	190
+NY  :	190
+NZ	:	90
+dx	:	200
+dz	:	100
+dt	:	1.0
 
 ----------------------------------------
 | Vertical grid stretching. Height (m)
@@ -29,8 +29,8 @@ height_lowest_level : 100
 | if "shift_prime_meridian" is set to 0
 | and from 180 W if set to 1.
 ----------------------------------------
-corner_lat	:	120
-corner_lon	:	50.4
+corner_lat	:	119.47
+corner_lon	:	45
 shift_prime_meridian : 0
 
 ---------------------------------------
@@ -38,13 +38,13 @@ shift_prime_meridian : 0
 | often to output results to a file
 | (in number of time steps)
 ---------------------------------------
-time_steps		 :	100
-output_frequency :	5
+time_steps		 :	189 3600
+output_frequency :	60
 
 ----------------------------------------
 | Grid level to begin upper-level damping
 ----------------------------------------
-rayleigh_damping_z	: 37
+rayleigh_damping_z	: 90
 
 /
 
@@ -112,7 +112,7 @@ run_vorticity_budget :	0
 | 1 - Kessler warm rain microphysics
 | 2 - Rutledge/Hong ice microphysics
 ----------------------------------------
-microphysics_option : 1
+microphysics_option : 0
 
 ----------------------------------------
 | How flow-relative rain vertical 
@@ -140,7 +140,7 @@ water_temp : 29.0
 | orders 2, 4, or 6
 ----------------------------------------
 use_explicit_diffusion : 0
-diffusion_order : 4
+diffusion_order : 6
 kdiffh : 0.005
 kdiffv : 0.005
 /
@@ -185,13 +185,13 @@ output_file_base	: ./
 ----------------------------------------
 | Input files
 ----------------------------------------
-basic_state_input_file	:	rainball.nc
-perturbation_input_file	:	rainball.nc
+basic_state_input_file	:	thermal.nc
+perturbation_input_file	:	thermal.nc
 
 ----------------------------------------
 | Output files
 ----------------------------------------
-output_file				  :	outfile0218_10.nc
+output_file				  :	outfile0219_3.nc
 heat_budget_filename	  :	temp_budget1130_0.nc
 moisture_budget_filename  :	moisture_budget1130_0.nc
 pe_budget_filename		  :	pe_budget1130_0.nc

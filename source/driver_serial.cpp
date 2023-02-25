@@ -3,6 +3,7 @@
 #include "turbulence.h"
 #include "Heating.h"
 #include "energy.h"
+#include "fluxes.h"
 #include "damping.h"
 #include "boundaries.h"
 #include "initializer.h"
@@ -38,6 +39,43 @@ void optional_output(FILE *infile){
 }
 
 /*********************************************************************
+* Top-level initializer for serial model
+**********************************************************************/
+void initialize_serial(){
+	
+	set_outfilename(filename);
+
+	initialize_basic_state();
+	
+	initialize_perturbation();
+	
+	if(USE_TURBULENT_STRESS){ init_kmix(NX,NY,NZ,&ZU(0));}
+	
+	if(USE_MICROPHYSICS){ init_microphysics(NX,NY);}
+	
+	initialize_landsea(landseaMaskFile);
+
+	initialize_pressure_solver();
+	
+	init_boundaries(iebuffer,iwbuffer,jnbuffer,jsbuffer,-1);
+	
+	//init_stats();
+	//heat.initialize(21.18,86.3,19.37,93.0,100000.,6.0);
+	//heat.initialize(15.18,-5,15.37,5,150000.,6.0);
+	//heat.initialize(8,270,8,276,300000.,6.0);
+	//heat.shift(1.0,-2.0);
+
+	//heat.printInfo();
+
+	if(OUTPUT_TO_FILE){ outfile_init(filename);}
+	
+	init_damping(NX,NY,NZ);
+	
+	init_diffusion_weights(DIFFUSION_ORDER,&ZU(0));
+
+}
+
+/*********************************************************************
 * Advance model foreward one full time step using third-order Runge-Kutta
 * integration. One full step consists of three smaller steps.
 *
@@ -59,7 +97,7 @@ void linear_integrate_rk3(){
 		
 		if(USE_TERRAIN){ set_terrain(&THP(0,0,0),&ISTOPO(0,0,0),NX*NY*NZ);}
 		
-		if(EXTRA_DIFFUSION && !STRETCHED_GRID){ diffusion_6th_var(&THP(0,0,0),&THM(0,0,0),steps[s],3,NX-3,3,NY-3);}
+		if(USE_EXPLICIT_DIFFUSION){ apply_explicit_diffusion(steps[s],3,NX-3,3,NY-3);}
 
 		apply_boundary_condition(0);
 		
@@ -70,7 +108,7 @@ void linear_integrate_rk3(){
 				advect_qv(steps[s],3,NX-3,3,NY-3);
 				//}
 			//set_terrain(&QVP(0,0,0),&ISTOPO(0,0,0),NX*NY*NZ);
-			diffusion_6th_var(&QVP(0,0,0),&QVM(0,0,0),steps[s],3,NX-3,3,NY-3);
+			//diffusion_6th_var(&QVP(0,0,0),&QVM(0,0,0),steps[s],3,NX-3,3,NY-3);
 			apply_boundary_condition_microphysics(0);
 			if(s<2){ microphysics_advance_inner(NX*NY*NZ*sizeof(double));}
 		}
@@ -143,6 +181,13 @@ void s_integrate_rk3(){
 	int size = NX*NY*NZ;
 
 	/*******************************************************
+	* Apply explicit diffusion. Do this first, because the
+	* final state should satisfy the anelastic continuity
+	* equation and be free of super saturation.
+	********************************************************/
+	if(USE_EXPLICIT_DIFFUSION){ apply_explicit_diffusion(1.0,3,NX-3,3,NY-3);}
+
+	/*******************************************************
 	* Calculate frictional and diffusional tendencies to
 	* be applied during RK3 loop
 	********************************************************/
@@ -152,6 +197,9 @@ void s_integrate_rk3(){
 	* Runge-Kutta Loop
 	********************************************************/
 	for(int s=0;s<3;s++){
+		
+		// sign of advection for upwind biased derivatives
+		compute_sign_cells(0,NX,0,NY);
 		
 		/*******************************************************
 		* Solve momentum and pressure equations using either
@@ -190,22 +238,6 @@ void s_integrate_rk3(){
 		********************************************************/
 		if(HYDROSTATIC){ w_velocity_LH(1,NX-1,1,NY-1);}
 
-    
-#if 0
-        // divergence calcuation
-        for(int i=1;i<NX-1;i++){
-        for(int j=1;j<NY-1;j++){
-        for(int k=1;k<NZ-1;k++){
-            
-            WM(i,j,k) = rhou[k]*( UP(i+1,j,k)-UP(i,j,k) )*one_d_dx + 
-                             rhou[k]*( VP(i,j+1,k)-VP(i,j,k) )*one_d_dy + 
-                           ( rhow[k+1]*W(i,j,k+1)-rhow[k]*W(i,j,k) )*ONE_D_DZ(k);
-            if(abs(WM(i,j,k)) > 1.0e-8){
-            printf("%e\n",WM(i,j,k));
-            }
-
-        }}}
-#endif
 		/*******************************************************
 		* Handle all boundary conditions
 		********************************************************/
@@ -270,6 +302,8 @@ void s_run_model(int count,FILE *infile){
 	
 	clock_t start_time = clock(),finis_time;
 
+	clock_t start_time_full = clock();
+
 	//------------------------------------------------------
 	// Step through model 'count' number of times
 	//------------------------------------------------------
@@ -297,6 +331,8 @@ void s_run_model(int count,FILE *infile){
 		if(ISLINEAR){ linear_integrate_rk3();}
 		else { s_integrate_rk3();}
 
+		if(inputs.print_courant_number){ print_courant_number_serial();}
+
 		if(OUTPUT_TO_FILE && bigcounter % outfilefreq == 0 && ENSEMBLE==0){
 			
 			if(!isRestartRun || !isFirstStep)
@@ -322,8 +358,7 @@ void s_run_model(int count,FILE *infile){
 		total_cputime += elapsed;
 		timer_counter += 1;
 			
-
-		if(VERBOSE){ printf("time %0.3f hr %0.3f s\n",mtime/3600,elapsed);}
+		if(VERBOSE){ printf("Time %d | Model time %0.3f hr | CPU time %0.3f s\n",bigcounter,mtime/3600,elapsed);}
 		fflush(stdout);
 
 		start_time = clock();
@@ -336,6 +371,11 @@ void s_run_model(int count,FILE *infile){
 		isFirstStep = false;
 	}
 
+	finis_time = clock();
+	elapsed = ((double) (finis_time - start_time_full)) / CLOCKS_PER_SEC;
+
+	printf("Program successfully completed. Total runtime: %f\n",elapsed);
+
 }
 
 /*********************************************************************
@@ -346,5 +386,4 @@ void run_serial_model(int count,FILE *infile){
 	initialize_serial();
 	
 	s_run_model(count,infile);
-	
 }

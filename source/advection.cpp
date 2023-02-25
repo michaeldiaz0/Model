@@ -450,6 +450,12 @@ void advect_scalar(double step,int il,int ih,int jl,int jh,double *varm,double *
 **********************************************************************/
 void advect_microphysics_cell(double step,int il,int ih,int jl,int jh){
 
+	//--------------------------------------------------------
+	// If Eulerian rain fall integration, calculate fall speed
+	//--------------------------------------------------------
+	if(RAIN_FALLOUT==1)
+		calculate_eulerian_fall_speed_rain(vts, qrs, il, ih, jl, jh);
+
 	// Calculate the zonal flux on the eastern side of innermost column of boundary points.
 	// This will become the flux on the western side of the leftmost interior cell
 	compute_west_moisture(il-1,jl,jh);
@@ -461,13 +467,22 @@ void advect_microphysics_cell(double step,int il,int ih,int jl,int jh){
 
 		// compute all fluxes for a YZ cross section
 		compute_fluxes_moisture(i,jl-1,jh);
+		
+		
+		
+		
 #if 1
+		//compute_fluxes_scalar(i,jl-1,jh,qvs,m_qbar,qvcell,qvbcell);
 		LOOP2D_JK(jl,jh,1,NZ-1, QVP(i,j,k) = QVM(i,j,k) + step * qv_tend_cell(i,j,k) )
+			
+		//compute_fluxes_scalar(i,jl-1,jh,qcs,qccell);
 		LOOP2D_JK(jl,jh,1,NZ-1, QCP(i,j,k) = QCM(i,j,k) + step * qc_tend_cell(i,j,k) )
+			
+		//compute_fluxes_scalar_with_fallspeed(i,jl-1,jh,qrs,vts,qrcell);
 		LOOP2D_JK(jl,jh,1,NZ-1, QRP(i,j,k) = QRM(i,j,k) + step * qr_tend_cell(i,j,k) )
 #else
 		//-------------------------------------------------------
-		* For each point within the north-south range
+		// For each point within the north-south range
 		//-------------------------------------------------------
 		for(int j=jl;j<jh;j++){
 		for(int k=1;k<NZ-1;k++){
@@ -491,6 +506,12 @@ void advect_microphysics_cell(double step,int il,int ih,int jl,int jh){
 * @param il,ih,jl,jh - beginning and ending indices
 **********************************************************************/
 void advect_ice_cell(double step,int il,int ih,int jl,int jh){
+
+	//--------------------------------------------------------
+	// If Eulerian snow/ice fall integration, calculate fall speed
+	//--------------------------------------------------------
+	if(RAIN_FALLOUT==1)
+		calculate_eulerian_fall_speed_snow_ice(sts, qss, its, pis, il, ih, jl, jh);
 
 	//-------------------------------------------------------------
 	// ADVECTION OF SNOW
