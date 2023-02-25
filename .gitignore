@@ -11,3 +11,5 @@ __pycache__
 .DS_Store
 plot_*.py
 .vscode
+*.dat
+old/
