@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "pcomm.h"
+#include "turbulence.h"
 
 void handle_file_error(int,const char*);
 void add_attribute(int ncid,const char *att_name,const char *value);
@@ -12,6 +13,9 @@ double * temp_storage;
 char filename[len];
 char inputPerturbationFileName[len];
 char inputBasicStateFileName[len];
+
+bool output_K = true;
+bool output_radar = true;
 
 #if !PARALLEL
 int rank = 0;
@@ -168,6 +172,10 @@ void create_outfile(const char *myfilename, bool basestate,bool modelBaseState,b
 			status = nc_def_var (ncid,"lh_flux", NC_FLOAT, 3, var_dimids, &var_id);
 			if (status != NC_NOERR) handle_error(status);
 		}
+		if(output_K){
+			status = nc_def_var (ncid,"eddy_viscosity", NC_FLOAT, 4, var_dimids, &var_id);
+			if (status != NC_NOERR) handle_error(status);
+		}
 	}
 	
 	/*************************************************
@@ -189,7 +197,13 @@ void create_outfile(const char *myfilename, bool basestate,bool modelBaseState,b
 		}
 
 		if(MICROPHYSICS_OPTION==3){
+
 			mpVarCount = 6;
+
+			if(output_radar){
+				status = nc_def_var (ncid,"dBZ", NC_FLOAT, 4, var_dimids, &var_id);
+				if (status != NC_NOERR) handle_error(status);
+			}
 		}
 	
 		for(int i=0;i<mpVarCount;i++){
@@ -708,7 +722,12 @@ void output_meteorological_fields_to_file(
 		}
 
 		if(MICROPHYSICS_OPTION==3){
+
 			write3d(filename,"qg",qgs,tcount);
+
+			if(output_radar){
+				write3d(filename,"dBZ",dBZ,tcount);
+			}
 		}
 	}
 	//------------------------------------------------------
@@ -721,6 +740,11 @@ void output_meteorological_fields_to_file(
 		if(SURFACE_HEAT_FLUX){
 			write2d(filename,"lh_flux",latent_heat_flux,tcount);
 		}
+
+		if(output_K){
+			write3d(filename,"eddy_viscosity",KVmix,tcount);
+		}
+
 	}
 	//------------------------------------------------------
 	// Extra variables

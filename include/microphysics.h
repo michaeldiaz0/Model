@@ -1,15 +1,19 @@
 
-//#if MICROPHYSICS_OPTION > 0
-//	#define USE_MICROPHYSICS 1
-//#else
-//	#define USE_MICROPHYSICS 0
-//#endif
+#define ALPHA(x) ( 1.0 + (x-273.15) / (tmax-tmin) )
+#define SAT_VAP_WAT(t) ( 611.2 * exp(17.67 * (t-273.15) / (t - 29.65) ) )
+#define SAT_VAP_ICE(t) ( 611.2 * exp(21.8745584 * (t-273.15) / (t - 7.66) ) )
+#define SAT_MIX_RATIO(e,p) ( 0.62197 * e / (p-e) )
 
-//#if MICROPHYSICS_OPTION == 2
-//	#define USE_ICE 1
-//#else
-//	#define USE_ICE 0
-//#endif
+const double tmin = -30+273.15;	// temperature below which only ice
+const double tmax = 0+273.15;	// temperature above which only water
+
+// hydrostatic uses Exner pressure
+// non-hydrostatic uses pressure / density
+#if HYDROSTATIC
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)
+#else
+    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)/(cp*tbv[k])
+#endif
 
 /********************************************************
 * Perturbation values forecast by model
@@ -25,6 +29,7 @@ extern double *nips,*nis,*nims;
 extern double *nrps,*nrs,*nrms;
 extern double *vts,*sts,*its;		// fall speed (m/s)
 extern double *accRain,*accSnow;
+extern double *dBZ;
 extern bool *isSaturated;
 
 #define QV(i,j,k) qvs[INDEX(i,j,k)]
@@ -75,6 +80,8 @@ void init_microphysics(int,int);
 * General shared function
 *
 *********************************************************/
+double get_dimensional_pressure(int index,int k);
+double get_qvsat_mixed(double temperature,double pd);
 void microphysics_diffusion(int,int,int,int,double);
 void microphysics_advance(size_t);
 void microphysics_advance_inner(size_t);
@@ -103,5 +110,5 @@ void run_thompson_microphysics(int il,int ih, int jl, int jh, int kl, int kh,
     double *qv,double *qc,double *qi,double *qr,double *qs,double *qg,
     double *ni,double *nr,
     double *t3d,double *p3d,double *w3d,
-    double *pptrain,double *pptsnow);
+    double *pptrain,double *pptsnow,bool do_radar);
 

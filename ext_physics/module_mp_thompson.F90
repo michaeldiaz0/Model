@@ -2255,7 +2255,7 @@ MODULE module_mp_thompson
          tempc = temp(k) - 273.15
          rhof(k) = SQRT(RHO_NOT/rho(k))
          rhof2(k) = SQRT(rhof(k))
-         qvs(k) = rslf(pres(k), temp(k))
+         qvs(k) = rslf(pres(k), temp(k)) ! saturation calculation
          delQvs(k) = MAX(0.0, rslf(pres(k), 273.15)-qv(k))
          if (tempc .le. 0.0) then
           qvsi(k) = rsif(pres(k), temp(k))
@@ -5799,18 +5799,20 @@ MODULE module_mp_thompson
 !! melting level interface.
       subroutine calc_refl10cm (qv1d, qc1d, qr1d, nr1d, qs1d, qg1d, &
                t1d, p1d, dBZ, rand1, kts, kte, ii, jj, melti,       &
-               vt_dBZ, first_time_step)
+               vt_dBZ, first_time_step) bind(c,name="calc_refl10cm")
+
+      use iso_c_binding
 
       IMPLICIT NONE
 
 !..Sub arguments
-      INTEGER, INTENT(IN):: kts, kte, ii, jj
-      REAL, INTENT(IN):: rand1
-      REAL, DIMENSION(kts:kte), INTENT(IN)::                            &
+      INTEGER(c_int), INTENT(IN):: kts, kte, ii, jj
+      REAL(c_double), INTENT(IN):: rand1
+      REAL(c_double), DIMENSION(kts:kte), INTENT(IN)::                            &
                           qv1d, qc1d, qr1d, nr1d, qs1d, qg1d, t1d, p1d
-      REAL, DIMENSION(kts:kte), INTENT(INOUT):: dBZ
-      REAL, DIMENSION(kts:kte), OPTIONAL, INTENT(INOUT):: vt_dBZ
-      LOGICAL, OPTIONAL, INTENT(IN) :: first_time_step
+      REAL(c_double), DIMENSION(kts:kte), INTENT(INOUT):: dBZ
+      REAL(c_double), DIMENSION(kts:kte), OPTIONAL, INTENT(INOUT):: vt_dBZ
+      LOGICAL(c_bool), OPTIONAL, INTENT(IN) :: first_time_step
 
 !..Local variables
       LOGICAL :: do_vt_dBZ
@@ -5833,13 +5835,14 @@ MODULE module_mp_thompson
       DOUBLE PRECISION:: fmelt_s, fmelt_g
 
       INTEGER:: i, k, k_0, kbot, n
-      LOGICAL, INTENT(IN):: melti
+      LOGICAL(c_bool), INTENT(IN):: melti
       LOGICAL, DIMENSION(kts:kte):: L_qr, L_qs, L_qg
 
       DOUBLE PRECISION:: cback, x, eta, f_d
       REAL:: xslw1, ygra1, zans1
 
 !+---+
+#if 0
       if (present(vt_dBZ) .and. present(first_time_step)) then
          do_vt_dBZ = .true.
          if (first_time_step) then
@@ -5850,10 +5853,11 @@ MODULE module_mp_thompson
          endif
          allow_wet_graupel = .false.
       else
+#endif
          do_vt_dBZ = .false.
          allow_wet_snow = .true.
          allow_wet_graupel = .true.
-      endif
+      !endif
 
       do k = kts, kte
          dBZ(k) = -35.0

@@ -2,7 +2,6 @@
 #include "stdafx.h"
 #include "budgets.h"
 #include "turbulence.h"
-#include "interpolate.h"
 
 /*******************************************************************************************
 * ICE MICROPHYSICS BASED ON RUTLEDGE AND HOBBS (1983) WITH IMPROVEMENTS BY HONG ET AL. (2004).
@@ -11,28 +10,11 @@
 *
 ********************************************************************************************/
 
-#define ALPHA(x) ( 1.0 + (x-273.15) / (tmax-tmin) )
-#define SAT_VAP_WAT(t) ( 611.2 * exp(17.67 * (t-273.15) / (t - 29.65) ) )
-#define SAT_VAP_ICE(t) ( 611.2 * exp(21.8745584 * (t-273.15) / (t - 7.66) ) )
-#define SAT_MIX_RATIO(e,p) ( 0.62197 * e / (p-e) )
-
-// hydrostatic uses Exner pressure
-// non-hydrostatic uses pressure / density
-#if HYDROSTATIC
-    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)
-#else
-    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)/(cp*tbv[k])
-#endif
-
 double A,C,E,cvent,vtden,qrr,pd,theta,pressure,phi,vapor,total_convert,total_convert2;
 double qvl_sat,qvi_sat; // saturation mixing ratio / vapor pressure with respect to water
 double esl,esi; // saturation mixing ratio / vapor pressure with respect to ice
 
 double var;
-
-const double tmin = -30+273.15;	// temperature below which only ice
-const double tmax = 0+273.15;		// temperature above which only water
-
 
 const double minvar_snow = 1.0e-10;
 const double minvar_cice = 1.0e-10;

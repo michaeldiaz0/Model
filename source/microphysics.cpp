@@ -15,6 +15,8 @@
     #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)/(cp*tbv[k])
 #endif
 
+const double cpRd = cp/Rd;
+
 enum functions {
 	Constant,
 	Linear,
@@ -24,6 +26,7 @@ enum functions {
 double *qp_edges;
 double *qn_edges;
 double *delta_qk_mono;
+double *dBZ;
 
 double (*piecewise_interp)(double *zin,double *zout,double *qin,double *qout,int zlevs);
 
@@ -41,7 +44,11 @@ void calculate_edge_values(double *zin, double *qin, double *qp_edges, double *q
 ************************************************************************************/
 void init_microphysics(int nx,int ny){
 	
-	init_thompson_microphysics(rank);
+	if(MICROPHYSICS_OPTION==3){
+		init_thompson_microphysics(rank);
+		dBZ = (double *)calloc(nx*ny*NZ,sizeof(double));
+	}
+
 	//Rainfall_Interpolation_Method = Constant;
 	//Rainfall_Interpolation_Method = Linear;
 	Rainfall_Interpolation_Method = Parabolic;
@@ -98,6 +105,8 @@ inline static double min_of_three(double x,double y,double z){
 *******************************************************/
 void run_microphysics(int il,int ih,int jl,int jh){
 	
+	bool do_radar = false;
+
 	switch(MICROPHYSICS_OPTION){
 		
 		//-------------------------------------------------
@@ -127,11 +136,34 @@ void run_microphysics(int il,int ih,int jl,int jh){
 		//-------------------------------------------------			
 		case 3:
 
-			run_thompson_microphysics(
-				il,ih,jl,jh,2,NZ-1,fNX,fNY,fNZ,
+			
+
+			if(OUTPUT_TO_FILE && bigcounter % outfilefreq == 0){
+				do_radar = true;
+			}
+
+			if(PARALLEL){
+
+				zero_moisture(il,ih,jl,jh,fNX*fNY*fNZ);
+
+				run_thompson_microphysics(
+				il,ih,jl,jh,2,fNZ-1,fNX,fNY,fNZ,
 				qvps,qcps,qips,qrps,qsps,qgps,
-				nips,nrps,thps,pis,wps,accRain,accSnow
+				nips,nrps,thps,pis,wps,accRain,accSnow,
+				do_radar
 				);
+				
+			} else {
+
+				zero_moisture(il,ih,jl,jh,NX*NY*NZ);
+
+				run_thompson_microphysics(
+				il,ih,jl,jh,2,NZ-1,NX,NY,NZ,
+				qvps,qcps,qips,qrps,qsps,qgps,
+				nips,nrps,thps,pis,wps,accRain,accSnow,
+				do_radar
+				);
+			}
 				
 			break;
 		//-------------------------------------------------
@@ -714,6 +746,18 @@ void zero_moisture(int il,int ih,int jl,int jh,int size){
 		for(int i=0;i<size;i++)
 			if(qsps[i] < 0){ qsps[i] = 0;}
 	}
+
+	if(MICROPHYSICS_OPTION==3){
+
+		for(int i=0;i<size;i++)
+			if(qgps[i] < 0){ qgps[i] = 0;}
+
+		for(int i=0;i<size;i++)
+			if(nrps[i] < 0){ nrps[i] = 0;}
+
+		for(int i=0;i<size;i++)
+			if(nips[i] < 0){ nips[i] = 0;}
+	}
 	
 	for(int i=il;i<ih;i++){
 	for(int j=jl;j<jh;j++){
@@ -804,6 +848,68 @@ double get_CAPE(int i,int j,int k_p,double p_vapor,double p_temp){
 	}
 
 	return cape;
+}
+
+/*********************************************************************
+* 
+*
+**********************************************************************/
+double get_dimensional_pressure(int index,int k){
+
+#if !HYDROSTATIC
+	return p0*pow(m_pbar[index],cpRd) + pis[index]*rhou[k];
+#else
+	return p0*pow(m_pbar[index]+pis[index],cpRd);
+#endif
+}
+
+/*********************************************************************
+* Calculate saturation mixing ratio for water, ice, or mixed phase
+* depending on the temperature.
+*
+* pd -> dimensional pressure (Pa)
+*
+* for different phases (l->liquid, i->ice)
+*
+**********************************************************************/
+double get_qvsat_mixed(double temperature,double pd){
+
+	double esl,esi,qvsat,qvl_sat,qvi_sat;
+
+	//------------------------------------------------
+	// All rain
+	//------------------------------------------------
+	if(temperature > tmax){
+
+		// calculate saturation mixing ratio
+		esl = SAT_VAP_WAT(temperature);
+		qvsat = SAT_MIX_RATIO(esl,pd);
+
+	//------------------------------------------------
+	// All ice
+	//------------------------------------------------
+	} else if(temperature < tmin) {
+		// calculate saturation mixing ratio
+		esl = SAT_VAP_ICE(temperature);
+		qvsat = SAT_MIX_RATIO(esl,pd);
+
+	//------------------------------------------------
+	// Mixed phase
+	//------------------------------------------------
+	} else {
+
+		// calculate saturation mixing ratio
+		esl = SAT_VAP_WAT(temperature);
+		esi = SAT_VAP_ICE(temperature);
+
+		qvl_sat = SAT_MIX_RATIO(esl,pd);
+		qvi_sat = SAT_MIX_RATIO(esi,pd);
+
+		qvsat = ALPHA(temperature) * qvl_sat + (1.0-ALPHA(temperature)) * qvi_sat;
+
+	}
+
+	return qvsat;
 }
 
 /*********************************************************************

@@ -1,16 +1,11 @@
 #include "stdafx.h"
 #include "interpolate.h"
-#include "microphysics.h"
 
 #define ALLOC(v,size) v = (double *)calloc(size,sizeof(double))
 
 #define INTERP_PARCEL_TO_U(x,y,z) ( (frac1)*array_interpolate(u1, x+0.5, y, z) + (frac2)*array_interpolate(u2, x+0.5, y, z) )
 #define INTERP_PARCEL_TO_V(x,y,z) ( (frac1)*array_interpolate(v1, x, y+0.5, z) + (frac2)*array_interpolate(v2, x, y+0.5, z) )
 #define INTERP_PARCEL_TO_W(x,y,z) ( (frac1)*array_interpolate(w1, x, y, z+0.5) + (frac2)*array_interpolate(w2, x, y, z+0.5) )
-
-#define SAT_VAP_WAT(t) ( 611.2 * exp(17.67 * (t-273.15) / (t - 29.65) ) )
-#define SAT_VAP_ICE(t) ( 611.2 * exp(21.8745584 * (t-273.15) / (t - 7.66) ) )
-#define SAT_MIX_RATIO(e,p) ( 0.62197 * e / (p-e) )
 
 const int fileDT = 1*60*60;
 const int startTime = 13;

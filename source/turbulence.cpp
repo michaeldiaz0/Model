@@ -685,8 +685,7 @@ void get_Kmix(int il,int ih,int jl,int jh){
 				//-----------------------------------------------------------------
 				// Calculate full virtual potential temperature
 				//-----------------------------------------------------------------
-				thetaVH = (THM(i,j,k) + THBAR(i,j,k) + tb[k]) * ( 1 + 0.61*(QVM(i,j,k)+QBAR(i,j,k)+qb[k]));
-				
+				thetaVH = (THM(i,j,k  ) + THBAR(i,j,k  ) + tb[k  ]) * (1 + 0.61*(QVM(i,j,k  )+QBAR(i,j,k  )+qb[k  ]));	
 				thetaVL = (THM(i,j,k-1) + THBAR(i,j,k-1) + tb[k-1]) * (1 + 0.61*(QVM(i,j,k-1)+QBAR(i,j,k-1)+qb[k-1]));
 
 				dTheta = thetaVH - thetaVL;
@@ -702,11 +701,11 @@ void get_Kmix(int il,int ih,int jl,int jh){
 				//-----------------------------------------------------------------
 				// Calculate full potential and full actual temperature
 				//-----------------------------------------------------------------
-				thetaVH = THM(i,j,k) + THBAR(i,j,k) + tb[k];
+				thetaVH = THM(i,j,k  ) + THBAR(i,j,k  ) + tb[k];
 				thetaVL = THM(i,j,k-1) + THBAR(i,j,k-1) + tb[k-1];
 				
-				tempH = thetaVH * (PBAR(i,j,k  ) + PI(i,j,k  )/(cp*tbv[k  ]));
-				tempL = thetaVL * (PBAR(i,j,k-1) + PI(i,j,k-1)/(cp*tbv[k-1]));
+				tempH = thetaVH * (PBAR(i,j,k  ) + CONVERT_PRESSURE(i,j,k));
+				tempL = thetaVL * (PBAR(i,j,k-1) + CONVERT_PRESSURE(i,j,k-1));
 				
 				temp = 0.5 * (tempH+tempL);
 				//-----------------------------------------------------------------
@@ -718,12 +717,12 @@ void get_Kmix(int il,int ih,int jl,int jh){
 				qv = 0.5*(QVM(i,j,k)+QVM(i,j,k-1)+QBAR(i,j,k)+QBAR(i,j,k-1)+qb[k]+qb[k-1]);
 				//-----------------------------------------------------------------
 				// Calculate saturation mixing ratio
-				//-----------------------------------------------------------------						
-				pdH = p0*pow(PBAR(i,j,k  ),cpRd) + PI(i,j,k  )*rhou[k  ];	// full dimensional pressure at upper level
-				pdL = p0*pow(PBAR(i,j,k-1),cpRd) + PI(i,j,k-1)*rhou[k-1];	// full dimensional pressure at lower level
-				
-				eslH = 611.2 * exp(17.67 * (tempH-273.15) / (tempH - 29.65) );	// saturation vapor pressure at upper level
-				eslL = 611.2 * exp(17.67 * (tempL-273.15) / (tempL - 29.65) );	// saturation vapor pressure at lower level
+				//-----------------------------------------------------------------
+				pdH = get_dimensional_pressure(INDEX(i,j,k  ),k  ); // full dimensional pressure at upper level
+				pdL = get_dimensional_pressure(INDEX(i,j,k-1),k-1); // full dimensional pressure at lower level
+
+				eslH = SAT_VAP_WAT(tempH);	// saturation vapor pressure at upper level
+				eslL = SAT_VAP_WAT(tempL);	// saturation vapor pressure at lower level
 
 				qvsatH = 0.62197 * eslH / (pdH-eslH);	// saturation mixing ratio at upper level
 				qvsatL = 0.62197 * eslL / (pdL-eslL);	// saturation mixing ratio at lower level
@@ -752,12 +751,20 @@ void get_Kmix(int il,int ih,int jl,int jh){
 				
 				c = vert_mixing_length_squared[k]*cs*cs;
 				
+				// vertical mixing length
 				KVMIX(i,j,k)  = c*sqrt(S2-one_d_Pr*bruntv);
 			
+				// interpolate horizontal mixing length to cell centers
 				KHMIX( i,j,k-1) = 0.5*( KVMIX(i,j,k-1) / vert_mixing_length_squared[k-1] + KVMIX(i,j,k)/vert_mixing_length_squared[k] ) * lH*lH;
 				
-				if(KVMIX(i,j,k) >vert_mix_Kmax[k]){ KVMIX(i,j,k) = vert_mix_Kmax[k]; }
-				if(KHMIX(i,j,k-1) > kmixh_max){ KHMIX(i,j,k-1) = kmixh_max; }			
+				// upper bound on vertical mixing length
+				if(KVMIX(i,j,k  ) > vert_mix_Kmax[k]){ 
+					KVMIX(i,j,k) = vert_mix_Kmax[k]; 
+				}
+				// upper bound on horizontal mixing length
+				if(KHMIX(i,j,k-1) > kmixh_max){ 
+					KHMIX(i,j,k-1) = kmixh_max; 
+				}			
 							
 			} else {
 				
@@ -1374,15 +1381,14 @@ void turbulent_diffusion_scalars(int il,int ih,int jl,int jh){
 				pressure = p0*pow(PBAR(i,j,k)+dp_to_surface,cpRd) + PI(i,j,k)*rhou[k];	// full surface dimensional pressure
 				pisfc = PBAR(i,j,k) + PI(i,j,k)/(cp*tbv[k]) + dp_to_surface;			// full non-dimensional pressure at surface
 
-
 				qvs_surface = 0.62197 * es_water / (pressure-es_water);					// surface saturation mixing ratio
 			
 				tmp_surface_base = (THBAR(i,j,k)+tb[k])*pisfc;							// basic state temperature at surface
 				tmp_surface_pert = THM(i,j,k)*pisfc;									// perturbation temperature at surface
 			
 				// perturbation surface fluxes
-				tau_q_l = drag_coef * ( ( wind_speed - wind_speed_base) * (qvs_surface -  QBAR(i,j,k) - qb[k]) - wind_speed * QVM(i,j,k) );
-				tau_t_l = drag_coef * ( ( wind_speed - wind_speed_base) * (water_temp - tmp_surface_base) - wind_speed * tmp_surface_pert );
+				tau_q_l = fmax(0., drag_coef * ( ( wind_speed - wind_speed_base) * (qvs_surface -  QBAR(i,j,k) - qb[k]) - wind_speed * QVM(i,j,k) ));
+				tau_t_l = fmax(0., drag_coef * ( ( wind_speed - wind_speed_base) * (water_temp - tmp_surface_base) - wind_speed * tmp_surface_pert ));
 			}
 
 			latent_heat_flux[INDEX2D(i,j)] = tau_q_l * Lv * rhou[k];	// store surface latent heat flux

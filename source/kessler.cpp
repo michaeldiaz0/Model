@@ -5,12 +5,6 @@
 
 const double minvar = 1.0e-12; // threshold for microphysics calculations
 
-#if HYDROSTATIC
-    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)
-#else
-    #define CONVERT_PRESSURE(i,j,k) PI(i,j,k)/(cp*tbv[k])
-#endif
-
 /****************************************************
 * Initialize moisture variables
 *****************************************************/
