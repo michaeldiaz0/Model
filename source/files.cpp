@@ -187,6 +187,10 @@ void create_outfile(const char *myfilename, bool basestate,bool modelBaseState,b
 			status = nc_def_var (ncid,"snowfall", NC_FLOAT, 3, var_dimids, &var_id);
 			if (status != NC_NOERR) handle_error(status);
 		}
+
+		if(MICROPHYSICS_OPTION==3){
+			mpVarCount = 6;
+		}
 	
 		for(int i=0;i<mpVarCount;i++){
 
@@ -701,6 +705,10 @@ void output_meteorological_fields_to_file(
 			
 			write3d(filename,"qi",qis,tcount);
 			write3d(filename,"qs",qss,tcount);
+		}
+
+		if(MICROPHYSICS_OPTION==3){
+			write3d(filename,"qg",qgs,tcount);
 		}
 	}
 	//------------------------------------------------------

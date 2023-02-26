@@ -32,18 +32,21 @@ extern bool *isSaturated;
 #define QR(i,j,k) qrs[INDEX(i,j,k)]
 #define QI(i,j,k) qis[INDEX(i,j,k)]
 #define QS(i,j,k) qss[INDEX(i,j,k)]
+#define QG(i,j,k) qgs[INDEX(i,j,k)]
 
 #define QVP(i,j,k) qvps[INDEX(i,j,k)]
 #define QCP(i,j,k) qcps[INDEX(i,j,k)]
 #define QRP(i,j,k) qrps[INDEX(i,j,k)]
 #define QIP(i,j,k) qips[INDEX(i,j,k)]
 #define QSP(i,j,k) qsps[INDEX(i,j,k)]
+#define QGP(i,j,k) qgps[INDEX(i,j,k)]
 
 #define QVM(i,j,k) qvms[INDEX(i,j,k)]
 #define QCM(i,j,k) qcms[INDEX(i,j,k)]
 #define QRM(i,j,k) qrms[INDEX(i,j,k)]
 #define QIM(i,j,k) qims[INDEX(i,j,k)]
 #define QSM(i,j,k) qsms[INDEX(i,j,k)]
+#define QGM(i,j,k) qgms[INDEX(i,j,k)]
 
 #define QBAR(i,j,k) m_qbar[INDEX(i,j,k)]
 

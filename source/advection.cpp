@@ -16,14 +16,6 @@
 #define Z_ADVECT_BASE(s) ( 0.50*( rhow[k+1]*W(i,j,k+1)*(s[k+1]-s[k  ]) \
 							    + rhow[k  ]*W(i,j,k  )*(s[k  ]-s[k-1])	\
 							    ) * one_d_rhou[k] )
-// Buoyancy term
-#if USE_MICROPHYSICS && !USE_ICE
-	#define BUOYANCY(i,j,k) ( TH(i,j,k) / tbv[k] + 0.61*QV(i,j,k) - QC(i,j,k) - QR(i,j,k) )
-#elif USE_MICROPHYSICS && USE_ICE									
-	#define BUOYANCY(i,j,k) ( TH(i,j,k) / tbv[k] + 0.61*QV(i,j,k) - QC(i,j,k) - QR(i,j,k) - QI(i,j,k) - QS(i,j,k) )
-#else
-	#define BUOYANCY(i,j,k) ( TH(i,j,k) / tbv[k] )
-#endif
 
 #define LOOP3D_IJK(il,ih,jl,jh,kl,kh,equation) 	for(int i=il;i<ih;i++){ \
 												for(int j=jl;j<jh;j++){ \
@@ -55,6 +47,13 @@ inline double buoyancy_warm_micro(int i,int j,int k){
 ******************************************************************************************/
 inline double buoyancy_cold_micro(int i,int j,int k){
 	return TH(i,j,k) / tbv[k] + 0.61*QV(i,j,k) - QC(i,j,k) - QR(i,j,k) - QI(i,j,k) - QS(i,j,k);
+}
+
+/*****************************************************************************************
+* 
+******************************************************************************************/
+inline double buoyancy_cold_micro_graupel(int i,int j,int k){
+	return TH(i,j,k) / tbv[k] + 0.61*QV(i,j,k) - QC(i,j,k) - QR(i,j,k) - QI(i,j,k) - QS(i,j,k) - QG(i,j,k);
 }
 
 /******************************************************************************************
@@ -332,8 +331,11 @@ void advect_uvw_velocity(double step,int il,int ih,int jl,int jh){
 	if(MICROPHYSICS_OPTION != 0 && !USE_ICE){
 		LOOP3D_IJK(il,ih,jl,jh,2,NZ-1,	WP(i,j,k) = WM(i,j,k) + step * dt*grav*0.5*( buoyancy_warm_micro(i,j,k)+buoyancy_warm_micro(i,j,k-1))	)
 	}
-	if(MICROPHYSICS_OPTION != 0 && USE_ICE){
+	if(MICROPHYSICS_OPTION != 0 && USE_ICE && MICROPHYSICS_OPTION != 3){
 		LOOP3D_IJK(il,ih,jl,jh,2,NZ-1,	WP(i,j,k) = WM(i,j,k) + step * dt*grav*0.5*( buoyancy_cold_micro(i,j,k)+buoyancy_cold_micro(i,j,k-1))	)
+	}
+	if(MICROPHYSICS_OPTION != 0 && USE_ICE && MICROPHYSICS_OPTION == 3){
+		LOOP3D_IJK(il,ih,jl,jh,2,NZ-1,	WP(i,j,k) = WM(i,j,k) + step * dt*grav*0.5*( buoyancy_cold_micro_graupel(i,j,k)+buoyancy_cold_micro_graupel(i,j,k-1))	)
 	}
 	
 }
@@ -502,64 +504,74 @@ void advect_microphysics_cell(double step,int il,int ih,int jl,int jh){
 * @param il,ih,jl,jh - beginning and ending indices
 **********************************************************************/
 void advect_ice_cell(double step,int il,int ih,int jl,int jh){
-
-	//--------------------------------------------------------
-	// If Eulerian snow/ice fall integration, calculate fall speed
-	//--------------------------------------------------------
-	if(RAIN_FALLOUT==1 && MICROPHYSICS_OPTION!=3)
-		calculate_eulerian_fall_speed_snow_ice(sts, qss, its, pis, il, ih, jl, jh);
-
-	//-------------------------------------------------------------
-	// ADVECTION OF SNOW
-	//-------------------------------------------------------------
-	// Calculate the zonal flux on the eastern side of innermost column of boundary points.
-	// This will become the flux on the western side of the leftmost interior cell
-	compute_west_scalar(il-1,jl,jh,qss,ice_cell);
-
-	//-------------------------------------------------------
-	// For each point within the east-west range
-	//-------------------------------------------------------
-	for(int i=il;i<ih;i++){
-
-		// compute all fluxes for a YZ cross section
-		compute_fluxes_scalar_with_fallspeed(i,jl-1,jh,qss,sts,ice_cell);
-
-		//-------------------------------------------------------
-		// For each point within the north-south range
-		//-------------------------------------------------------
-		for(int j=jl;j<jh;j++){
-		for(int k=1;k<NZ-1;k++){
-		
-			// new values equal old values plus the rate of change
-			QSP(i,j,k) = QSM(i,j,k) + step * scalar_tend_cell(i,j,k,ice_cell);	// snow
-		}}
-	}
 	
-	//-------------------------------------------------------------
-	// ADVECTION OF CLOUD ICE
-	//-------------------------------------------------------------
-	// Calculate the zonal flux on the eastern side of innermost column of boundary points.
-	// This will become the flux on the western side of the leftmost interior cell
-	compute_west_scalar(il-1,jl,jh,qis,ice_cell);
+	if(MICROPHYSICS_OPTION!=3){
+		//--------------------------------------------------------
+		// If Eulerian snow/ice fall integration, calculate fall speed
+		//--------------------------------------------------------
+		if(RAIN_FALLOUT==1 && MICROPHYSICS_OPTION!=3)
+			calculate_eulerian_fall_speed_snow_ice(sts, qss, its, pis, il, ih, jl, jh);
 
-	//-------------------------------------------------------
-	// For each point within the east-west range
-	//-------------------------------------------------------
-	for(int i=il;i<ih;i++){
-
-		// compute all fluxes for a YZ cross section
-		compute_fluxes_scalar_with_fallspeed(i,jl-1,jh,qis,its,ice_cell);
+		//-------------------------------------------------------------
+		// ADVECTION OF SNOW
+		//-------------------------------------------------------------
+		// Calculate the zonal flux on the eastern side of innermost column of boundary points.
+		// This will become the flux on the western side of the leftmost interior cell
+		compute_west_scalar(il-1,jl,jh,qss,ice_cell);
 
 		//-------------------------------------------------------
-		// For each point within the north-south range
+		// For each point within the east-west range
 		//-------------------------------------------------------
-		for(int j=jl;j<jh;j++){
-		for(int k=1;k<NZ-1;k++){
+		for(int i=il;i<ih;i++){
+
+			// compute all fluxes for a YZ cross section
+			compute_fluxes_scalar_with_fallspeed(i,jl-1,jh,qss,sts,ice_cell);
+
+			//-------------------------------------------------------
+			// For each point within the north-south range
+			//-------------------------------------------------------
+			for(int j=jl;j<jh;j++){
+			for(int k=1;k<NZ-1;k++){
+			
+				// new values equal old values plus the rate of change
+				QSP(i,j,k) = QSM(i,j,k) + step * scalar_tend_cell(i,j,k,ice_cell);	// snow
+			}}
+		}
 		
-			// new values equal old values plus the rate of change
-			QIP(i,j,k) = QIM(i,j,k) + step * scalar_tend_cell(i,j,k,ice_cell);	// snow
-		}}
+		//-------------------------------------------------------------
+		// ADVECTION OF CLOUD ICE
+		//-------------------------------------------------------------
+		// Calculate the zonal flux on the eastern side of innermost column of boundary points.
+		// This will become the flux on the western side of the leftmost interior cell
+		compute_west_scalar(il-1,jl,jh,qis,ice_cell);
+
+		//-------------------------------------------------------
+		// For each point within the east-west range
+		//-------------------------------------------------------
+		for(int i=il;i<ih;i++){
+
+			// compute all fluxes for a YZ cross section
+			compute_fluxes_scalar_with_fallspeed(i,jl-1,jh,qis,its,ice_cell);
+
+			//-------------------------------------------------------
+			// For each point within the north-south range
+			//-------------------------------------------------------
+			for(int j=jl;j<jh;j++){
+			for(int k=1;k<NZ-1;k++){
+			
+				// new values equal old values plus the rate of change
+				QIP(i,j,k) = QIM(i,j,k) + step * scalar_tend_cell(i,j,k,ice_cell);	// snow
+			}}
+		}
+
+	} else {
+		advect_scalar(step,il,ih,jl,jh,qsms,qss,qsps,ice_cell);
+		advect_scalar(step,il,ih,jl,jh,qims,qis,qips,ice_cell);
+		advect_scalar(step,il,ih,jl,jh,qgms,qgs,qgps,ice_cell);
+		advect_scalar(step,il,ih,jl,jh,nrms,nrs,nrps,ice_cell);
+		advect_scalar(step,il,ih,jl,jh,nims,nis,nips,ice_cell);
 	}
+
 }
 
 /*********************************************************************

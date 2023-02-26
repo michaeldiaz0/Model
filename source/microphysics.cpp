@@ -128,7 +128,9 @@ void run_microphysics(int il,int ih,int jl,int jh){
 		case 3:
 
 			run_thompson_microphysics(
-				il,ih,jl,jh,2,NZ-1,fNX,fNY,fNZ,qvps,qcps,qips,qrps,qsps,qgps,nips,nrps,thps,pis,wps,accRain,accSnow
+				il,ih,jl,jh,2,NZ-1,fNX,fNY,fNZ,
+				qvps,qcps,qips,qrps,qsps,qgps,
+				nips,nrps,thps,pis,wps,accRain,accSnow
 				);
 				
 			break;
@@ -660,7 +662,13 @@ void microphysics_advance_inner(size_t num_bytes){
 	if(USE_ICE){
 		switch_array(&qis,&qips);
 		switch_array(&qss,&qsps);
-	}	
+	}
+	
+	if(MICROPHYSICS_OPTION==3){
+		switch_array(&qgs,&qgps);
+		switch_array(&nis,&nips);
+		switch_array(&nrs,&nrps);
+	}
 }
 
 /*********************************************************************
@@ -675,6 +683,12 @@ void microphysics_advance(size_t num_bytes){
 	if(USE_ICE){
 		memcpy(qims,qips,num_bytes);
 		memcpy(qsms,qsps,num_bytes);
+	}
+
+	if(MICROPHYSICS_OPTION==3){
+		memcpy(qgms,qgps,num_bytes);
+		memcpy(nims,nips,num_bytes);
+		memcpy(nrms,nrps,num_bytes);
 	}
 
 	microphysics_advance_inner(num_bytes);

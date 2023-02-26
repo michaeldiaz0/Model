@@ -83,7 +83,7 @@ const int coordVarCount = 2;
 //const int twodVarCount = 2;
 
 const char var_names[11][10] = {"u-wind","v-wind","w-wind", "theta", "pi","rate"};
-const char mp_var_names[11][10] = {"qv", "qc", "qr","qi","qs"};
+const char mp_var_names[11][10] = {"qv", "qc", "qr","qi","qs","qg"};
 const char opt_var_names[11][10] = {"fric","diff"};
 const char basevar_names[6][10] = {"ubar","vbar","wbar","thbar","qbar","pbar"};
 const char modelbasevar_names[4][10] = {"tb","pib","qb","zu"};

@@ -1739,6 +1739,12 @@ void initialize_from_output_parallel(const char *myfilename,size_t time){
 				
 				load_from_output_2d(myfilename,"snowfall",accSnow,time);
 			}
+
+			if(MICROPHYSICS_OPTION==3){
+				load_from_output(myfilename,"qg",qgs,qgms,time);
+				load_from_output(myfilename,"nr",nrs,nrms,time);
+				load_from_output(myfilename,"ni",nis,nims,time);
+			}
 			
 			load_from_output_2d(myfilename,"rainfall",accRain,time);
 		}
@@ -1786,6 +1792,13 @@ void initialize_from_output_parallel(const char *myfilename,size_t time){
 				
 				load_interpolate_from_output(myfilename,"qs",time,var,var_interpz,qss,qsms,&ZU(0),myLons,myLats,zlevs,xdim,ydim,zdim,interp_dx,interp_dy);	
 				load_interpolate_from_output(myfilename,"qi",time,var,var_interpz,qis,qims,&ZU(0),myLons,myLats,zlevs,xdim,ydim,zdim,interp_dx,interp_dy);
+			}
+
+			if(MICROPHYSICS_OPTION==3){
+				load_interpolate_from_output(myfilename,"qg",time,var,var_interpz,qgs,qgms,&ZU(0),myLons,myLats,zlevs,xdim,ydim,zdim,interp_dx,interp_dy);
+				load_interpolate_from_output(myfilename,"nr",time,var,var_interpz,nrs,nrms,&ZU(0),myLons,myLats,zlevs,xdim,ydim,zdim,interp_dx,interp_dy);
+				load_interpolate_from_output(myfilename,"ni",time,var,var_interpz,nis,nims,&ZU(0),myLons,myLats,zlevs,xdim,ydim,zdim,interp_dx,interp_dy);
+
 			}
 		}
 		
