@@ -79,7 +79,7 @@ void test_line_format(const char* buff){
 	
 	if( (buff[loc-1] != ' ' && buff[loc-1] != '\t') || (buff[loc+1] != ' ' && buff[loc+1] != '\t') ){
 		
-		printf("Error: format error in parameters file. Color needs spacing at line: %s",buff);
+		printf("Error: format error in parameters file. Colon needs spacing at line: %s",buff);
 		exit(0);
 	}
 	
