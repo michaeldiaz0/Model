@@ -254,6 +254,171 @@ def plot_winds_condensate(infile,outfile,time):
 	dataset.close()
 
 #------------------------------------------------------------
+#
+#------------------------------------------------------------
+def cross_section(infile,outfile,time):
+
+    west = 0
+    east = 500
+    north = 95#85#48#75
+    top = 42
+
+    dataset = Dataset(infile,mode='r')
+
+    lons = dataset.variables['lon'][west:east]
+    lats = dataset.variables['lat'][:]
+    times = dataset.variables['time'][:]
+
+
+    if time >= len(times):
+        return
+
+    levs = dataset.variables["zu"][:]
+
+    levs /= 1000
+
+    #north = find_index(31.6,lats)
+    #north = find_index(32.25,lats)
+    #mid = find_index(51.55,lons)
+
+    north = 95#47#95
+
+    #print(north)
+
+    nx = len(lons)
+    nz = len(levs)
+    top = nz
+
+#   levs = np.arange(-0.25,nz/2,0.5)
+
+    has_microphysics = False
+
+    tb = dataset.variables['tb'][:]
+    pib = dataset.variables['pib'][:]
+    qb = dataset.variables['qb'][:]
+
+    pres = 100000.0*pib**(1004.0/287.0)
+
+
+    print('time = '+str(time))
+    #print(pres)
+
+    #print(lats[north])
+
+    
+    u2 = dataset.variables['u-wind'][time,west:east,north,0:top] #+ dataset.variables['ubar'][west:east,north,0:top]
+    v2 = dataset.variables['v-wind'][time,west:east,north,0:top]   
+    p2 = dataset.variables['pi'][    time,west:east,north,0:top]
+    t2 = dataset.variables['theta'][ time,west:east,north,0:top]
+    w2 = dataset.variables['w-wind'][time,west:east,north,0:top]
+    
+    u = np.reshape(np.ravel(u2), (nz,nx), order='F')
+    w = np.reshape(np.ravel(w2), (nz,nx), order='F')
+    v = np.reshape(np.ravel(v2), (nz,nx), order='F')
+    p = np.reshape(np.ravel(p2), (nz,nx), order='F')
+    t = np.reshape(np.ravel(t2), (nz,nx), order='F')
+
+
+    if has_microphysics:
+
+        q2 = dataset.variables['qv'][time,west:east,north,0:top]
+        c2 = dataset.variables['qc'][time,west:east,north,0:top]
+        r2 = dataset.variables['qr'][time,west:east,north,0:top]
+        s2 = dataset.variables['qr'][time,west:east,north,0:top]
+        e2 = dataset.variables['qr'][time,west:east,north,0:top]
+
+        q = np.reshape(np.ravel(q2), (nz,nx), order='F')
+        c = np.reshape(np.ravel(c2), (nz,nx), order='F')
+        r = np.reshape(np.ravel(r2), (nz,nx), order='F')
+        s = np.reshape(np.ravel(s2), (nz,nx), order='F')
+        e = np.reshape(np.ravel(e2), (nz,nx), order='F')
+
+        c = 1000 * (c)
+        s = 1000 * (s)
+        r = 1000 * (r)
+        e = 1000 * (e)
+
+        for i in range(0,nx):
+            for j in range(0,nz):
+
+                if c[j,i] <= 0:
+                    c[j,i] = 1e-10
+
+                if s[j,i] <= 0:
+                    s[j,i] = 1e-10
+
+                if r[j,i] <= 0:
+                    r[j,i] = 1e-10
+
+
+    tmin = dataset.variables['theta'][time,:,:,:]
+
+    ind = np.unravel_index(np.argmax(tmin, axis=None), tmin.shape)
+    print(ind)
+    print(tmin[ind])
+
+
+    clevs = np.array([-10,-9,-8,-7,-6,-5,-4,-3,-2,-1,1,2,3,4,5,6,7,8,9,10])
+
+    clevs2 = np.array([0.03125/8.0,0.03125/4.0,0.03125/2.0,0.03125,0.0625,0.125,0.25,0.5,1,2,4,8,16,32])
+    clevs3 = np.array([-32,-16,-8,-4,-2,-1,-0.5,-0.25,-0.125,-0.0625,-0.03125,-0.03125/2.0,-0.03125/4,-0.03125/8.0,
+                        0.03125/8.0,0.03125/4.0,0.03125/2.0,0.03125,0.0625,0.125,0.25,0.5,1,2,4,8,16,32])
+
+    x, z = np.meshgrid(lons,levs)
+
+    formatter = LogFormatter(2, labelOnlyBase=False) 
+    formatter2 = LogFormatter(2, labelOnlyBase=False)
+
+
+    #-----------------------------------
+    # make filled contour plot
+    #cs = plt.contourf(x,z,r+c,clevs6,norm=LogNorm(vmin=clevs6[0],vmax=clevs6[len(clevs6)-1]),
+    #cmap=plt.cm.gist_ncar)
+    #cs = plt.contourf(x,z,r+c,clevs6,norm=LogNorm(vmin=clevs6[0],vmax=clevs6[len(clevs6)-1]),
+    #cmap=plt.cm.gist_ncar)
+    #cb = plt.colorbar(cs, shrink=0.8, extend='both',format=formatter)
+
+    #cs = plt.contour(x,z,s,clevs6,norm=LogNorm(vmin=clevs6[0],vmax=clevs6[len(clevs6)-1]),
+    #cmap=plt.cm.gist_ncar)
+    #cb = plt.colorbar(cs, shrink=0.8, extend='both',format=formatter)
+    #cs2 = plt.contour(x,z,r,clevs6,norm=LogNorm(vmin=clevs6[0],vmax=clevs6[len(clevs6)-1]),
+    #cmap=plt.cm.gist_ncar) 
+    #-----------------------------------
+    # make line contour plot
+
+
+    cs2 = plt.contourf(x,z,t,clevs*0.5,cmap=plt.cm.bwr)
+    cb = plt.colorbar(cs2, shrink=0.8, extend='both')
+
+    xmin, xmax = plt.xlim()
+    ymin, ymax = plt.ylim()
+
+    plt.xlim(45.05,45.3)
+    plt.ylim(0,10)
+
+    xstride = 2
+    zstride = 2
+
+    quiv = plt.quiver(x[::xstride,::zstride], z[::xstride,::zstride], u[::xstride,::zstride], w[::xstride,::zstride],pivot='mid',color='Black',scale=400)
+
+    index = int(infile[-4])
+    plt.title('Rain Water Mixing Ratio (shading, g/kg) at '+
+    str(np.round(times[time]*60,decimals=1))+
+    " min\n\n")# \nPert. Pot. Temp. (contours, K) at '+str(lats[north])+' N' ) 
+    plt.xlabel('Longitude')
+    plt.ylabel('Height (km)')
+
+    figure = plt.gcf()
+    figure.set_size_inches(12, 6)
+
+    plt.savefig(outfile,bbox_inches='tight')
+
+
+#   plt.show()
+    plt.close()
+    dataset.close()
+
+#------------------------------------------------------------
 # Get the dimension of a netcdf file.
 #------------------------------------------------------------
 def get_netcdf_dims(dataset):
