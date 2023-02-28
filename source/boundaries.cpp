@@ -219,6 +219,17 @@ void apply_boundary_condition_microphysics(int mpi_proc_null){
 			upper_lower_boundaries(qips,3,fNX-3,3,fNY-3);
 			upper_lower_boundaries(qsps,3,fNX-3,3,fNY-3);			
 		}
+
+		if(MICROPHYSICS_OPTION==3){
+			p_sponge_boundaries(qgps,east,west,north,south,halo_buffer,fNX,fNY,mpi_proc_null);			
+			p_sponge_boundaries(nrps,east,west,north,south,halo_buffer,fNX,fNY,mpi_proc_null);
+			p_sponge_boundaries(nips,east,west,north,south,halo_buffer,fNX,fNY,mpi_proc_null);
+
+			upper_lower_boundaries(qgps,3,fNX-3,3,fNY-3);
+			upper_lower_boundaries(nrps,3,fNX-3,3,fNY-3);
+			upper_lower_boundaries(nips,3,fNX-3,3,fNY-3);	
+
+		}
 	//-----------------------------------------------------------
 	// SERIAL VERSION
 	//-----------------------------------------------------------			

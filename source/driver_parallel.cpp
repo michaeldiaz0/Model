@@ -161,6 +161,10 @@ void p_integrate_rk3(){
 				exchange(qss); exchange(qis);
 				advect_ice_cell(steps[s],3,fNX-3,3,fNY-3);
 			}
+
+			if(MICROPHYSICS_OPTION==3){
+				exchange(qgs); exchange(nrs); exchange(nis);
+			}
 			
 			if(USE_TURBULENT_STRESS){ apply_moisture_diffusion(steps[s],3,fNX-3,3,fNY-3);}
 			

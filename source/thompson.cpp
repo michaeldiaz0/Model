@@ -148,8 +148,8 @@ void run_thompson_microphysics(
                 }
             }
 
-            accRain[i*ny+j] = rainfall;
-            accSnow[i*ny+j] = snowfall + graupfall + icefall;
+            accRain[i*ny+j] += rainfall;
+            accSnow[i*ny+j] += snowfall + graupfall + icefall;
 
             if(do_radar){
                 calc_refl10cm(
