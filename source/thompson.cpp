@@ -70,7 +70,7 @@ void run_thompson_microphysics(
     bool re = false;
     bool melti = true;
     bool first_time_step = false;
-    double *vt_dBZ = (double *)calloc(nz,sizeof(double));;
+    double *vt_dBZ = (double *)calloc(nz,sizeof(double));
 
 
     double *nc1d = (double *)calloc(nz,sizeof(double));
@@ -184,4 +184,5 @@ void run_thompson_microphysics(
     free(p1d);
     free(dzq);
     free(a);
+    free(vt_dBZ);
 }
